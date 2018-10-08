@@ -1,0 +1,6 @@
+[package]
+name = "libiio-sys"
+version = "0.1.0"
+authors = ["fmp <fpagliughi@mindspring.com>"]
+
+[dependencies]

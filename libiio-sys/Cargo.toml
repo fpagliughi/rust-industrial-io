@@ -1,6 +1,13 @@
 [package]
 name = "libiio-sys"
 version = "0.1.0"
-authors = ["fmp <fpagliughi@mindspring.com>"]
+authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
+repository = "https://github.com/fpagliughi/rust-industrial-io"
+description = "Native, unsafe, bindings to the libiio library"
+license = "MIT"
+links = "iio"
+build = "build.rs"
+keywords = ["linux", "embedded", "iio"]
+categories = ["embedded", "hardware-support", "os", "os::unix-apis"]
 
 [dependencies]

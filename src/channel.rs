@@ -3,6 +3,12 @@
 //!
 //!
 
+use std::ffi::{CString, CStr};
+use std::os::raw::{c_uint, c_longlong};
+
+use nix::errno::{Errno};
+use nix::Error::Sys as SysError;
+
 use ffi;
 use super::*;
 
@@ -39,6 +45,109 @@ impl Channel {
         unsafe { ffi::iio_channel_is_scan_element(self.chan) }
     }
 
+    /// Gets the number of context-specific attributes
+    pub fn num_attrs(&self) -> usize {
+        let n = unsafe { ffi::iio_channel_get_attrs_count(self.chan) };
+        n as usize
+    }
+
+    /// Gets the channel-specific attribute at the index
+    pub fn get_attr(&self, idx: usize) -> Result<String> {
+        let pstr = unsafe { ffi::iio_channel_get_attr(self.chan, idx as c_uint) };
+        cstring_opt(pstr).ok_or("Invalid index".into())
+    }
+
+    /// Reads a channel-specific attribute as a boolean
+    /// `attr` The name of the attribute
+    pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
+        let mut val: bool = false;
+        let attr = CString::new(attr).unwrap();
+        unsafe {
+            if ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val) < 0 {
+                bail!(SysError(Errno::last()));
+            }
+        }
+        Ok(val)
+    }
+
+    /// Reads a channel-specific attribute as an integer (i64)
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
+        let mut val: c_longlong = 0;
+        let attr = CString::new(attr).unwrap();
+        unsafe {
+            if ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val) < 0 {
+                bail!(SysError(Errno::last()));
+            }
+        }
+        Ok(val as i64)
+    }
+
+    /// Reads a channel-specific attribute as a floating-point (f64) number
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
+        let mut val: f64 = 0.0;
+        let attr = CString::new(attr).unwrap();
+        unsafe {
+            if ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val) < 0 {
+                bail!(SysError(Errno::last()));
+            }
+        }
+        Ok(val)
+    }
+
+    /// Writes a channel-specific attribute as a boolean
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
+        let attr = CString::new(attr).unwrap();
+        unsafe {
+            if ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val) < 0 {
+                bail!(SysError(Errno::last()));
+            }
+        }
+        Ok(())
+    }
+
+    /// Writes a channel-specific attribute as an integer (i64)
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
+        let attr = CString::new(attr).unwrap();
+        unsafe {
+            if ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val) < 0 {
+                bail!(SysError(Errno::last()));
+            }
+        }
+        Ok(())
+    }
+
+    /// Writes a channel-specific attribute as a floating-point (f64) number
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
+        let attr = CString::new(attr).unwrap();
+        unsafe {
+            if ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val) < 0 {
+                bail!(SysError(Errno::last()));
+            }
+        }
+        Ok(())
+    }
+
+    /// Gets an iterator for the attributes of the channel
+    pub fn attrs(&self) -> AttrIterator {
+        AttrIterator {
+            chan: self,
+            idx: 0
+        }
+    }
+
     /// Enable the channel
     ///
     /// Before creating a buffer, at least one channel of the device
@@ -59,5 +168,22 @@ impl Channel {
 
 }
 
+pub struct AttrIterator<'a> {
+    chan: &'a Channel,
+    idx: usize,
+}
 
+impl<'a> Iterator for AttrIterator<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.chan.get_attr(self.idx) {
+            Ok(name) => {
+                self.idx += 1;
+                Some(name)
+            },
+            Err(_) => None
+        }
+    }
+}
 

@@ -37,7 +37,7 @@ fn cstring_opt(pstr: *const c_char) -> Option<String> {
 }
 
 
-
+// --------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

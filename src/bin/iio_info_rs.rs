@@ -1,5 +1,12 @@
 // industrial-io/src/bin/iio_info_rs.rs
 //
+// Copyright (c) 2018, Frank Pagliughi
+//
+// Licensed under the MIT license:
+//   <LICENSE or http://opensource.org/licenses/MIT>
+// This file may not be copied, modified, or distributed except according
+// to those terms.
+//
 //! Rust application to gather information about Industrial I/O devices.
 //!
 

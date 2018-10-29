@@ -2,6 +2,13 @@
 //
 // Simple Rust IIO example. This lists the devices found in the default context.
 //
+// Copyright (c) 2018, Frank Pagliughi
+//
+// Licensed under the MIT license:
+//   <LICENSE or http://opensource.org/licenses/MIT>
+// This file may not be copied, modified, or distributed except according
+// to those terms.
+//
 
 extern crate industrial_io as iio;
 use std::process;

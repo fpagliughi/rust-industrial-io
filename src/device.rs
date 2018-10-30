@@ -192,6 +192,15 @@ impl Device {
         }
     }
 
+    /// Creates a buffer for the device.
+    ///
+    /// `sample_count` The number of samples the buffer should hold
+    /// `cyclic` Whether to enable cyclic mode.
+    pub fn create_buffer(&self, sample_count: usize, cyclic: bool) -> Result<Buffer> {
+        let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
+        if buf.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Buffer { buf, })
+    }
 }
 
 impl PartialEq for Device {

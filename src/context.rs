@@ -36,6 +36,19 @@ impl Context {
         Ok(Context { ctx, })
     }
 
+    /// Tries to create a context from the specified URI
+    pub fn from_uri(uri: &str) -> Result<Context> {
+        let uri = match CString::new(uri) {
+            Ok(v) => v,
+            Err(_e) => bail!("Can't create context from URI {}", uri),
+        };
+        let ctx = unsafe {
+            ffi::iio_create_context_from_uri(uri.as_ptr())
+        };
+        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Context{ ctx, })
+    }
+
     /// Get a description of the context
     pub fn description(&self) -> String {
         let pstr = unsafe { ffi::iio_context_get_description(self.ctx) };

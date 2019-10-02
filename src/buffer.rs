@@ -18,23 +18,17 @@ use nix::Error::Sys as SysError;
 
 use ffi;
 use errors::*;
-use device::*;
+use context::*;
 use channel::*;
 
 /// An Industrial I/O input or output buffer
 pub struct Buffer {
     pub(crate) buf: *mut ffi::iio_buffer,
+    #[allow(dead_code)] // this holds the refcount for libiio
+    pub(crate) ctx: Context,
 }
 
 impl Buffer {
-
-    /// Get the device to which this buffer belongs
-    pub fn device(&self) -> Device {
-        // TODO: Check C API to make sure it's safe to convert to *mut
-        let dev = unsafe { ffi::iio_buffer_get_device(self.buf) as *mut ffi::iio_device };
-        Device { dev, }
-    }
-
     /// Fetch more samples from the hardware
     ///
     /// This is only valid for input buffers
@@ -78,6 +72,12 @@ impl Buffer {
                 step,
             }
         }
+    }
+}
+
+impl Drop for Buffer {
+    fn drop(&mut self) {
+        unsafe { ffi::iio_buffer_destroy(self.buf) }
     }
 }
 

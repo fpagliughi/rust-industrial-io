@@ -24,14 +24,13 @@ use super::*;
 /// This can not be created directly. It is obtained from a context.
 pub struct Device {
     pub(crate) dev: *mut ffi::iio_device,
+    pub(crate) ctx: Context,
 }
 
 impl Device {
     /// Gets the context to which the device belongs
     pub fn context(&self) -> Context {
-        let ctx = unsafe { ffi::iio_device_get_context(self.dev) as *mut ffi::iio_context };
-        if ctx.is_null() { panic!("Unexpected NULL context"); }
-        Context { ctx, }
+        self.ctx.clone()
     }
 
     /// Gets the device ID (e.g. <b><i>iio:device0</i></b>)
@@ -165,7 +164,7 @@ impl Device {
     pub fn get_channel(&self, idx: usize) -> Result<Channel> {
         let chan = unsafe { ffi::iio_device_get_channel(self.dev, idx as c_uint) };
         if chan.is_null() { bail!("Index out of range"); }
-        Ok(Channel { chan, })
+        Ok(Channel { chan, ctx: self.context() })
     }
 
     /// Try to find a channel by its name or ID
@@ -178,7 +177,7 @@ impl Device {
             None
         }
         else {
-            Some(Channel { chan, })
+            Some(Channel { chan, ctx: self.context() })
         }
     }
 
@@ -197,7 +196,7 @@ impl Device {
     pub fn create_buffer(&self, sample_count: usize, cyclic: bool) -> Result<Buffer> {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
         if buf.is_null() { bail!(SysError(Errno::last())); }
-        Ok(Buffer { buf, })
+        Ok(Buffer { buf, ctx: self.context() })
     }
 }
 

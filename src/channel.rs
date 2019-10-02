@@ -28,6 +28,8 @@ pub enum ChannelType {
 /// An Industrial I/O Device Channel
 pub struct Channel {
     pub(crate) chan: *mut ffi::iio_channel,
+    #[allow(dead_code)]  // looks like it's unused, but really it's holding the Device's lifetime for libiio safety.
+    pub(crate) ctx: Context,
 }
 
 impl Channel {

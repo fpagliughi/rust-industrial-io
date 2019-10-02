@@ -15,7 +15,7 @@ fn main() -> iio::Result<()> {
 
     for chan in dev.channels() {
         if chan.id() != Some("timestamp".to_string()) {
-            print!("{} ", chan.id().unwrap_or(unknown.clone()));
+            print!("{} ", chan.id().unwrap_or_else(|| unknown.clone()));
         }
     }
     println!();
@@ -24,17 +24,13 @@ fn main() -> iio::Result<()> {
         tick.recv().unwrap();
         for chan in dev.channels() {
             if chan.id() == Some("timestamp".to_string()) {
-            }
-            else {
-                if let Ok(val) = chan.attr_read_int("raw") {
-                    print!(" {:6}", val);
-                }
-                else {
-                    print!(" xxxxxx");
-                }
+            } else if let Ok(val) = chan.attr_read_int("raw") {
+                print!(" {:6}", val);
+            } else {
+                print!(" xxxxxx");
             }
         }
-        println!("");
+        println!();
     }
 }
 

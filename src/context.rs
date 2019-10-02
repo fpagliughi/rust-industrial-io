@@ -20,8 +20,6 @@ use nix::Error::Sys as SysError;
 
 use ffi;
 use super::*;
-use errors::*;
-use device::*;
 
 /** An Industrial I/O Context
 Since IIO doesn't provide any thread safety guarantees, this object cannot be Send or Sync.

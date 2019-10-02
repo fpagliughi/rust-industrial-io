@@ -27,7 +27,7 @@ fn main() -> iio::Result<()> {
     for dev in ctx.devices() {
         //assert_eq(ctx, dev.context());
         println!("\t{}: {}", dev.id().unwrap_or_default(),
-                 dev.name().unwrap_or("<unknown>".to_string()));
+                 dev.name().unwrap_or_else(|| "<unknown>".to_string()));
         println!("\t\t{} channels found:", dev.num_channels());
 
         for chan in dev.channels() {
@@ -45,7 +45,7 @@ fn main() -> iio::Result<()> {
                     println!("{}", val);
                 }
                 else {
-                    println!("");
+                    println!();
                 }
             }
         }

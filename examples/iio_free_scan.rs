@@ -14,7 +14,7 @@
 extern crate industrial_io as iio;
 use std::process;
 
-const DFLT_DEV_NAME: &'static str = "44e0d000.tscadc:adc";
+const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
 
 
 fn main() {
@@ -45,7 +45,7 @@ fn main() {
         process::exit(4);
     }
 
-    for mut chan in dev.channels() {
+    for chan in dev.channels() {
         let data: Vec<u16> = buf.channel_iter::<u16>(&chan).collect();
         println!("{}: {:?}", chan.id().unwrap_or_default(), data);
     }

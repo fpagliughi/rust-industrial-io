@@ -10,7 +10,7 @@
 //! Industrial I/O Channels
 //!
 
-use std::ffi::{CString, CStr};
+use std::ffi::CString;
 use std::os::raw::{c_uint, c_longlong};
 
 use nix::errno::{Errno};
@@ -61,7 +61,7 @@ impl Channel {
     /// Gets the channel-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_channel_get_attr(self.chan, idx as c_uint) };
-        cstring_opt(pstr).ok_or("Invalid index".into())
+        cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
     }
 
     /// Reads a channel-specific attribute as a boolean

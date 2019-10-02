@@ -10,7 +10,7 @@
 //! Industrial I/O Devices
 //!
 
-use std::ffi::{CString, CStr};
+use std::ffi::CString;
 use std::os::raw::{c_uint, c_longlong};
 
 use nix::errno::{Errno};
@@ -18,8 +18,6 @@ use nix::Error::Sys as SysError;
 
 use ffi;
 use super::*;
-use errors::*;
-use channel::*;
 
 /// An Industrial I/O Device
 ///
@@ -70,7 +68,7 @@ impl Device {
     /// Gets the name of the device-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_device_get_attr(self.dev, idx as c_uint) };
-        cstring_opt(pstr).ok_or("Invalid index".into())
+        cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
     }
 
     /// Reads a device-specific attribute as a boolean

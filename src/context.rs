@@ -19,8 +19,6 @@ use nix::Error::Sys as SysError;
 
 use ffi;
 use super::*;
-use errors::*;
-use device::*;
 
 /// An Industrial I/O Context
 #[derive(Debug)]
@@ -53,7 +51,7 @@ impl Context {
     /// `timeout` The timeout. A value of zero specifies that no timeout
     /// should be used.
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<()> {
-        let timeout_ms: u64 = 1000 * timeout.as_secs() + timeout.subsec_millis() as u64;
+        let timeout_ms: u64 = 1000 * timeout.as_secs() + u64::from(timeout.subsec_millis());
         let ret = unsafe { ffi::iio_context_set_timeout(self.ctx, timeout_ms as c_uint) };
         if ret < 0 { bail!(SysError(Errno::last())); }
         Ok(())

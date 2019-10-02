@@ -3,8 +3,8 @@
 extern crate industrial_io as iio;
 extern crate schedule_recv;
 
-use std::time::Duration;
 use schedule_recv::periodic;
+use std::time::Duration;
 
 fn main() -> iio::Result<()> {
     let ctx = iio::Context::new().expect("Couldn't open IIO Context");
@@ -33,4 +33,3 @@ fn main() -> iio::Result<()> {
         println!();
     }
 }
-

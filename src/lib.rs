@@ -21,28 +21,26 @@ extern crate libiio_sys as ffi;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
+pub use buffer::*;
+pub use channel::*;
 pub use context::*;
 pub use device::*;
-pub use channel::*;
-pub use buffer::*;
 pub use errors::*;
 
+pub mod buffer;
+pub mod channel;
 pub mod context;
 pub mod device;
-pub mod channel;
-pub mod buffer;
 pub mod errors;
 
 fn cstring_opt(pstr: *const c_char) -> Option<String> {
     if pstr.is_null() {
         None
-    }
-    else {
+    } else {
         let name = unsafe { CStr::from_ptr(pstr) };
         Some(name.to_str().unwrap_or_default().to_string())
     }
 }
-
 
 // --------------------------------------------------------------------------
 

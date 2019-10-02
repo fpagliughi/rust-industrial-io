@@ -16,7 +16,6 @@ use std::process;
 
 const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
 
-
 fn main() {
     let dev_name = DFLT_DEV_NAME;
 
@@ -50,4 +49,3 @@ fn main() {
         println!("{}: {:?}", chan.id().unwrap_or_default(), data);
     }
 }
-

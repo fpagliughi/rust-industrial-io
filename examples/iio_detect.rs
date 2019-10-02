@@ -23,16 +23,14 @@ fn main() {
 
     if ctx.num_devices() == 0 {
         println!("No devices in the default IIO context");
-    }
-    else {
+    } else {
         println!("IIO Devices:");
         for dev in ctx.devices() {
             if dev.is_trigger() {
                 if let Some(id) = dev.id() {
                     trigs.push(id);
                 }
-            }
-            else {
+            } else {
                 print!("  {} ", dev.id().unwrap_or_default());
                 print!("[{}]", dev.name().unwrap_or_default());
                 println!(": {} channel(s)", dev.num_channels());
@@ -47,4 +45,3 @@ fn main() {
         }
     }
 }
-

@@ -11,13 +11,13 @@
 //!
 
 use std::ffi::CString;
-use std::os::raw::{c_uint, c_longlong};
+use std::os::raw::{c_longlong, c_uint};
 
-use nix::errno::{Errno};
+use nix::errno::Errno;
 use nix::Error::Sys as SysError;
 
-use ffi;
 use super::*;
+use ffi;
 
 /// An Industrial I/O Device
 ///
@@ -54,7 +54,9 @@ impl Device {
     /// `trigger` The device to be used as a trigger.
     pub fn set_trigger(&mut self, trigger: &Device) -> Result<()> {
         let ret = unsafe { ffi::iio_device_set_trigger(self.dev, trigger.dev) };
-        if ret < 0 { bail!(SysError(Errno::last())); }
+        if ret < 0 {
+            bail!(SysError(Errno::last()));
+        }
         Ok(())
     }
 
@@ -163,8 +165,13 @@ impl Device {
     /// Gets a channel by index
     pub fn get_channel(&self, idx: usize) -> Result<Channel> {
         let chan = unsafe { ffi::iio_device_get_channel(self.dev, idx as c_uint) };
-        if chan.is_null() { bail!("Index out of range"); }
-        Ok(Channel { chan, ctx: self.context() })
+        if chan.is_null() {
+            bail!("Index out of range");
+        }
+        Ok(Channel {
+            chan,
+            ctx: self.context(),
+        })
     }
 
     /// Try to find a channel by its name or ID
@@ -175,18 +182,17 @@ impl Device {
 
         if chan.is_null() {
             None
-        }
-        else {
-            Some(Channel { chan, ctx: self.context() })
+        } else {
+            Some(Channel {
+                chan,
+                ctx: self.context(),
+            })
         }
     }
 
     /// Gets an iterator for the channels in the device
     pub fn channels(&self) -> ChannelIterator {
-        ChannelIterator {
-            dev: self,
-            idx: 0,
-        }
+        ChannelIterator { dev: self, idx: 0 }
     }
 
     /// Creates a buffer for the device.
@@ -195,8 +201,13 @@ impl Device {
     /// `cyclic` Whether to enable cyclic mode.
     pub fn create_buffer(&self, sample_count: usize, cyclic: bool) -> Result<Buffer> {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
-        if buf.is_null() { bail!(SysError(Errno::last())); }
-        Ok(Buffer { buf, ctx: self.context() })
+        if buf.is_null() {
+            bail!(SysError(Errno::last()));
+        }
+        Ok(Buffer {
+            buf,
+            ctx: self.context(),
+        })
     }
 }
 
@@ -221,8 +232,8 @@ impl<'a> Iterator for ChannelIterator<'a> {
             Ok(chan) => {
                 self.idx += 1;
                 Some(chan)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
@@ -240,9 +251,8 @@ impl<'a> Iterator for AttrIterator<'a> {
             Ok(name) => {
                 self.idx += 1;
                 Some(name)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
-

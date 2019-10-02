@@ -11,24 +11,25 @@
 //!
 
 use std::ffi::CString;
-use std::os::raw::{c_uint, c_longlong};
+use std::os::raw::{c_longlong, c_uint};
 
-use nix::errno::{Errno};
+use nix::errno::Errno;
 use nix::Error::Sys as SysError;
 
-use ffi;
 use super::*;
+use ffi;
 
 #[derive(Debug, PartialEq)]
 pub enum ChannelType {
     Input,
-    Output
+    Output,
 }
 
 /// An Industrial I/O Device Channel
 pub struct Channel {
     pub(crate) chan: *mut ffi::iio_channel,
-    #[allow(dead_code)]  // looks like it's unused, but really it's holding the Device's lifetime for libiio safety.
+    #[allow(dead_code)]
+    // looks like it's unused, but really it's holding the Device's lifetime for libiio safety.
     pub(crate) ctx: Context,
 }
 
@@ -151,10 +152,7 @@ impl Channel {
 
     /// Gets an iterator for the attributes of the channel
     pub fn attrs(&self) -> AttrIterator {
-        AttrIterator {
-            chan: self,
-            idx: 0
-        }
+        AttrIterator { chan: self, idx: 0 }
     }
 
     /// Enable the channel
@@ -174,7 +172,6 @@ impl Channel {
     pub fn is_enabled(&self) -> bool {
         unsafe { ffi::iio_channel_is_enabled(self.chan) }
     }
-
 }
 
 pub struct AttrIterator<'a> {
@@ -190,9 +187,8 @@ impl<'a> Iterator for AttrIterator<'a> {
             Ok(name) => {
                 self.idx += 1;
                 Some(name)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
-

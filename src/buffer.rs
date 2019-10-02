@@ -10,16 +10,16 @@
 //! Industrial I/O Buffers
 //!
 
-use std::{mem, ptr};
 use std::marker::PhantomData;
+use std::{mem, ptr};
 
-use nix::errno::{Errno};
+use nix::errno::Errno;
 use nix::Error::Sys as SysError;
 
-use ffi;
-use errors::*;
-use context::*;
 use channel::*;
+use context::*;
+use errors::*;
+use ffi;
 
 /// An Industrial I/O input or output buffer
 pub struct Buffer {
@@ -34,7 +34,9 @@ impl Buffer {
     /// This is only valid for input buffers
     pub fn refill(&mut self) -> Result<usize> {
         let n = unsafe { ffi::iio_buffer_refill(self.buf) };
-        if n < 0 { bail!(SysError(Errno::last())); }
+        if n < 0 {
+            bail!(SysError(Errno::last()));
+        }
         Ok(n as usize)
     }
 
@@ -43,7 +45,9 @@ impl Buffer {
     /// This is only valid for output buffers
     pub fn push(&mut self) -> Result<usize> {
         let n = unsafe { ffi::iio_buffer_push(self.buf) };
-        if n < 0 { bail!(SysError(Errno::last())); }
+        if n < 0 {
+            bail!(SysError(Errno::last()));
+        }
         Ok(n as usize)
     }
 
@@ -53,7 +57,9 @@ impl Buffer {
     /// This is only valid for output buffers
     pub fn push_partial(&mut self, n: usize) -> Result<usize> {
         let n = unsafe { ffi::iio_buffer_push_partial(self.buf, n) };
-        if n < 0 { bail!(SysError(Errno::last())); }
+        if n < 0 {
+            bail!(SysError(Errno::last()));
+        }
         Ok(n as usize)
     }
 
@@ -63,7 +69,7 @@ impl Buffer {
             let begin = ffi::iio_buffer_first(self.buf, chan.chan) as *mut T;
             let end = ffi::iio_buffer_end(self.buf) as *const T;
             let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(self.buf)/mem::size_of::<T>() as isize;
+            let step: isize = ffi::iio_buffer_step(self.buf) / mem::size_of::<T>() as isize;
 
             IntoIter {
                 phantom: PhantomData,
@@ -99,8 +105,7 @@ impl<T> Iterator for IntoIter<T> {
         unsafe {
             if self.ptr as *const _ >= self.end {
                 None
-            }
-            else {
+            } else {
                 let prev = self.ptr;
                 self.ptr = self.ptr.offset(self.step);
                 Some(ptr::read(prev))
@@ -108,5 +113,3 @@ impl<T> Iterator for IntoIter<T> {
         }
     }
 }
-
-

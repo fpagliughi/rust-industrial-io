@@ -10,8 +10,10 @@
 // Temporary
 #![allow(dead_code)]
 
+// Bindgen uses u128 on some rare parameters
+#![allow(improper_ctypes)]
 // Bring in the bindgen bindings of "iio.h"
-include!(concat!(env!("CARGO_MANIFEST_DIR"), "/bindings/bindings-0.15.rs"));
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/bindings/bindings-0.18.rs"));
 
 // --------------------------------------------------------------------------
 

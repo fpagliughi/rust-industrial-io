@@ -8,7 +8,16 @@ The current version is a wrapper around the user-space C library, [libiio](https
 
 This is an early, pre-release verion of the crate. The API is under active development and may change repeatedly. It is not recommended to use this for production applications... yet.
 
-This initial development work wrappers a _specific_ version (v0.15) of _libiio_. It assumes that the library is installed on the target system.
+This initial development work wrappers a _specific_ version (v0.18) of _libiio_. It assumes that the library is installed on the target system.
+
+## Latest News
+
+These are the unreleased features in this branch:
+
+- Support for libiio v0.18
+- Contexts have a ref-counted "inner" representation using _Rc<>_, and can be "cloned" quickly by incrementing the count. (Thanks, @skrap!)
+ - Devices carry a cloned reference to the context that created them, thus keeping the context alive until the last device using it gets dropped.
+ - Some clippy-recommended lints.
 
 ## Testing the Crate
 
@@ -18,7 +27,7 @@ Several maker boards can be used to try out the Industrial I/O subsystem pretty 
 
 ## Installing the C Library
 
-Install _libiio_ v0.15 on the target board. If you're developing on a Linux host, install the same version of the library there so that you can do some development on the host,
+Install _libiio_ v0.18 on the target board. If you're developing on a Linux host, install the same version of the library there so that you can do some development on the host,
 
 ### Check the version on the target
 
@@ -28,10 +37,10 @@ Log onto the board and check the version:
 
 ```
 $ iiod --version
-0.15
+0.18
 ```
 
-If this is less than 0.15, remove the Debian packages and install from sources.
+If this is less than 0.18, remove the Debian packages and install from sources.
 
 First, get rid of the existing library and utilities:
 
@@ -51,9 +60,9 @@ And then download the library sources and build:
 
 ```
 $ cd /tmp
-$ wget https://github.com/analogdevicesinc/libiio/archive/v0.15.tar.gz
-$ tar -xf v0.15.tar.gz 
-$ cd libiio-0.15/
+$ wget https://github.com/analogdevicesinc/libiio/archive/v0.18.tar.gz
+$ tar -xf v0.18.tar.gz 
+$ cd libiio-0.18/
 $ mkdir build ; cd build
 $ cmake .. && make && sudo make install
 ```
@@ -62,7 +71,7 @@ Then check that the version installed properly:
 
 ```
 $ iiod --version
-0.15
+0.18
 ```
 
 ## Build the Rust Crate

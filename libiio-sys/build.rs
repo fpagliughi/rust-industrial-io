@@ -10,7 +10,14 @@
 // to those terms.
 //
 
+use std::env;
+
 fn main() {
+    // TODO: We should eventually find or regenerate the
+    //      bindings file for the specific target.
+    let tgt = env::var("TARGET").unwrap();
+    println!("debug: Building for target: '{}'", tgt);
+
     println!("cargo:rustc-link-lib=iio");
 }
 

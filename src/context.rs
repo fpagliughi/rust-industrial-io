@@ -21,24 +21,29 @@ use nix::Error::Sys as SysError;
 use ffi;
 use super::*;
 
-/** An Industrial I/O Context
-Since IIO doesn't provide any thread safety guarantees, this object cannot be Send or Sync.
-This object maintains a reference counted pointer to the context object of the underlying library's iio_context object.
-Once all references to the Context object have been dropped, the underlying iio_context will be destroyed.
-This is done to make creation and use of a single Device more ergonomic by removing the need to manage the lifetime of the Context.
-**/
+/// An Industrial I/O Context
+///
+/// Since the IIO library isn't thread safe, this object cannot be Send or
+/// Sync.
+///
+/// This object maintains a reference counted pointer to the context object
+/// of the underlying library's iio_context object. Once all references to
+/// the Context object have been dropped, the underlying iio_context will be
+/// destroyed. This is done to make creation and use of a single Device more
+/// ergonomic by removing the need to manage the lifetime of the Context.
 #[derive(Debug,Clone)]
 pub struct Context {
-    raw: Rc<RawContext>,
+    inner: Rc<InnerContext>,
 }
 
-/// RawContext holds a 
+/// This holds a pointer to the library context.
+/// When it is dropped, the library context is destroyed.
 #[derive(Debug)]
-struct RawContext {
+struct InnerContext {
     pub(crate) ctx: *mut ffi::iio_context
 }
 
-impl Drop for RawContext {
+impl Drop for InnerContext {
     fn drop(&mut self) {
         unsafe { ffi::iio_context_destroy(self.ctx) };
     }
@@ -49,7 +54,7 @@ impl Context {
     pub fn new() -> Result<Context> {
         let ctx = unsafe { ffi::iio_create_default_context() };
         if ctx.is_null() { bail!(SysError(Errno::last())); }
-        Ok(Context { raw: Rc::new(RawContext{ ctx }) })
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
     /// Tries to create a context from the specified URI
@@ -62,18 +67,18 @@ impl Context {
             ffi::iio_create_context_from_uri(uri.as_ptr())
         };
         if ctx.is_null() { bail!(SysError(Errno::last())); }
-        Ok(Context{ ctx, })
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
     /// Get a description of the context
     pub fn description(&self) -> String {
-        let pstr = unsafe { ffi::iio_context_get_description(self.raw.ctx) };
+        let pstr = unsafe { ffi::iio_context_get_description(self.inner.ctx) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
     /// Gets the number of context-specific attributes
     pub fn num_attrs(&self) -> usize {
-        let n = unsafe { ffi::iio_context_get_attrs_count(self.raw.ctx) };
+        let n = unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) };
         n as usize
     }
 
@@ -83,20 +88,20 @@ impl Context {
     /// should be used.
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<()> {
         let timeout_ms: u64 = 1000 * timeout.as_secs() + u64::from(timeout.subsec_millis());
-        let ret = unsafe { ffi::iio_context_set_timeout(self.raw.ctx, timeout_ms as c_uint) };
+        let ret = unsafe { ffi::iio_context_set_timeout(self.inner.ctx, timeout_ms as c_uint) };
         if ret < 0 { bail!(SysError(Errno::last())); }
         Ok(())
     }
 
     /// Get the number of devices in the context
     pub fn num_devices(&self) -> usize {
-        let n = unsafe { ffi::iio_context_get_devices_count(self.raw.ctx) };
+        let n = unsafe { ffi::iio_context_get_devices_count(self.inner.ctx) };
         n as usize
     }
 
     /// Gets a device by index
     pub fn get_device(&self, idx: usize) -> Result<Device> {
-        let dev = unsafe { ffi::iio_context_get_device(self.raw.ctx, idx as c_uint) };
+        let dev = unsafe { ffi::iio_context_get_device(self.inner.ctx, idx as c_uint) };
         if dev.is_null() { bail!("Index out of range"); }
         Ok(Device { dev, ctx: self.clone() })
     }
@@ -105,7 +110,7 @@ impl Context {
     /// `name` The name or ID of the device to find
     pub fn find_device(&self, name: &str) -> Option<Device> {
         let name = CString::new(name).unwrap();
-        let dev = unsafe { ffi::iio_context_find_device(self.raw.ctx, name.as_ptr()) };
+        let dev = unsafe { ffi::iio_context_find_device(self.inner.ctx, name.as_ptr()) };
         if dev.is_null() {
             None
         }
@@ -132,7 +137,7 @@ impl PartialEq for Context {
     /// Two contexts are the same if they refer to the same underlying
     /// object in the library.
     fn eq(&self, other: &Context) -> bool {
-        self.raw.ctx == other.raw.ctx
+        self.inner.ctx == other.inner.ctx
     }
 }
 

@@ -63,20 +63,6 @@ impl Context {
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
-    /// Tries to create a context from the specified URI
-    pub fn from_uri(uri: &str) -> Result<Context> {
-        let uri = match CString::new(uri) {
-            Ok(v) => v,
-            Err(_e) => bail!("Can't create context from URI {}", uri),
-        };
-        let ctx = unsafe {
-            ffi::iio_create_context_from_uri(uri.as_ptr())
-        };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
-    }
-
-
     /// Creates a context from a URI
     ///
     /// This can create a local, network, or XML context as specified by
@@ -117,7 +103,7 @@ impl Context {
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
-    /// Creates a context from a XML data in memory
+    /// Creates a context from XML data in memory
     pub fn create_xml_mem(xml: &str) -> Result<Context> {
         let n = xml.len();
         let xml = CString::new(xml)?;

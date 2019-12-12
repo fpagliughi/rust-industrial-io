@@ -28,19 +28,36 @@ fn main() {
                     .arg(Arg::with_name("device")
                          .short("d")
                          .long("device")
-                         .value_name("DEVICE")
+                         //.value_name("DEVICE")
                          .help("Specifies the name of the IIO device to read")
                          .takes_value(true))
-                     .get_matches();
+                    .arg(Arg::with_name("network")
+                         .short("n")
+                         .long("network")
+                         .help("Use the network backend with the provided hostname")
+                         .takes_value(true))
+                    .arg(Arg::with_name("uri")
+                         .short("u")
+                         .long("uri")
+                         .help("Use the context with the provided URI")
+                         .takes_value(true))
+                    .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
 
-    println!("Device: {}", dev_name);
-
-    let ctx = iio::Context::new().unwrap_or_else(|_err| {
-        println!("Couldn't open default IIO context");
-        process::exit(1);
-    });
+    let ctx = if let Some(hostname) = matches.value_of("network") {
+                  iio::Context::create_network(hostname)
+              }
+              else if let Some(uri) = matches.value_of("uri") {
+                  iio::Context::create_from_uri(uri)
+              }
+              else {
+                  iio::Context::new()
+              }
+              .unwrap_or_else(|_err| {
+                  println!("Couldn't open IIO context.");
+                  process::exit(1);
+              });
 
     let dev = ctx.find_device(dev_name).unwrap_or_else(|| {
         println!("No IIO device named '{}'", dev_name);

@@ -1,7 +1,7 @@
 // industrial-io/examples/iio_free_scan.rs
 //
-// Simple Rust IIO example.
-// This does buffered reading without using a trigger (free scan).
+// Simple Rust IIO example for buffered, free-scan reading.
+// This does buffered reading without using a trigger.
 //
 // Copyright (c) 2018-2019, Frank Pagliughi
 //
@@ -11,10 +11,8 @@
 // to those terms.
 //
 
+#[macro_use] extern crate clap;
 extern crate industrial_io as iio;
-
-#[macro_use]
-extern crate clap;
 
 use std::process;
 use clap::{Arg, App};

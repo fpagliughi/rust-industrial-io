@@ -1,8 +1,12 @@
 // industrial-io/examples/iio_detect.rs
 //
-// Simple Rust IIO example. This lists the devices found in the default context.
+// Simple Rust IIO example to list the devices found in the specified context.
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Note that, if no context is requested at the command line, this will create
+// a network context if the IIOD_REMOTE environment variable is set, otherwise
+// it will create a local context. See Context::new().
+//
+// Copyright (c) 2018-2019, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -10,14 +14,41 @@
 // to those terms.
 //
 
+#[macro_use] extern crate clap;
 extern crate industrial_io as iio;
+
 use std::process;
+use clap::{Arg, App};
 
 fn main() {
-    let ctx = iio::Context::new().unwrap_or_else(|_err| {
-        println!("Couldn't open default IIO context");
-        process::exit(1);
-    });
+    let matches = App::new("iio_free_scan")
+                    .version(crate_version!())
+                    .about("IIO free scan buffered reads.")
+                    .arg(Arg::with_name("network")
+                         .short("n")
+                         .long("network")
+                         .help("Use the network backend with the provided hostname")
+                         .takes_value(true))
+                    .arg(Arg::with_name("uri")
+                         .short("u")
+                         .long("uri")
+                         .help("Use the context with the provided URI")
+                         .takes_value(true))
+                    .get_matches();
+
+    let ctx = if let Some(hostname) = matches.value_of("network") {
+                  iio::Context::create_network(hostname)
+              }
+              else if let Some(uri) = matches.value_of("uri") {
+                  iio::Context::create_from_uri(uri)
+              }
+              else {
+                  iio::Context::new()
+              }
+              .unwrap_or_else(|_err| {
+                  println!("Couldn't open IIO context.");
+                  process::exit(1);
+              });
 
     let mut trigs = Vec::new();
 

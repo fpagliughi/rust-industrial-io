@@ -70,7 +70,7 @@ impl Channel {
     /// `attr` The name of the attribute
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
-        let attr = CString::new(attr).unwrap();
+        let attr = CString::new(attr)?;
         unsafe {
             if ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val) < 0 {
                 bail!(SysError(Errno::last()));
@@ -84,7 +84,7 @@ impl Channel {
     /// `attr` The name of the attribute
     pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
-        let attr = CString::new(attr).unwrap();
+        let attr = CString::new(attr)?;
         unsafe {
             if ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val) < 0 {
                 bail!(SysError(Errno::last()));
@@ -98,7 +98,7 @@ impl Channel {
     /// `attr` The name of the attribute
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
-        let attr = CString::new(attr).unwrap();
+        let attr = CString::new(attr)?;
         unsafe {
             if ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val) < 0 {
                 bail!(SysError(Errno::last()));
@@ -112,7 +112,7 @@ impl Channel {
     /// `attr` The name of the attribute
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
-        let attr = CString::new(attr).unwrap();
+        let attr = CString::new(attr)?;
         unsafe {
             if ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val) < 0 {
                 bail!(SysError(Errno::last()));
@@ -126,7 +126,7 @@ impl Channel {
     /// `attr` The name of the attribute
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
-        let attr = CString::new(attr).unwrap();
+        let attr = CString::new(attr)?;
         unsafe {
             if ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val) < 0 {
                 bail!(SysError(Errno::last()));
@@ -140,7 +140,7 @@ impl Channel {
     /// `attr` The name of the attribute
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
-        let attr = CString::new(attr).unwrap();
+        let attr = CString::new(attr)?;
         unsafe {
             if ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val) < 0 {
                 bail!(SysError(Errno::last()));

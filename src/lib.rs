@@ -33,6 +33,11 @@ pub mod channel;
 pub mod buffer;
 pub mod errors;
 
+// --------------------------------------------------------------------------
+
+/// Gets an optional string value from a C const char pointer.
+/// If the pointer is NULL, this returns `None` otherwise it converts the
+/// string and returns it.
 fn cstring_opt(pstr: *const c_char) -> Option<String> {
     if pstr.is_null() {
         None

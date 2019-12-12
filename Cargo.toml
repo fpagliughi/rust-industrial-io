@@ -18,4 +18,5 @@ nix = "0.11"
 
 [dev-dependencies]
 schedule_recv = "0.1"
+clap = "2.33"
 

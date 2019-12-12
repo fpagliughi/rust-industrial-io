@@ -50,7 +50,13 @@ impl Drop for InnerContext {
 }
 
 impl Context {
-    /// Tries to create a context from a local or remote IIO device.
+    /// Creates a default context from a local or remote IIO device.
+    ///
+    /// @note This will create a network context if the IIOD_REMOTE
+    /// environment variable is set to the hostname where the IIOD server
+    /// runs. If set to an empty string, the server will be discovered using
+    /// ZeroConf. If the environment variable is not set, a local context
+    /// will be created instead.
     pub fn new() -> Result<Context> {
         let ctx = unsafe { ffi::iio_create_default_context() };
         if ctx.is_null() { bail!(SysError(Errno::last())); }
@@ -69,6 +75,57 @@ impl Context {
         if ctx.is_null() { bail!(SysError(Errno::last())); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
+
+
+    /// Creates a context from a URI
+    ///
+    /// This can create a local, network, or XML context as specified by
+    /// the URI using the preambles:
+    ///   * "local:"  - a local context
+    ///   * "xml:"  - an xml (file) context
+    ///   * "ip:"  - a network context
+    ///   * "usb:"  - a USB backend
+    ///   * "serial:"  - a serial backend
+    pub fn create_from_uri(uri: &str) -> Result<Context> {
+        let uri = CString::new(uri)?;
+        let ctx = unsafe { ffi::iio_create_context_from_uri(uri.as_ptr()) };
+        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+    }
+
+    /// Creates a context from a local device (Linux only)
+    #[cfg(target_os = "linux")]
+    pub fn create_local() -> Result<Context> {
+        let ctx = unsafe { ffi::iio_create_local_context() };
+        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+    }
+
+    /// Creates a context from a network device
+    pub fn create_network(host: &str) -> Result<Context> {
+        let host = CString::new(host)?;
+        let ctx = unsafe { ffi::iio_create_network_context(host.as_ptr()) };
+        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+    }
+
+    /// Creates a context from an XML file
+    pub fn create_xml(xml_file: &str) -> Result<Context> {
+        let xml_file = CString::new(xml_file)?;
+        let ctx = unsafe { ffi::iio_create_xml_context(xml_file.as_ptr()) };
+        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+    }
+
+    /// Creates a context from a XML data in memory
+    pub fn create_xml_mem(xml: &str) -> Result<Context> {
+        let n = xml.len();
+        let xml = CString::new(xml)?;
+        let ctx = unsafe { ffi::iio_create_xml_context_mem(xml.as_ptr(), n) };
+        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+    }
+
 
     /// Get a description of the context
     pub fn description(&self) -> String {
@@ -159,4 +216,28 @@ impl<'a> Iterator for DeviceIterator<'a> {
         }
     }
 }
+
+/*
+    TODO: We need to implement a context::get_attr()
+    before we can add this.
+
+pub struct AttrIterator<'a> {
+    ctx: &'a Context,
+    idx: usize,
+}
+
+impl<'a> Iterator for AttrIterator<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.ctx.get_attr(self.idx) {
+            Ok(name) => {
+                self.idx += 1;
+                Some(name)
+            },
+            Err(_) => None
+        }
+    }
+}
+*/
 

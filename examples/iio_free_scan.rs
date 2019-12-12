@@ -3,7 +3,7 @@
 // Simple Rust IIO example.
 // This does buffered reading without using a trigger (free scan).
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Copyright (c) 2018-2019, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -12,13 +12,30 @@
 //
 
 extern crate industrial_io as iio;
+
+#[macro_use]
+extern crate clap;
+
 use std::process;
+use clap::{Arg, App};
 
-const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
-
+const DFLT_DEV_NAME: &'static str = "44e0d000.tscadc:adc";
 
 fn main() {
-    let dev_name = DFLT_DEV_NAME;
+    let matches = App::new("iio_free_scan")
+                    .version(crate_version!())
+                    .about("IIO free scan buffered reads.")
+                    .arg(Arg::with_name("device")
+                         .short("d")
+                         .long("device")
+                         .value_name("DEVICE")
+                         .help("Specifies the name of the IIO device to read")
+                         .takes_value(true))
+                     .get_matches();
+
+    let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
+
+    println!("Device: {}", dev_name);
 
     let ctx = iio::Context::new().unwrap_or_else(|_err| {
         println!("Couldn't open default IIO context");

@@ -13,6 +13,7 @@
 error_chain! {
     foreign_links {
         Io(::std::io::Error);
+        NulError(::std::ffi::NulError);
         Nix(::nix::Error);
     }
 }

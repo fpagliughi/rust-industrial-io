@@ -72,8 +72,10 @@ fn main() -> iio::Result<()> {
     let unknown = "unknown".to_string();
     let tick = periodic(Duration::from_millis(1000));
 
+    println!("Device: {}", dev.name().unwrap_or_else(|| unknown.clone()));
+
     for chan in dev.channels() {
-        if chan.id() != Some("timestamp".to_string()) {
+        if chan.has_attr("raw") {
             print!(" {:>9}", chan.id().unwrap_or_else(|| unknown.clone()));
         }
     }
@@ -82,11 +84,8 @@ fn main() -> iio::Result<()> {
     loop {
         tick.recv().unwrap();
         for chan in dev.channels() {
-            if chan.id() == Some("timestamp".to_string()) {
-            } else if let Ok(val) = chan.attr_read_int("raw") {
+            if let Ok(val) = chan.attr_read_int("raw") {
                 print!(" {:>8} ", val);
-            } else {
-                print!("    xxxxxx");
             }
         }
         println!();

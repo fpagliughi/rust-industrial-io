@@ -10,8 +10,10 @@
 //! Industrial I/O Devices
 //!
 
+use std::str;
 use std::ffi::CString;
-use std::os::raw::{c_uint, c_longlong};
+use std::os::raw::{c_void, c_int, c_uint, c_longlong};
+use std::collections::HashMap;
 
 use nix::errno::{Errno};
 use nix::Error::Sys as SysError;
@@ -112,6 +114,38 @@ impl Device {
         Ok(val)
     }
 
+
+    // Callback from the C lib to extract the collection of all
+    // device-specific attributes. See attr_read_all().
+    unsafe extern "C" fn attr_read_all_cb(_chan: *mut ffi::iio_device,
+                                          attr: *const c_char,
+                                          val: *const c_char, _len: usize,
+                                          pmap: *mut c_void) -> c_int {
+        if attr.is_null() || val.is_null() || pmap.is_null() {
+            return -1;
+        }
+
+        let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
+        // TODO: We could/should check val[len-1] == '\x0'
+        let val = CStr::from_ptr(val).to_string_lossy().to_string();
+        let map: &mut HashMap<String,String> = &mut *(pmap as *mut _);
+        map.insert(attr, val);
+        0
+    }
+
+    /// Reads all the device-specific attributes.
+    /// This is especially useful when using the network backend to
+    /// retrieve all the attributes with a single call.
+    pub fn attr_read_all(&self) -> Result<HashMap<String,String>> {
+        let mut map = HashMap::new();
+        let pmap = &mut map as *mut _ as *mut c_void;
+        unsafe {
+            let ret = ffi::iio_device_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap);
+            if ret < 0 { bail!(SysError(Errno::last())); }
+        }
+        Ok(map)
+    }
+
     /// Writes a device-specific attribute as a boolean
     ///
     /// `attr` The name of the attribute
@@ -168,9 +202,8 @@ impl Device {
     }
 
     /// Try to find a channel by its name or ID
-    pub fn find_channel(&self, name: &str, chan_type: ChannelType) -> Option<Channel> {
+    pub fn find_channel(&self, name: &str, is_output: bool) -> Option<Channel> {
         let name = CString::new(name).unwrap();
-        let is_output = chan_type == ChannelType::Output;
         let chan = unsafe { ffi::iio_device_find_channel(self.dev, name.as_ptr(), is_output) };
 
         if chan.is_null() {

@@ -48,6 +48,8 @@ fn main() -> iio::Result<()> {
                     println!();
                 }
             }
+            let map = chan.attr_read_all();
+            println!("{:?}", map);
         }
     }
     Ok(())

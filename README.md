@@ -1,5 +1,8 @@
 # Rust Industrial I/O for Linux
 
+![Crates.io](https://img.shields.io/crates/d/industrial-io)
+
+
 This is a Rust library crate for using the Linux Industrial I/O (IIO) subsytem, primarily used for the input and output of analog data from a Linux system. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
 
 The current version is a wrapper around the user-space C library, [libiio](https://github.com/analogdevicesinc/libiio).  Subsequent versions may access the interface the kernel ABI directly.
@@ -15,6 +18,8 @@ This initial development work wrappers a _specific_ version (v0.18) of _libiio_.
 These are the unreleased features in this branch:
 
 - Support for libiio v0.18
+- Further implementation of _libiio_ functions for contexts, devices, channels, etc.
+- [Breaking] Removed previous `ChannelType` for Input/Output as it conflicted with the library's channel types of `Voltage`, `Current`, `Power`, etc, and implemented the library type.
 - Contexts have a ref-counted "inner" representation using _Rc<>_, and can be "cloned" quickly by incrementing the count. (Thanks, @skrap!)
  - Devices carry a cloned reference to the context that created them, thus keeping the context alive until the last device using it gets dropped.
  - Some clippy-recommended lints.

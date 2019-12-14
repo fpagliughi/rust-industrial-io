@@ -11,15 +11,11 @@
 //!
 
 use std::{mem, ptr};
+use std::os::raw::c_int;
 use std::marker::PhantomData;
 
-use nix::errno::{Errno};
-use nix::Error::Sys as SysError;
-
 use ffi;
-use errors::*;
-use context::*;
-use channel::*;
+use super::*;
 
 /// An Industrial I/O input or output buffer
 pub struct Buffer {
@@ -29,22 +25,28 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    /// Gets a pollable file descriptor for the buffer.
+    /// This can be used to determine when refill() or push() can be called
+    /// without blocking.
+    pub fn poll_fd(&mut self) -> Result<c_int> {
+        let ret = unsafe { ffi::iio_buffer_get_poll_fd(self.buf) };
+        sys_result(i32::from(ret), ret)
+    }
+
     /// Fetch more samples from the hardware
     ///
     /// This is only valid for input buffers
     pub fn refill(&mut self) -> Result<usize> {
-        let n = unsafe { ffi::iio_buffer_refill(self.buf) };
-        if n < 0 { bail!(SysError(Errno::last())); }
-        Ok(n as usize)
+        let ret = unsafe { ffi::iio_buffer_refill(self.buf) };
+        sys_result(ret as i32, ret as usize)
     }
 
     /// Send the samples to the hardware.
     ///
     /// This is only valid for output buffers
     pub fn push(&mut self) -> Result<usize> {
-        let n = unsafe { ffi::iio_buffer_push(self.buf) };
-        if n < 0 { bail!(SysError(Errno::last())); }
-        Ok(n as usize)
+        let ret = unsafe { ffi::iio_buffer_push(self.buf) };
+        sys_result(ret as i32, ret as usize)
     }
 
     /// Send a given number of samples to the hardware.
@@ -52,9 +54,8 @@ impl Buffer {
     /// `n` The number of samples to send
     /// This is only valid for output buffers
     pub fn push_partial(&mut self, n: usize) -> Result<usize> {
-        let n = unsafe { ffi::iio_buffer_push_partial(self.buf, n) };
-        if n < 0 { bail!(SysError(Errno::last())); }
-        Ok(n as usize)
+        let ret = unsafe { ffi::iio_buffer_push_partial(self.buf, n) };
+        sys_result(ret as i32, ret as usize)
     }
 
     /// Gets an iterator for the data from a channel.

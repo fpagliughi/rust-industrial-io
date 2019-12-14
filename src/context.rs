@@ -15,7 +15,7 @@ use std::ffi::CString;
 use std::os::raw::c_uint;
 use std::rc::Rc;
 
-use nix::errno::{Errno};
+use nix::errno::Errno;
 use nix::Error::Sys as SysError;
 
 use ffi;
@@ -132,8 +132,7 @@ impl Context {
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<()> {
         let timeout_ms: u64 = 1000 * timeout.as_secs() + u64::from(timeout.subsec_millis());
         let ret = unsafe { ffi::iio_context_set_timeout(self.inner.ctx, timeout_ms as c_uint) };
-        if ret < 0 { bail!(SysError(Errno::last())); }
-        Ok(())
+        sys_result(ret, ())
     }
 
     /// Get the number of devices in the context

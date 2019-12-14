@@ -21,6 +21,9 @@ extern crate libiio_sys as ffi;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
+use nix::errno;
+use nix::Error::Sys as SysError;
+
 pub use context::*;
 pub use device::*;
 pub use channel::*;
@@ -48,6 +51,12 @@ fn cstring_opt(pstr: *const c_char) -> Option<String> {
     }
 }
 
+pub fn sys_result<T>(ret: i32, result: T) -> Result<T> {
+    if ret < 0 {
+        bail!(SysError(errno::from_i32(ret)))
+    }
+    Ok(result)
+}
 
 // --------------------------------------------------------------------------
 

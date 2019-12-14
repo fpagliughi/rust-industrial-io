@@ -33,8 +33,12 @@ fn main() -> iio::Result<()> {
         for chan in dev.channels() {
             println!("\t\t\t{}", chan.id().unwrap_or_default());
             println!("\t\t\t{} channel-specific attributes found:", chan.num_attrs());
+
+            // Note: We could get all the attr into a map and then print
+            //let attrs = chan.attr_read_all();
+
             for attr in chan.attrs() {
-                print!("\t\t\t\t'{}' value: ", attr);
+                print!("\t\t\t\t'{}': ", attr);
                 if let Ok(val) = chan.attr_read_float(&attr) {
                     println!("{}", val);
                 }
@@ -48,8 +52,6 @@ fn main() -> iio::Result<()> {
                     println!();
                 }
             }
-            let map = chan.attr_read_all();
-            println!("{:?}", map);
         }
     }
     Ok(())

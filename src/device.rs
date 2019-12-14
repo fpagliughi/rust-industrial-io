@@ -15,7 +15,7 @@ use std::ffi::CString;
 use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
 
-use nix::errno::{Errno};
+use nix::errno::Errno;
 use nix::Error::Sys as SysError;
 
 use ffi;
@@ -56,8 +56,7 @@ impl Device {
     /// `trigger` The device to be used as a trigger.
     pub fn set_trigger(&mut self, trigger: &Device) -> Result<()> {
         let ret = unsafe { ffi::iio_device_set_trigger(self.dev, trigger.dev) };
-        if ret < 0 { bail!(SysError(Errno::last())); }
-        Ok(())
+        sys_result(ret, ())
     }
 
     /// Gets the number of device-specific attributes
@@ -78,12 +77,10 @@ impl Device {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_device_attr_read_bool(self.dev, attr.as_ptr(), &mut val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(val)
+        let ret = unsafe {
+            ffi::iio_device_attr_read_bool(self.dev, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val)
     }
 
     /// Reads a device-specific attribute as an integer (i64)
@@ -92,12 +89,10 @@ impl Device {
     pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_device_attr_read_longlong(self.dev, attr.as_ptr(), &mut val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(val as i64)
+        let ret = unsafe {
+            ffi::iio_device_attr_read_longlong(self.dev, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val as i64)
     }
 
     /// Reads a device-specific attribute as a floating-point (f64) number
@@ -106,12 +101,10 @@ impl Device {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_device_attr_read_double(self.dev, attr.as_ptr(), &mut val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(val)
+        let ret = unsafe {
+            ffi::iio_device_attr_read_double(self.dev, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val)
     }
 
 
@@ -139,11 +132,10 @@ impl Device {
     pub fn attr_read_all(&self) -> Result<HashMap<String,String>> {
         let mut map = HashMap::new();
         let pmap = &mut map as *mut _ as *mut c_void;
-        unsafe {
-            let ret = ffi::iio_device_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap);
-            if ret < 0 { bail!(SysError(Errno::last())); }
-        }
-        Ok(map)
+        let ret = unsafe {
+            ffi::iio_device_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap)
+        };
+        sys_result(ret, map)
     }
 
     /// Writes a device-specific attribute as a boolean
@@ -152,12 +144,10 @@ impl Device {
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_device_attr_write_bool(self.dev, attr.as_ptr(), val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(())
+        let ret = unsafe {
+            ffi::iio_device_attr_write_bool(self.dev, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
     }
 
     /// Writes a device-specific attribute as an integer (i64)
@@ -166,12 +156,10 @@ impl Device {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_device_attr_write_longlong(self.dev, attr.as_ptr(), val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(())
+        let ret = unsafe {
+            ffi::iio_device_attr_write_longlong(self.dev, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
     }
 
     /// Writes a device-specific attribute as a floating-point (f64) number
@@ -180,12 +168,10 @@ impl Device {
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_device_attr_write_double(self.dev, attr.as_ptr(), val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(())
+        let ret = unsafe {
+            ffi::iio_device_attr_write_double(self.dev, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
     }
 
     /// Gets the number of channels on the device

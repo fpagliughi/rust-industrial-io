@@ -15,9 +15,6 @@ use std::ffi::CString;
 use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
 
-use nix::errno::{Errno};
-use nix::Error::Sys as SysError;
-
 use ffi;
 use super::*;
 
@@ -188,12 +185,10 @@ impl Channel {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(val)
+        let ret = unsafe {
+            ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val)
     }
 
     /// Reads a channel-specific attribute as an integer (i64)
@@ -202,12 +197,10 @@ impl Channel {
     pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(val as i64)
+        let ret = unsafe {
+            ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val as i64)
     }
 
     /// Reads a channel-specific attribute as a floating-point (f64) number
@@ -216,12 +209,10 @@ impl Channel {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(val)
+        let ret = unsafe {
+            ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val)
     }
 
     // Callback from the C lib to extract the collection of all
@@ -248,11 +239,10 @@ impl Channel {
     pub fn attr_read_all(&self) -> Result<HashMap<String,String>> {
         let mut map = HashMap::new();
         let pmap = &mut map as *mut _ as *mut c_void;
-        unsafe {
-            let ret = ffi::iio_channel_attr_read_all(self.chan, Some(Channel::attr_read_all_cb), pmap);
-            if ret < 0 { bail!(SysError(Errno::last())); }
-        }
-        Ok(map)
+        let ret = unsafe {
+            ffi::iio_channel_attr_read_all(self.chan, Some(Channel::attr_read_all_cb), pmap)
+        };
+        sys_result(ret, map)
     }
 
     /// Writes a channel-specific attribute as a boolean
@@ -261,12 +251,10 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(())
+        let ret = unsafe {
+            ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
     }
 
     /// Writes a channel-specific attribute as an integer (i64)
@@ -275,12 +263,10 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(())
+        let ret = unsafe {
+            ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
     }
 
     /// Writes a channel-specific attribute as a floating-point (f64) number
@@ -289,12 +275,10 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        unsafe {
-            if ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val) < 0 {
-                bail!(SysError(Errno::last()));
-            }
-        }
-        Ok(())
+        let ret = unsafe {
+            ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
     }
 
     /// Gets an iterator for the attributes of the channel

@@ -1,4 +1,4 @@
-// industrial-io/examples/readraw.rs
+// industrial-io/examples/riio_readraw.rs
 //
 // Note that, if no context is requested at the command line, this will create
 // a network context if the IIOD_REMOTE environment variable is set, otherwise
@@ -22,9 +22,9 @@ use schedule_recv::periodic;
 use clap::{Arg, App};
 
 fn main() -> iio::Result<()> {
-    let matches = App::new("iio_free_scan")
+    let matches = App::new("riio_readraw")
                     .version(crate_version!())
-                    .about("IIO free scan buffered reads.")
+                    .about("Rust IIO raw reads example.")
                     .arg(Arg::with_name("device")
                          .short("d")
                          .long("device")

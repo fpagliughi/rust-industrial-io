@@ -33,6 +33,12 @@ impl Buffer {
         sys_result(i32::from(ret), ret)
     }
 
+    /// Make the push or refill calls blocking or not.
+    pub fn set_blocking_mode(&mut self, blocking: bool) -> Result<()> {
+        let ret = unsafe { ffi::iio_buffer_set_blocking_mode(self, blocking.buf) };
+        sys_result(ret, ())
+    }
+
     /// Fetch more samples from the hardware
     ///
     /// This is only valid for input buffers

@@ -1,4 +1,4 @@
-// industrial-io/examples/iio_free_scan.rs
+// industrial-io/examples/riio_free_scan.rs
 //
 // Simple Rust IIO example for buffered, free-scan reading.
 // This does buffered reading without using a trigger.
@@ -20,9 +20,9 @@ use clap::{Arg, App};
 const DFLT_DEV_NAME: &'static str = "44e0d000.tscadc:adc";
 
 fn main() {
-    let matches = App::new("iio_free_scan")
+    let matches = App::new("riio_free_scan")
                     .version(crate_version!())
-                    .about("IIO free scan buffered reads.")
+                    .about("Rust IIO free scan buffered reads.")
                     .arg(Arg::with_name("device")
                          .short("d")
                          .long("device")

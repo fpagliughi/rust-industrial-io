@@ -208,6 +208,8 @@ impl Device {
         }
     }
 
+    // ----- Buffer Functions -----
+
     /// Creates a buffer for the device.
     ///
     /// `sample_count` The number of samples the buffer should hold
@@ -216,6 +218,134 @@ impl Device {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
         if buf.is_null() { bail!(SysError(Errno::last())); }
         Ok(Buffer { buf, ctx: self.context() })
+    }
+
+    /// Reads a buffer-specific attribute as a boolean
+    ///
+    /// `attr` The name of the attribute
+    pub fn buffer_attr_read_bool(&self, attr: &str) -> Result<bool> {
+        let mut val: bool = false;
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_read_bool(self.dev, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val)
+    }
+
+    /// Reads a buffer-specific attribute as an integer (i64)
+    ///
+    /// `attr` The name of the attribute
+    pub fn buffer_attr_read_int(&self, attr: &str) -> Result<i64> {
+        let mut val: c_longlong = 0;
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_read_longlong(self.dev, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val as i64)
+    }
+
+    /// Reads a buffer-specific attribute as a floating-point (f64) number
+    ///
+    /// `attr` The name of the attribute
+    pub fn buffer_attr_read_float(&self, attr: &str) -> Result<f64> {
+        let mut val: f64 = 0.0;
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_read_double(self.dev, attr.as_ptr(), &mut val)
+        };
+        sys_result(ret, val)
+    }
+
+/*
+    // Callback from the C lib to extract the collection of all
+    // device-specific attributes. See attr_read_all().
+    unsafe extern "C" fn buffer_attr_read_all_cb(_chan: *mut ffi::iio_device,
+                                          attr: *const c_char,
+                                          val: *const c_char, _len: usize,
+                                          pmap: *mut c_void) -> c_int {
+        if attr.is_null() || val.is_null() || pmap.is_null() {
+            return -1;
+        }
+
+        let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
+        // TODO: We could/should check val[len-1] == '\x0'
+        let val = CStr::from_ptr(val).to_string_lossy().to_string();
+        let map: &mut HashMap<String,String> = &mut *(pmap as *mut _);
+        map.insert(attr, val);
+        0
+    }
+*/
+
+    /// Reads all the buffer-specific attributes.
+    /// This is especially useful when using the network backend to
+    /// retrieve all the attributes with a single call.
+    pub fn buffer_attr_read_all(&self) -> Result<HashMap<String,String>> {
+        let mut map = HashMap::new();
+        let pmap = &mut map as *mut _ as *mut c_void;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap)
+        };
+        sys_result(ret, map)
+    }
+
+    /// Writes a buffer-specific attribute as a boolean
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn buffer_attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_write_bool(self.dev, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
+    }
+
+    /// Writes a device-specific attribute as an integer (i64)
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn buffer_attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_write_longlong(self.dev, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
+    }
+
+    /// Writes a device-specific attribute as a floating-point (f64) number
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn buffer_attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_write_double(self.dev, attr.as_ptr(), val)
+        };
+        sys_result(ret, ())
+    }
+
+
+    // ----- Low-level & Debug functions -----
+
+    /// Gets the current sample size, in bytes.
+    /// This gets the number of bytes requires to store the samples,
+    /// based on the the channels that are currently enabled.
+    pub fn sample_size(&self) -> Result<usize> {
+        let ret = unsafe { ffi::iio_device_get_sample_size(self.dev) };
+        sys_result(ret as i32, ret as usize)
+    }
+
+    /// Gets the value of a hardware register
+    pub fn reg_read(&self, addr: u32) -> Result<u32> {
+        let mut val: u32 = 0;
+        let ret = unsafe { ffi::iio_device_reg_read(self.dev, addr, &mut val) };
+        sys_result(ret as i32, val)
+    }
+
+    /// Sets the value of a hardware register
+    pub fn reg_write(&self, addr: u32, val: u32) -> Result<()> {
+        let ret = unsafe { ffi::iio_device_reg_write(self.dev, addr, val) };
+        sys_result(ret as i32, ())
     }
 }
 

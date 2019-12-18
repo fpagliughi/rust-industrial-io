@@ -1,4 +1,4 @@
-// industrial-io/examples/iio_detect.rs
+// industrial-io/examples/riio_detect.rs
 //
 // Simple Rust IIO example to list the devices found in the specified context.
 //
@@ -21,9 +21,9 @@ use std::process;
 use clap::{Arg, App};
 
 fn main() {
-    let matches = App::new("iio_free_scan")
+    let matches = App::new("riio_free_scan")
                     .version(crate_version!())
-                    .about("IIO free scan buffered reads.")
+                    .about("Rust IIO free scan buffered reads.")
                     .arg(Arg::with_name("network")
                          .short("n")
                          .long("network")

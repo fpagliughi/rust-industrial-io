@@ -49,7 +49,7 @@ fn main() -> iio::Result<()> {
                     println!("{}", val);
                 }
                 else {
-                    println!();
+                    println!("{}", chan.find_attr(&attr).unwrap());
                 }
             }
         }

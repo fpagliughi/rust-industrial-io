@@ -15,7 +15,13 @@ This initial development work wrappers a _specific_ version (v0.18) of _libiio_.
 
 ## Latest News
 
-These are the unreleased features in this branch:
+An effort is underway to get this crate to production quality. This will hopefully be complete by early 2020. It includes:
+
+- Full coverage of the _libiio_ API - or as much as makes sense.
+- A complete set of working examples.
+- Unit tests and CI
+
+### Unreleased features in this branch:
 
 - Support for libiio v0.18
 - Further implementation of _libiio_ functions for contexts, devices, channels, etc.

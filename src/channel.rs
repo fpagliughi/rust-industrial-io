@@ -129,7 +129,7 @@ impl Channel {
         cstring_opt(pstr)
     }
 
-    /// @brief Retrieve the channel ID (e.g. <b><i>voltage0</i></b>)
+    /// Retrieve the channel ID (e.g. <b><i>voltage0</i></b>)
     pub fn id(&self) -> Option<String> {
         let pstr = unsafe { ffi::iio_channel_get_id(self.chan) };
         cstring_opt(pstr)
@@ -147,6 +147,11 @@ impl Channel {
     /// being enabled.
     pub fn is_scan_element(&self) -> bool {
         unsafe { ffi::iio_channel_is_scan_element(self.chan) }
+    }
+
+    pub fn index(&self) -> Result<usize> {
+        let ret = unsafe { ffi::iio_channel_get_index(self.chan) };
+        sys_result(ret as i32, ret as usize)
     }
 
     /// Gets the number of context-specific attributes

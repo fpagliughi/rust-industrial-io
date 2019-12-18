@@ -35,7 +35,7 @@ impl Buffer {
 
     /// Make the push or refill calls blocking or not.
     pub fn set_blocking_mode(&mut self, blocking: bool) -> Result<()> {
-        let ret = unsafe { ffi::iio_buffer_set_blocking_mode(self, blocking.buf) };
+        let ret = unsafe { ffi::iio_buffer_set_blocking_mode(self.buf, blocking) };
         sys_result(ret, ())
     }
 

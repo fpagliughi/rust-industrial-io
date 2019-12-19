@@ -18,8 +18,11 @@ extern crate error_chain;
 
 extern crate libiio_sys as ffi;
 
-use std::ffi::CStr;
-use std::os::raw::c_char;
+//use ffi;
+
+use std::{str, slice};
+use std::ffi::{CString, CStr};
+use std::os::raw::{c_char, c_uint};
 
 use nix::errno;
 use nix::Error::Sys as SysError;
@@ -56,6 +59,31 @@ pub fn sys_result<T>(ret: i32, result: T) -> Result<T> {
         bail!(SysError(errno::from_i32(ret)))
     }
     Ok(result)
+}
+
+// --------------------------------------------------------------------------
+
+/// Gets the library version as (Major, Minor, Git Tag)
+pub fn library_version() -> (u32, u32, String) {
+    let mut major: c_uint = 0;
+    let mut minor: c_uint = 0;
+
+    const BUF_SZ: usize = 8;
+    let mut buf = vec![' ' as c_char ; BUF_SZ];
+    let pbuf = buf.as_mut_ptr();
+
+    unsafe { ffi::iio_library_get_version(&mut major, &mut minor, pbuf) };
+
+    let sgit = unsafe {
+        if buf.contains(&0) {
+            CStr::from_ptr(pbuf).to_owned()
+        }
+        else {
+            let slc = str::from_utf8(slice::from_raw_parts(pbuf as *mut u8, BUF_SZ)).unwrap();
+            CString::new(slc).unwrap()
+        }
+    };
+    (major as u32, minor as u32, sgit.to_string_lossy().into_owned())
 }
 
 // --------------------------------------------------------------------------

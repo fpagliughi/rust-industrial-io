@@ -75,10 +75,7 @@ impl Device {
 
     /// Try to find a device-specific attribute by its name
     pub fn find_attr(&self, name: &str) -> Option<String> {
-        let cname = match CString::new(name) {
-            Ok(s) => s,
-            Err(_) => return None,
-        };
+        let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
         cstring_opt(pstr)
     }
@@ -218,8 +215,8 @@ impl Device {
 
     /// Try to find a channel by its name or ID
     pub fn find_channel(&self, name: &str, is_output: bool) -> Option<Channel> {
-        let name = CString::new(name).unwrap();
-        let chan = unsafe { ffi::iio_device_find_channel(self.dev, name.as_ptr(), is_output) };
+        let cname = cstring_or_bail!(name);
+        let chan = unsafe { ffi::iio_device_find_channel(self.dev, cname.as_ptr(), is_output) };
 
         if chan.is_null() {
             None
@@ -262,10 +259,7 @@ impl Device {
 
     /// Try to find a buffer-specific attribute by its name
     pub fn find_buffer_attr(&self, name: &str) -> Option<String> {
-        let cname = match CString::new(name) {
-            Ok(s) => s,
-            Err(_) => return None,
-        };
+        let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
         cstring_opt(pstr)
     }

@@ -33,11 +33,14 @@ pub use channel::*;
 pub use buffer::*;
 pub use errors::*;
 
+mod macros;
+
 pub mod context;
 pub mod device;
 pub mod channel;
 pub mod buffer;
 pub mod errors;
+
 
 // --------------------------------------------------------------------------
 

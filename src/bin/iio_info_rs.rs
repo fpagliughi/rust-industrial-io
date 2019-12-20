@@ -24,8 +24,13 @@ fn main() -> iio::Result<()> {
     });
 
     println!("Description: {}", ctx.description());
-    println!("IIO context has {} devices:", ctx.num_devices());
 
+    println!("{} context attribute(s) found", ctx.num_attrs());
+    for attr in ctx.attributes() {
+        println!("\t{}: {}", attr.0, attr.1)
+    }
+
+    println!("IIO context has {} device(s):", ctx.num_devices());
     for dev in ctx.devices() {
         //assert_eq(ctx, dev.context());
         println!("\t{}: {}", dev.id().unwrap_or_default(),
@@ -56,6 +61,7 @@ fn main() -> iio::Result<()> {
             }
         }
     }
+
     Ok(())
 }
 

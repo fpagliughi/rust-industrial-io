@@ -57,7 +57,7 @@ fn cstring_opt(pstr: *const c_char) -> Option<String> {
     }
 }
 
-pub fn sys_result<T>(ret: i32, result: T) -> Result<T> {
+pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
     if ret < 0 {
         bail!(SysError(errno::from_i32(ret)))
     }

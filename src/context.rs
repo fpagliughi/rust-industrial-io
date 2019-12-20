@@ -10,6 +10,7 @@
 //! Industrial I/O Contexts.
 //!
 
+use std::ptr;
 use std::time::Duration;
 use std::ffi::CString;
 use std::os::raw::c_uint;
@@ -112,10 +113,22 @@ impl Context {
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
+    /// Get the name of the context.
+    /// This should be "local", "xml", or "network" depending on how the context was created.
+    pub fn name(&self) -> String {
+        let pstr = unsafe { ffi::iio_context_get_name(self.inner.ctx) };
+        cstring_opt(pstr).unwrap_or_default()
+    }
 
     /// Get a description of the context
     pub fn description(&self) -> String {
         let pstr = unsafe { ffi::iio_context_get_description(self.inner.ctx) };
+        cstring_opt(pstr).unwrap_or_default()
+    }
+
+    /// Obtain the XML representation of the context.
+    pub fn xml(&self) -> String {
+        let pstr = unsafe { ffi::iio_context_get_xml(self.inner.ctx) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
@@ -124,6 +137,35 @@ impl Context {
         let n = unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) };
         n as usize
     }
+
+    /// Gets the name and value of the context-specific attributes.
+    /// Note that this is different than the same function for other IIO
+    /// types, in that this retrieves both the name and value of the
+    /// attributes in a single call.
+    pub fn get_attr(&self, idx: usize) -> Result<(String, String)> {
+        let mut pname: *const c_char = ptr::null();
+        let mut pval: *const c_char = ptr::null();
+
+        let ret = unsafe {
+            ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint,
+                                      &mut pname, &mut pval)
+        };
+        if ret < 0 {
+            bail!(SysError(errno::from_i32(ret)))
+        }
+        let name = cstring_opt(pname);
+        let val = cstring_opt(pval);
+        if name.is_none() || val.is_none() {
+            bail!("String conversion error");
+        }
+        Ok((name.unwrap(), val.unwrap()))
+    }
+
+    /// Gets an iterator for the attributes in the context
+    pub fn attributes(&self) -> AttrIterator {
+        AttrIterator { ctx: self, idx: 0, }
+    }
+
 
     /// Sets the timeout for I/O operations
     ///
@@ -202,29 +244,24 @@ impl<'a> Iterator for DeviceIterator<'a> {
     }
 }
 
-/*
-    TODO: We need to implement a context::get_attr()
-    before we can add this.
-
 pub struct AttrIterator<'a> {
     ctx: &'a Context,
     idx: usize,
 }
 
 impl<'a> Iterator for AttrIterator<'a> {
-    type Item = String;
+    type Item = (String, String);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.ctx.get_attr(self.idx) {
-            Ok(name) => {
+            Ok(name_val) => {
                 self.idx += 1;
-                Some(name)
+                Some(name_val)
             },
             Err(_) => None
         }
     }
 }
-*/
 
 // --------------------------------------------------------------------------
 //                              Unit Tests
@@ -264,4 +301,23 @@ mod tests {
         assert!(ndev != 0);
         assert!(ctx.devices().count() == ndev);
     }
+
+    // See that the description gives back something.
+    #[test]
+    fn name() {
+        let ctx = Context::new().unwrap();
+        let name = ctx.name();
+        println!("Context name: {}", name);
+        assert!(name == "local" || name == "network");
+    }
+
+    // See that the description gives back something.
+    #[test]
+    fn description() {
+        let ctx = Context::new().unwrap();
+        let desc = ctx.description();
+        println!("Context description: {}", desc);
+        assert!(!desc.is_empty());
+    }
 }
+

@@ -176,12 +176,12 @@ impl Channel {
     }
 
     /// Try to find the channel-specific attribute by name.
-    pub fn find_attr(&self, attr: &str) -> Option<String> {
-        let attr = match CString::new(attr) {
+    pub fn find_attr(&self, name: &str) -> Option<String> {
+        let cname = match CString::new(name) {
             Ok(s) => s,
             Err(_) => return None,
         };
-        let pstr = unsafe { ffi::iio_channel_find_attr(self.chan, attr.as_ptr()) };
+        let pstr = unsafe { ffi::iio_channel_find_attr(self.chan, cname.as_ptr()) };
         cstring_opt(pstr)
     }
 
@@ -349,3 +349,23 @@ impl<'a> Iterator for AttrIterator<'a> {
     }
 }
 
+
+// --------------------------------------------------------------------------
+//                              Unit Tests
+// --------------------------------------------------------------------------
+
+// Note: These tests assume that the IIO Dummy kernel module is loaded
+// locally with a device created. See the `load_dummy.sh` script.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // See that we get the default context.
+    #[test]
+    fn default_context() {
+        let dev = Context::new().unwrap().get_device(0).unwrap();
+        let chan = dev.get_channel(0);
+        assert!(chan.is_ok());
+    }
+}

@@ -226,3 +226,42 @@ impl<'a> Iterator for AttrIterator<'a> {
 }
 */
 
+// --------------------------------------------------------------------------
+//                              Unit Tests
+// --------------------------------------------------------------------------
+
+// Note: These tests assume that the IIO Dummy kernel module is loaded
+// locally with a device created. See the `load_dummy.sh` script.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // See that we get the default context.
+    #[test]
+    fn default_context() {
+        let ctx = Context::new();
+        assert!(ctx.is_ok());
+        //let ctx = ctx.unwrap();
+    }
+
+    // Clone a context and make sure it's reported as same one.
+    #[test]
+    fn clone_context() {
+        let ctx = Context::new();
+        assert!(ctx.is_ok());
+        let ctx = ctx.unwrap();
+
+        let ctx2 = ctx.clone();
+        assert!(ctx == ctx2);
+    }
+
+    // See that device iterator gets the correct number of devices.
+    #[test]
+    fn dev_iterator_count() {
+        let ctx = Context::new().unwrap();
+        let ndev = ctx.num_devices();
+        assert!(ndev != 0);
+        assert!(ctx.devices().count() == ndev);
+    }
+}

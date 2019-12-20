@@ -90,8 +90,13 @@ pub fn library_version() -> (u32, u32, String) {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    // Just make sure version gives a consistent result.
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn version() {
+        let v1 = library_version();
+        let v2 = library_version();
+        assert!(v1 == v2);
     }
 }

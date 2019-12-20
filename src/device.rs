@@ -59,6 +59,8 @@ impl Device {
         sys_result(ret, ())
     }
 
+    // ----- Attributes -----
+
     /// Gets the number of device-specific attributes
     pub fn num_attrs(&self) -> usize {
         let n = unsafe { ffi::iio_device_get_attrs_count(self.dev) };
@@ -69,6 +71,26 @@ impl Device {
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_device_get_attr(self.dev, idx as c_uint) };
         cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
+    }
+
+    /// Try to find a device-specific attribute by its name
+    pub fn find_attr(&self, name: &str) -> Option<String> {
+        let cname = match CString::new(name) {
+            Ok(s) => s,
+            Err(_) => return None,
+        };
+        let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
+        cstring_opt(pstr)
+    }
+
+    /// Determines if a buffer-specific attribute exists
+    pub fn has_attr(&self, name: &str) -> bool {
+        let cname = match CString::new(name) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
+        !pstr.is_null()
     }
 
     /// Reads a device-specific attribute as a boolean
@@ -174,6 +196,13 @@ impl Device {
         sys_result(ret, ())
     }
 
+    /// Gets an iterator for the attributes in the device
+    pub fn attributes(&self) -> AttrIterator {
+        AttrIterator { dev: self, idx: 0, }
+    }
+
+    // ----- Channels -----
+
     /// Gets the number of channels on the device
     pub fn num_channels(&self) -> usize {
         let n = unsafe { ffi::iio_device_get_channels_count(self.dev) };
@@ -202,10 +231,7 @@ impl Device {
 
     /// Gets an iterator for the channels in the device
     pub fn channels(&self) -> ChannelIterator {
-        ChannelIterator {
-            dev: self,
-            idx: 0,
-        }
+        ChannelIterator { dev: self, idx: 0, }
     }
 
     // ----- Buffer Functions -----
@@ -218,6 +244,40 @@ impl Device {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
         if buf.is_null() { bail!(SysError(Errno::last())); }
         Ok(Buffer { buf, ctx: self.context() })
+    }
+
+
+    // ----- Attributes -----
+
+    /// Gets the number of buffer-specific attributes
+    pub fn num_buffer_attrs(&self) -> usize {
+        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev) as usize }
+    }
+
+    /// Gets the name of the buffer-specific attribute at the index
+    pub fn get_buffer_attr(&self, idx: usize) -> Result<String> {
+        let pstr = unsafe { ffi::iio_device_get_buffer_attr(self.dev, idx as c_uint) };
+        cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
+    }
+
+    /// Try to find a buffer-specific attribute by its name
+    pub fn find_buffer_attr(&self, name: &str) -> Option<String> {
+        let cname = match CString::new(name) {
+            Ok(s) => s,
+            Err(_) => return None,
+        };
+        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
+        cstring_opt(pstr)
+    }
+
+    /// Determines if a buffer-specific attribute exists
+    pub fn has_buffer_attr(&self, name: &str) -> bool {
+        let cname = match CString::new(name) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
+        !pstr.is_null()
     }
 
     /// Reads a buffer-specific attribute as a boolean
@@ -255,26 +315,6 @@ impl Device {
         };
         sys_result(ret, val)
     }
-
-/*
-    // Callback from the C lib to extract the collection of all
-    // device-specific attributes. See attr_read_all().
-    unsafe extern "C" fn buffer_attr_read_all_cb(_chan: *mut ffi::iio_device,
-                                          attr: *const c_char,
-                                          val: *const c_char, _len: usize,
-                                          pmap: *mut c_void) -> c_int {
-        if attr.is_null() || val.is_null() || pmap.is_null() {
-            return -1;
-        }
-
-        let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
-        // TODO: We could/should check val[len-1] == '\x0'
-        let val = CStr::from_ptr(val).to_string_lossy().to_string();
-        let map: &mut HashMap<String,String> = &mut *(pmap as *mut _);
-        map.insert(attr, val);
-        0
-    }
-*/
 
     /// Reads all the buffer-specific attributes.
     /// This is especially useful when using the network backend to
@@ -322,6 +362,11 @@ impl Device {
             ffi::iio_device_buffer_attr_write_double(self.dev, attr.as_ptr(), val)
         };
         sys_result(ret, ())
+    }
+
+    /// Gets an iterator for the buffer attributes in the device
+    pub fn buffer_attributes(&self) -> BufferAttrIterator {
+        BufferAttrIterator { dev: self, idx: 0, }
     }
 
 
@@ -392,6 +437,60 @@ impl<'a> Iterator for AttrIterator<'a> {
             },
             Err(_) => None
         }
+    }
+}
+
+pub struct BufferAttrIterator<'a> {
+    dev: &'a Device,
+    idx: usize,
+}
+
+impl<'a> Iterator for BufferAttrIterator<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.dev.get_buffer_attr(self.idx) {
+            Ok(name) => {
+                self.idx += 1;
+                Some(name)
+            },
+            Err(_) => None
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
+//                              Unit Tests
+// --------------------------------------------------------------------------
+
+// Note: These tests assume that the IIO Dummy kernel module is loaded
+// locally with a device created. See the `load_dummy.sh` script.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Make sure we get a device
+    #[test]
+    fn get_device() {
+        let ctx = Context::new().unwrap();
+        let dev = ctx.get_device(0);
+        assert!(dev.is_ok());
+
+        let dev = dev.unwrap();
+        let id = dev.id().unwrap();
+        assert!(!id.is_empty());
+    }
+
+    // See that attr iterator gets the correct number of attributes
+    #[test]
+    fn attr_iterator_count() {
+        let ctx = Context::new().unwrap();
+        let dev = ctx.get_device(0).unwrap();
+
+        let n = dev.num_attrs();
+        assert!(n != 0);
+        assert!(dev.attributes().count() == n);
     }
 }
 

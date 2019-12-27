@@ -14,7 +14,7 @@ Linux Industrial I/O (IIO) Support
 [dependencies]
 libiio-sys = { version = "0.1", path = "libiio-sys" }
 error-chain = "0.12"
-nix = "0.11"
+nix = "0.16"
 
 [dev-dependencies]
 schedule_recv = "0.1"

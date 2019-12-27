@@ -202,8 +202,9 @@ fn main() {
         process::exit(1);
     });
 
-    let dfmt = sample_chan.data_format();
-    println!("Using channel: {}  [{:?}]", chan_name, dfmt);
+    //let dfmt = sample_chan.data_format();
+    //println!("Using channel: {}  [{:?}]", chan_name, dfmt);
+    println!("Using channel: {}", chan_name);
 
     if sample_chan.type_of() != Some(TypeId::of::<RawSampleType>()) {
         eprintln!("The channel type is different than expected.");

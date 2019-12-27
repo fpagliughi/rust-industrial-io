@@ -24,29 +24,36 @@ use chrono::offset::Utc;
 use chrono::DateTime;
 
 const DFLT_DEV_NAME: &'static str = "ads1015";
+const DFLT_CHAN_NAME: &'static str = "voltage0";
 
 fn main() {
     let matches = App::new("riio_tsbuf")
                     .version(crate_version!())
                     .about("Rust IIO timestamped buffered read example.")
-                    .arg(Arg::with_name("device")
-                         .short("d")
-                         .long("device")
-                         .help("Specifies the name of the IIO device to read")
-                         .takes_value(true))
                     .arg(Arg::with_name("network")
-                         .short("n")
-                         .long("network")
-                         .help("Use the network backend with the provided hostname")
-                         .takes_value(true))
+                        .short("n")
+                        .long("network")
+                        .help("Use the network backend with the provided hostname")
+                        .takes_value(true))
                     .arg(Arg::with_name("uri")
-                         .short("u")
-                         .long("uri")
-                         .help("Use the context with the provided URI")
-                         .takes_value(true))
+                        .short("u")
+                        .long("uri")
+                        .help("Use the context with the provided URI")
+                        .takes_value(true))
+                    .arg(Arg::with_name("device")
+                        .short("d")
+                        .long("device")
+                        .help("Specifies the name of the IIO device to read")
+                        .takes_value(true))
+                    .arg(Arg::with_name("channel")
+                        .short("c")
+                        .long("channel")
+                        .help("Specifies the name of the channel to read")
+                        .takes_value(true))
                     .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
+    let chan_name = matches.value_of("chan").unwrap_or(DFLT_CHAN_NAME);
 
     let ctx = if let Some(hostname) = matches.value_of("network") {
                   iio::Context::create_network(hostname)
@@ -69,24 +76,18 @@ fn main() {
 
     // ----- Find the timestamp channel and a voltage channel -----
 
-    let mut ts_chan = match dev.find_channel("timestamp", false) {
-        Some(chan) => chan,
-        None => {
-            println!("No timestamp channel on this device");
-            process::exit(1);
-        }
-    };
+    let mut ts_chan = dev.find_channel("timestamp", false).unwrap_or_else(|| {
+        println!("No timestamp channel on this device");
+        process::exit(1);
+    });
 
-    let mut v0_chan = match dev.find_channel("voltage0", false) {
-        Some(chan) => chan,
-        None => {
-            println!("No voltage0 channel on this device");
-            process::exit(1);
-        }
-    };
+    let mut sample_chan = dev.find_channel(chan_name, false).unwrap_or_else(|| {
+        println!("No '{}' channel on this device", chan_name);
+        process::exit(1);
+    });
 
     ts_chan.enable();
-    v0_chan.enable();
+    sample_chan.enable();
 
     println!("Sample size: {}", dev.sample_size().unwrap());
 
@@ -96,13 +97,10 @@ fn main() {
     const TRIGGER: &'static str = "trigger0";
     const RATE_HZ: i64 = 100;
 
-    let trig = match ctx.find_device(TRIGGER) {
-        Some(t) => t,
-        None => {
-            eprintln!("Couldn't find requested trigger: {}", TRIGGER);
-            process::exit(1);
-        }
-    };
+    let trig = ctx.find_device(TRIGGER).unwrap_or_else(|| {
+        eprintln!("Couldn't find requested trigger: {}", TRIGGER);
+        process::exit(1);
+    });
 
     // Set the sampling rate
     if let Err(err) = trig.attr_write_int("sampling_frequency", RATE_HZ) {
@@ -132,7 +130,7 @@ fn main() {
     // Extract and print the data
 
     let mut ts_data = buf.channel_iter::<u64>(&ts_chan);
-    let mut v0_data = buf.channel_iter::<u16>(&v0_chan);
+    let mut sample_data = buf.channel_iter::<u16>(&sample_chan);
 
     loop {
         // Get the next timestamp. It's represented as the 64-bit integer
@@ -146,8 +144,8 @@ fn main() {
         else {
             break;
         }
-        if let Some(v) = v0_data.next() {
-            print!("{}", v);
+        if let Some(val) = sample_data.next() {
+            print!("{}", val);
         }
         println!();
     }

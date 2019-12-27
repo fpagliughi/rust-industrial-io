@@ -1,5 +1,9 @@
 // industrial-io/examples/riio_readraw.rs
 //
+// Periodically reads the samples from all channels on a device that have
+// the "raw" attribute. This periodically polls the channels using a Rust
+// timer via the schedule_recv crate.
+//
 // Note that, if no context is requested at the command line, this will create
 // a network context if the IIOD_REMOTE environment variable is set, otherwise
 // it will create a local context. See Context::new().

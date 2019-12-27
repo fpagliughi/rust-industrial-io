@@ -12,6 +12,7 @@
 
 use std::{mem, str};
 use std::ffi::CString;
+use std::any::TypeId;
 use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
 
@@ -112,6 +113,39 @@ impl DataFormat {
     /// Number of times length repeats
     pub fn repeat(&self) -> u32 {
         u32::from(self.data_fmt.repeat)
+    }
+
+    /// The number of bytes required to hold a single sample from the channel.
+    pub fn byte_length(&self) -> usize {
+        let nbytes = (self.length() / 8) * self.repeat();
+        nbytes as usize
+    }
+
+    /// Gets the TypeId for a single sample from the channel.
+    ///
+    /// This will get the TypeId for a sample if it can fit into a standard
+    /// integer type, signed or unsigned, of 8, 16, 32, or 64 bits.
+    pub fn type_of(&self) -> Option<TypeId> {
+        let nbytes = self.byte_length();
+
+        if self.is_signed() {
+            match nbytes {
+                1 => Some(TypeId::of::<i8>()),
+                2 => Some(TypeId::of::<i16>()),
+                4 => Some(TypeId::of::<i32>()),
+                8 => Some(TypeId::of::<i64>()),
+                _ => None
+            }
+        }
+        else {
+            match nbytes {
+                1 => Some(TypeId::of::<u8>()),
+                2 => Some(TypeId::of::<u16>()),
+                4 => Some(TypeId::of::<u32>()),
+                8 => Some(TypeId::of::<u64>()),
+                _ => None
+            }
+        }
     }
 }
 
@@ -320,6 +354,17 @@ impl Channel {
         }
     }
 
+    // ----- Data Type and Conversion -----
+
+    /// Gets the TypeId for a single sample from the channel.
+    ///
+    /// This will get the TypeId for a sample if it can fit into a standard
+    /// integer type, signed or unsigned, of 8, 16, 32, or 64 bits.
+    pub fn type_of(&self) -> Option<TypeId> {
+        let dfmt = self.data_format();
+        dfmt.type_of()
+    }
+
     /// Gets the type of data associated with the channel
     pub fn channel_type(&self) -> ChannelType {
         // TODO: We're trusting that the lib returns a valid enum.
@@ -327,6 +372,62 @@ impl Channel {
             let n = ffi::iio_channel_get_type(self.chan);
             mem::transmute(n)
         }
+    }
+
+    /// Converts a single sample from the hardware format to the host format.
+    pub fn convert<T>(&self, val: T) -> T
+        where T: Default
+    {
+        // TODO: Make sure T is the correct data type
+        let mut retval: T = T::default();
+        unsafe {
+            ffi::iio_channel_convert(self.chan,
+                                     &mut retval as *mut T as *mut c_void,
+                                     &val as *const T as *const c_void);
+        }
+        retval
+    }
+
+    /// Converts a sample from the host format to the hardware format.
+    pub fn convert_inverse<T>(&self, val: T) -> T
+        where T: Default
+    {
+        // TODO: Make sure T is the correct data type
+        let mut retval: T = T::default();
+        unsafe {
+            ffi::iio_channel_convert_inverse(self.chan,
+                                             &mut retval as *mut T as *mut c_void,
+                                             &val as *const T as *const c_void);
+        }
+        retval
+    }
+
+    /// Demultiplex and convert the samples of a given channel.
+    pub fn read<T>(&self, buf: &Buffer) -> Result<Vec<T>>
+        where T: Default + Copy + 'static,
+    {
+        if self.type_of() != Some(TypeId::of::<T>()) {
+            bail!("Wrong data type");
+        }
+
+        let n = buf.len();
+        let mut v = vec![T::default() ; n];
+        let sz_item = mem::size_of::<T>();
+        let sz_in = n * sz_item;
+        let sz_ret = unsafe {
+            ffi::iio_channel_read(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
+        };
+
+        if sz_ret > sz_in {
+            // This should really never happen.
+            bail!("Bad return size")
+        }
+
+        if sz_ret < sz_in {
+            let n = sz_ret / sz_item;
+            v.truncate(n);
+        }
+        Ok(v)
     }
 }
 

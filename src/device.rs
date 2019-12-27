@@ -240,7 +240,7 @@ impl Device {
     pub fn create_buffer(&self, sample_count: usize, cyclic: bool) -> Result<Buffer> {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
         if buf.is_null() { bail!(SysError(Errno::last())); }
-        Ok(Buffer { buf, ctx: self.context() })
+        Ok(Buffer { buf, len: sample_count, ctx: self.context() })
     }
 
     /// Gets the number of buffer-specific attributes

@@ -19,12 +19,20 @@ use super::*;
 
 /// An Industrial I/O input or output buffer
 pub struct Buffer {
+    /// The underlying buffer from the C library
     pub(crate) buf: *mut ffi::iio_buffer,
-    #[allow(dead_code)] // this holds the refcount for libiio
+    /// The sample count (# samples from each channel)
+    pub(crate) len: usize,
+    // this holds the refcount for libiio
+    #[allow(dead_code)]
     pub(crate) ctx: Context,
 }
 
 impl Buffer {
+    /// Get the buffer sample count.
+    /// This is the number of items from each channel that the buffer can hold.
+    pub fn len(&self) -> usize { self.len }
+
     /// Gets a pollable file descriptor for the buffer.
     /// This can be used to determine when refill() or push() can be called
     /// without blocking.
@@ -49,7 +57,7 @@ impl Buffer {
 
     /// Send the samples to the hardware.
     ///
-    /// This is only valid for output buffers
+    /// Note that this is only valid for output buffers
     pub fn push(&mut self) -> Result<usize> {
         let ret = unsafe { ffi::iio_buffer_push(self.buf) };
         sys_result(ret as i32, ret as usize)
@@ -57,8 +65,9 @@ impl Buffer {
 
     /// Send a given number of samples to the hardware.
     ///
+    /// Note that this is only valid for output buffers
+    ///
     /// `n` The number of samples to send
-    /// This is only valid for output buffers
     pub fn push_partial(&mut self, n: usize) -> Result<usize> {
         let ret = unsafe { ffi::iio_buffer_push_partial(self.buf, n) };
         sys_result(ret as i32, ret as usize)

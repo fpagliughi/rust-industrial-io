@@ -15,6 +15,7 @@
 extern crate industrial_io as iio;
 
 use std::process;
+use std::any::TypeId;
 use clap::{Arg, App};
 
 const DFLT_DEV_NAME: &'static str = "44e0d000.tscadc:adc";
@@ -26,7 +27,6 @@ fn main() {
                     .arg(Arg::with_name("device")
                          .short("d")
                          .long("device")
-                         //.value_name("DEVICE")
                          .help("Specifies the name of the IIO device to read")
                          .takes_value(true))
                     .arg(Arg::with_name("network")
@@ -62,8 +62,20 @@ fn main() {
         process::exit(2);
     });
 
+    // Note that we just look at unsigned 16-bit samples.
+    // This is arbitrary for the purpose of example.
+
+    let mut nchan = 0;
     for mut chan in dev.channels() {
-        chan.enable();
+        if chan.type_of() == Some(TypeId::of::<u16>()) {
+            nchan += 1;
+            chan.enable();
+        }
+    }
+
+    if nchan == 0 {
+        eprintln!("Couldn't find any unsigned 16-bit channels to capture.");
+        process::exit(2);
     }
 
     let mut buf = dev.create_buffer(8, false).unwrap_or_else(|err| {

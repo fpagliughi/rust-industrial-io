@@ -9,7 +9,7 @@ The current version is a wrapper around the user-space C library, [libiio](https
 
 ## Pre-release notes
 
-This is an early, pre-release verion of the crate. The API is under active development and may change repeatedly. It is not recommended to use this for production applications... yet.
+This is a pre-release verion of the crate. The API is stabilizing, but is still under active development and may change before a final release.
 
 This initial development work wrappers a _specific_ version (v0.18) of _libiio_. It assumes that the library is installed on the target system.
 
@@ -25,16 +25,34 @@ An effort is underway to get this crate to production quality. This will hopeful
 
 - Support for libiio v0.18
 - Further implementation of _libiio_ functions for contexts, devices, channels, etc.
+- Functions to read and write buffers, with and without conversions, and to convert individual samples to and from hardware format.
 - [Breaking] Removed previous `ChannelType` for Input/Output as it conflicted with the library's channel types of `Voltage`, `Current`, `Power`, etc, and implemented the library type.
 - Contexts have a ref-counted "inner" representation using _Rc<>_, and can be "cloned" quickly by incrementing the count. (Thanks, @skrap!)
  - Devices carry a cloned reference to the context that created them, thus keeping the context alive until the last device using it gets dropped.
  - Some clippy-recommended lints.
+ - Sample to collect and process data a buffer at a time.
 
 ## Testing the Crate
 
-A great thing about the user-space IIO libraries is that, if you're developing on a fairly recent Linux host, you can start experimenting without having to do development on a board. You can run the IIO server daemon on an embedded board, and then use this crate to communicate with it over a network connection. When your application is working, you can then compile it for the target board and test it natively.
+A great thing about the user-space IIO libraries is that, if you're developing on a fairly recent Linux host, you can start experimenting without having to do development on a board. You can run the IIO server daemon on an embedded board, and then use this crate to communicate with it over a network connection. When your application is working, you can then compile it for the target board and test it natively. Alternately, you can test with a mock, "dummy" context on a development host.
 
-Several maker boards can be used to try out the Industrial I/O subsystem pretty easily. The BeagleBone Black and Green have the on-board AM335X A/D. The IIO library for it supports individual and buffered sampling, though without external trigger support.  The [Debian 9.5 IoT](https://beagleboard.org/latest-images) distribution for the board has IIO compiled into the kernel which can be used out of the box - although the user-space library should be upgraded.
+### BeagleBone
+
+Several maker boards can be used to try out the Industrial I/O subsystem pretty easily. The BeagleBone Black and Green have the on-board AM335X A/D, and the BeagleBone AI has an STM touchscreen chip that can be used for analog input.
+
+ The IIO library for the BeagleBones support individual and buffered sampling, though without external trigger support.  The recent [Debian 9.x IoT](https://beagleboard.org/latest-images) distributions for the board have IIO compiled into the kernel which can be used out of the box - although the user-space library, _libiio_, should be upgraded (see below).
+ 
+### Linux Development Host
+
+Several modern Linux distributions, such as Ubuntu 18.04, have IIO modules compiled for the kernel, such as the _dummy_ context. These can be loaded into the kernel, like:
+```
+$ sudo modprobe iio_dummy
+$ sudo modprobe iio_trig_hrtimer
+```
+Once loaded, the _configfs_ can be used to create devices and triggers. The _load_dummy.sh_ script included in this repository can be used to load the modules and configure a device, suitable for basic experiments or running the unit tests.
+```
+$ sudo ./load_dummy.sh
+```
 
 ## Installing the C Library
 

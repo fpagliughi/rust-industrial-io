@@ -336,7 +336,7 @@ impl Channel {
         unsafe { ffi::iio_channel_enable(self.chan) };
     }
 
-    /// Disables the channel
+    /// Disable the channel
     pub fn disable(&mut self) {
         unsafe { ffi::iio_channel_disable(self.chan) };
     }
@@ -346,6 +346,8 @@ impl Channel {
         unsafe { ffi::iio_channel_is_enabled(self.chan) }
     }
 
+    // ----- Data Type and Conversion -----
+
     /// Gets the data format for the channel
     pub fn data_format(&self) -> DataFormat {
         unsafe {
@@ -353,8 +355,6 @@ impl Channel {
             DataFormat::new(*pfmt)
         }
     }
-
-    // ----- Data Type and Conversion -----
 
     /// Gets the TypeId for a single sample from the channel.
     ///
@@ -375,29 +375,39 @@ impl Channel {
     }
 
     /// Converts a single sample from the hardware format to the host format.
+    ///
+    /// To be properly converted, the value must be the same type as that of
+    /// the channel, including size and sign. If not, the original value is
+    /// returned.
     pub fn convert<T>(&self, val: T) -> T
-        where T: Default
+        where T: Copy + 'static,
     {
-        // TODO: Make sure T is the correct data type
-        let mut retval: T = T::default();
-        unsafe {
-            ffi::iio_channel_convert(self.chan,
-                                     &mut retval as *mut T as *mut c_void,
-                                     &val as *const T as *const c_void);
+        let mut retval = val;
+        if self.type_of() == Some(TypeId::of::<T>()) {
+            unsafe {
+                ffi::iio_channel_convert(self.chan,
+                                         &mut retval as *mut T as *mut c_void,
+                                         &val as *const T as *const c_void);
+            }
         }
         retval
     }
 
     /// Converts a sample from the host format to the hardware format.
+    ///
+    /// To be properly converted, the value must be the same type as that of
+    /// the channel, including size and sign. If not, the original value is
+    /// returned.
     pub fn convert_inverse<T>(&self, val: T) -> T
-        where T: Default
+        where T: Copy + 'static,
     {
-        // TODO: Make sure T is the correct data type
-        let mut retval: T = T::default();
-        unsafe {
-            ffi::iio_channel_convert_inverse(self.chan,
-                                             &mut retval as *mut T as *mut c_void,
-                                             &val as *const T as *const c_void);
+        let mut retval = val;
+        if self.type_of() == Some(TypeId::of::<T>()) {
+            unsafe {
+                ffi::iio_channel_convert_inverse(self.chan,
+                                                 &mut retval as *mut T as *mut c_void,
+                                                 &val as *const T as *const c_void);
+            }
         }
         retval
     }
@@ -411,23 +421,87 @@ impl Channel {
         }
 
         let n = buf.len();
-        let mut v = vec![T::default() ; n];
         let sz_item = mem::size_of::<T>();
         let sz_in = n * sz_item;
-        let sz_ret = unsafe {
+
+        let mut v = vec![T::default() ; n];
+        let sz = unsafe {
             ffi::iio_channel_read(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
         };
 
-        if sz_ret > sz_in {
-            // This should really never happen.
-            bail!("Bad return size")
+        if sz > sz_in {
+            bail!("Bad return size");   // This should never happen.
         }
 
-        if sz_ret < sz_in {
-            let n = sz_ret / sz_item;
-            v.truncate(n);
+        if sz < sz_in {
+            v.truncate(sz/sz_item);
         }
         Ok(v)
+    }
+
+    /// Demultiplex the samples of a given channel.
+    pub fn read_raw<T>(&self, buf: &Buffer) -> Result<Vec<T>>
+        where T: Default + Copy + 'static,
+    {
+        if self.type_of() != Some(TypeId::of::<T>()) {
+            bail!("Wrong data type");
+        }
+
+        let n = buf.len();
+        let sz_item = mem::size_of::<T>();
+        let sz_in = n * sz_item;
+
+        let mut v = vec![T::default() ; n];
+        let sz = unsafe {
+            ffi::iio_channel_read_raw(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
+        };
+
+        if sz > sz_in {
+            bail!("Bad return size");   // This should never happen.
+        }
+
+        if sz < sz_in {
+            v.truncate(sz/sz_item);
+        }
+        Ok(v)
+    }
+
+    /// Convert and multiplex the samples of a given channel.
+    /// Returns the number of items written.
+    pub fn write<T>(&self, buf: &Buffer, data: &[T]) -> Result<usize>
+        where T: Default + Copy + 'static,
+    {
+        if self.type_of() != Some(TypeId::of::<T>()) {
+            bail!("Wrong data type");
+        }
+
+        let sz_item = mem::size_of::<T>();
+        let sz_in = data.len() * sz_item;
+
+        let sz = unsafe {
+            ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr() as *const c_void, sz_in)
+        };
+
+        Ok(sz / sz_item)
+    }
+
+    /// Multiplex the samples of a given channel.
+    /// Returns the number of items written.
+    pub fn write_raw<T>(&self, buf: &Buffer, data: &[T]) -> Result<usize>
+        where T: Default + Copy + 'static,
+    {
+        if self.type_of() != Some(TypeId::of::<T>()) {
+            bail!("Wrong data type");
+        }
+
+        let sz_item = mem::size_of::<T>();
+        let sz_in = data.len() * sz_item;
+
+        let sz = unsafe {
+            ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr() as *const c_void, sz_in)
+        };
+
+        Ok(sz / sz_item)
     }
 }
 

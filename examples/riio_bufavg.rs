@@ -17,6 +17,7 @@ extern crate industrial_io as iio;
 extern crate chrono;
 
 use std::process;
+use std::any::TypeId;
 use std::time::{SystemTime, Duration, UNIX_EPOCH};
 use std::thread::{spawn, JoinHandle};
 use std::sync::mpsc::{channel, Sender, Receiver, SendError};
@@ -36,12 +37,16 @@ const DFLT_CHAN_NAME: &'static str = "voltage0-voltage3";
 
 /////////////////////////////////////////////////////////////////////////////
 
+// Active data processing object.
+// Each one of these has a thread that can process a buffer's worth of
+// incoming data at a time.
 struct Averager {
     sender: Sender<TsDataBuffer>,
     thr: JoinHandle<()>,
 }
 
 impl Averager {
+    // Creates a new averager with the specified offset and scale.
     pub fn new(offset: f64, scale: f64) -> Self {
         let (sender, receiver) = channel();
         let thr = spawn(move || {
@@ -50,37 +55,35 @@ impl Averager {
         Averager { sender, thr, }
     }
 
+    // The internal thread function.
+    // This just loops, receiving buffers of data, then averages them,
+    // transforming to physical units like Volts, deg C, etc.
     fn thread_func(receiver: Receiver<TsDataBuffer>, offset: f64, scale: f64) {
         loop {
             let (ts, data): TsDataBuffer = receiver.recv().unwrap();
 
-            if data.is_empty() {
-                break;
-            }
+            if data.is_empty() { break; }
 
             let sys_tm = SystemTime::UNIX_EPOCH + Duration::from_nanos(ts);
             let dt: DateTime<Utc> = sys_tm.into();
             print!("{}: ", dt.format("%T%.6f"));
 
-            if data.is_empty() {
-                println!("<none>");
-            }
-            else {
-                let sum: f64 = data.iter()
-                                   .map(|&x| f64::from(x))
-                                   .sum();
-                let avg = sum / data.len() as f64;
-                let val = (avg + offset)*scale/1000.0;
-                println!("{:.2} - {:?}", val, &data[0..4]);
-            }
+            let sum: f64 = data.iter()
+                               .map(|&x| f64::from(x))
+                               .sum();
+            let avg = sum / data.len() as f64;
+            let val = (avg + offset)*scale/1000.0;
+
+            println!("<{:.2}> - {:?}", val, &data[0..4]);
         }
     }
 
-
+    // Send data to the thread for processing
     pub fn send(&self, data: TsDataBuffer) -> Result<(), SendError<TsDataBuffer>> {
         self.sender.send(data)
     }
 
+    // Tell the inner thread to quit, then block and wait for it.
     pub fn quit(self) {
         self.sender.send((0, vec![])).unwrap();
         self.thr.join().unwrap();
@@ -91,13 +94,12 @@ impl Averager {
 /////////////////////////////////////////////////////////////////////////////
 
 // If the IIO device doesn't have a timestamp channel, we can use this to
-// get an equivalent, though approximate timestamp.
+// get an equivalent, though less accurate, timestamp.
 pub fn timestamp() -> u64
 {
     let now = SystemTime::now();
-    let t = now.duration_since(UNIX_EPOCH)
-                .expect("Time went backwards");
-    t.as_secs() as u64 * 1000000000u64 + t.subsec_micros() as u64
+    let t = now.duration_since(UNIX_EPOCH).expect("Clock error");
+    t.as_secs() as u64 * 1_000_000_000u64 + t.subsec_micros() as u64
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -163,6 +165,11 @@ fn main() {
 
     println!("Using channel: {}", chan_name);
 
+    if sample_chan.type_of() != Some(TypeId::of::<RawSampleType>()) {
+        eprintln!("The channel type is different than expected.");
+        process::exit(2);
+    }
+
     if let Some(ref mut chan) = ts_chan {
         chan.enable();
     }
@@ -217,7 +224,7 @@ fn main() {
             break;
         }
 
-        // Extract the data
+        // Get the timestamp
 
         let ts: u64 = if let Some(ref chan) = ts_chan {
             buf.channel_iter::<u64>(chan).next().unwrap_or_default()
@@ -226,15 +233,21 @@ fn main() {
             timestamp()
         };
 
+        // Extract and convert the raw data from the buffer.
+        // This puts the raw samples into host format (fixes "endiness" and
+        // shifts into place), but it's still raw data. The other thread
+        // will apply the offset and scaling.
+        // We do this here because the channel is not thread-safe.
+
         /*
-        Note: We could do this to convert each sample, one at a time, but
-            it's probably more efficient to convert the whole buffer using read()
+        Note: We could do the following to convert each sample, one at a time,
+            but it's more efficient to convert the whole buffer using read()
 
         let data: Vec<RawSampleType> = buf.channel_iter::<RawSampleType>(&sample_chan)
                                            .map(|x| sample_chan.convert(x))
                                            .collect();
-
         */
+
         let data: Vec<RawSampleType> = match sample_chan.read(&buf) {
             Ok(v) => v,
             Err(err) => {

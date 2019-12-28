@@ -21,17 +21,17 @@ use super::*;
 pub struct Buffer {
     /// The underlying buffer from the C library
     pub(crate) buf: *mut ffi::iio_buffer,
-    /// The sample count (# samples from each channel)
-    pub(crate) len: usize,
+    /// The buffer capacity (# samples from each channel)
+    pub(crate) cap: usize,
     // this holds the refcount for libiio
     #[allow(dead_code)]
     pub(crate) ctx: Context,
 }
 
 impl Buffer {
-    /// Get the buffer sample count.
-    /// This is the number of items from each channel that the buffer can hold.
-    pub fn len(&self) -> usize { self.len }
+    /// Get the buffer capacity in number of samples from each channel that
+    /// the buffer can hold.
+    pub fn capacity(&self) -> usize { self.cap }
 
     /// Gets a pollable file descriptor for the buffer.
     /// This can be used to determine when refill() or push() can be called

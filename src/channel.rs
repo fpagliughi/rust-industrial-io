@@ -420,7 +420,7 @@ impl Channel {
             bail!("Wrong data type");
         }
 
-        let n = buf.len();
+        let n = buf.capacity();
         let sz_item = mem::size_of::<T>();
         let sz_in = n * sz_item;
 
@@ -447,7 +447,7 @@ impl Channel {
             bail!("Wrong data type");
         }
 
-        let n = buf.len();
+        let n = buf.capacity();
         let sz_item = mem::size_of::<T>();
         let sz_in = n * sz_item;
 

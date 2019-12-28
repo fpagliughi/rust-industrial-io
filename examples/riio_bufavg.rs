@@ -23,12 +23,15 @@
 #[macro_use] extern crate clap;
 extern crate industrial_io as iio;
 extern crate chrono;
+extern crate ctrlc;
 
-use std::process;
+use std::{process, cmp};
 use std::any::TypeId;
 use std::time::{SystemTime, Duration, UNIX_EPOCH};
 use std::thread::{spawn, JoinHandle};
 use std::sync::mpsc::{channel, Sender, Receiver, SendError};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use clap::{Arg, App};
 use chrono::offset::Utc;
 use chrono::DateTime;
@@ -40,9 +43,9 @@ type RawSampleType = i16;
 type TsDataBuffer = (u64, Vec<RawSampleType>);
 
 // The defaults device and channel if none specified
-const DFLT_DEV_NAME: &'static str = "ads1015";
-const DFLT_CHAN_NAME: &'static str = "voltage0";
-const DFLT_TRIG_NAME: &'static str = "trigger0";
+const DFLT_DEV_NAME:  &str = "ads1015";
+const DFLT_CHAN_NAME: &str = "voltage0";
+const DFLT_TRIG_NAME: &str = "trigger0";
 
 const DFLT_FREQ: i64 = 100;
 const DFLT_NUM_SAMPLE: usize = 100;
@@ -165,19 +168,19 @@ fn main() {
     let chan_name = matches.value_of("channel").unwrap_or(DFLT_CHAN_NAME);
     let trig_name = matches.value_of("trigger").unwrap_or(DFLT_TRIG_NAME);
 
-    let ctx = if let Some(hostname) = matches.value_of("host") {
-                  iio::Context::create_network(hostname)
-              }
-              else if let Some(uri) = matches.value_of("uri") {
-                  iio::Context::create_from_uri(uri)
-              }
-              else {
-                  iio::Context::new()
-              }
-              .unwrap_or_else(|_err| {
-                  println!("Couldn't open IIO context.");
-                  process::exit(1);
-              });
+    let mut ctx = if let Some(hostname) = matches.value_of("host") {
+                      iio::Context::create_network(hostname)
+                  }
+                  else if let Some(uri) = matches.value_of("uri") {
+                      iio::Context::create_from_uri(uri)
+                  }
+                  else {
+                      iio::Context::new()
+                  }
+                  .unwrap_or_else(|_err| {
+                      println!("Couldn't open IIO context.");
+                      process::exit(1);
+                  });
 
     let mut dev = ctx.find_device(dev_name).unwrap_or_else(|| {
         println!("No IIO device named '{}'", dev_name);
@@ -202,8 +205,6 @@ fn main() {
         process::exit(1);
     });
 
-    //let dfmt = sample_chan.data_format();
-    //println!("Using channel: {}  [{:?}]", chan_name, dfmt);
     println!("Using channel: {}", chan_name);
 
     if sample_chan.type_of() != Some(TypeId::of::<RawSampleType>()) {
@@ -256,14 +257,31 @@ fn main() {
         process::exit(3);
     });
 
+    // Make sure the timeout is more than enough to gather each buffer
+    // Give 50% extra time, or at least 5sec.
+    let ms = cmp::max(5000, 1500 * (n_sample as u64) / (freq as u64));
+    if let Err(err) = ctx.set_timeout_ms(ms) {
+        eprintln!("Error setting timeout of {}ms: {}", ms, err);
+    }
+
     // ----- Create the averager -----
 
     let avg = Averager::new(offset, scale);
 
+    // ---- Handle ^C since we want a graceful shutdown -----
+
+    let quit = Arc::new(AtomicBool::new(false));
+    let q = quit.clone();
+
+    ctrlc::set_handler(move || {
+        q.store(true, Ordering::SeqCst);
+    }).expect("Error setting Ctrl-C handler");
+
     // ----- Capture data into the buffer -----
 
     println!("Started capturing data...");
-    loop {
+
+    while !quit.load(Ordering::SeqCst) {
         if let Err(err) = buf.refill() {
             eprintln!("Error filling the buffer: {}", err);
             break;
@@ -272,7 +290,7 @@ fn main() {
         // Get the timestamp. Use the time of the _last_ sample.
 
         let ts: u64 = if let Some(ref chan) = ts_chan {
-            buf.channel_iter::<u64>(chan).skip(n_sample-1).next().unwrap_or_default()
+            buf.channel_iter::<u64>(chan).nth(n_sample-1).unwrap_or_default()
         }
         else {
             timestamp()
@@ -306,6 +324,8 @@ fn main() {
 
     // ----- Shut down -----
 
+    println!("\nExiting...");
     avg.quit();
+    println!("Done");
 }
 

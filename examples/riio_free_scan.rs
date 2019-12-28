@@ -18,7 +18,7 @@ use std::process;
 use std::any::TypeId;
 use clap::{Arg, App};
 
-const DFLT_DEV_NAME: &'static str = "44e0d000.tscadc:adc";
+const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
 
 fn main() {
     let matches = App::new("riio_free_scan")

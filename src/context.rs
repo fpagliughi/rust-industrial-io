@@ -170,17 +170,24 @@ impl Context {
     /// Sets the timeout for I/O operations
     ///
     /// `timeout` The timeout. A value of zero specifies that no timeout
-    /// should be used.
+    ///     should be used.
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<()> {
-        let timeout_ms: u64 = 1000 * timeout.as_secs() + u64::from(timeout.subsec_millis());
-        let ret = unsafe { ffi::iio_context_set_timeout(self.inner.ctx, timeout_ms as c_uint) };
+        let ms: u64 = 1000 * timeout.as_secs() + u64::from(timeout.subsec_millis());
+        self.set_timeout_ms(ms)
+    }
+
+    /// Sets the timeout for I/O operations, in milliseconds
+    ///
+    /// `timeout` The timeout, in ms. A value of zero specifies that no
+    ///     timeout should be used.
+    pub fn set_timeout_ms(&mut self, ms: u64) -> Result<()> {
+        let ret = unsafe { ffi::iio_context_set_timeout(self.inner.ctx, ms as c_uint) };
         sys_result(ret, ())
     }
 
     /// Get the number of devices in the context
     pub fn num_devices(&self) -> usize {
-        let n = unsafe { ffi::iio_context_get_devices_count(self.inner.ctx) };
-        n as usize
+        unsafe { ffi::iio_context_get_devices_count(self.inner.ctx) as usize }
     }
 
     /// Gets a device by index

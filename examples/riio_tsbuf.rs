@@ -1,9 +1,9 @@
 // industrial-io/examples/riio_tsbuf.rs
 //
-// Simple Rust IIO example for time-stamped, buffered, reading.
-// This does buffered reading with a trigger.
+// Simple Rust IIO example for time-stamped, buffered, reading
+// using a trigger.
 //
-// This example requires a A/D with a timestamp channel.
+// This example requires a device with a timestamp channel.
 //
 // Copyright (c) 2018-2019, Frank Pagliughi
 //
@@ -17,22 +17,28 @@
 extern crate industrial_io as iio;
 extern crate chrono;
 
-use std::process;
+use std::{process, cmp};
 use std::time::{SystemTime, Duration};
 use clap::{Arg, App};
 use chrono::offset::Utc;
 use chrono::DateTime;
 
-const DFLT_DEV_NAME: &'static str = "ads1015";
-const DFLT_CHAN_NAME: &'static str = "voltage0";
+const DFLT_DEV_NAME:  &str = "ads1015";
+const DFLT_CHAN_NAME: &str = "voltage0";
+const DFLT_TRIG_NAME: &str = "trigger0";
+
+const DFLT_FREQ: i64 = 100;
+const DFLT_NUM_SAMPLE: usize = 100;
+
+// --------------------------------------------------------------------------
 
 fn main() {
     let matches = App::new("riio_tsbuf")
                     .version(crate_version!())
                     .about("Rust IIO timestamped buffered read example.")
-                    .arg(Arg::with_name("network")
-                        .short("n")
-                        .long("network")
+                    .arg(Arg::with_name("host")
+                        .short("h")
+                        .long("host")
                         .help("Use the network backend with the provided hostname")
                         .takes_value(true))
                     .arg(Arg::with_name("uri")
@@ -50,24 +56,40 @@ fn main() {
                         .long("channel")
                         .help("Specifies the name of the channel to read")
                         .takes_value(true))
+                    .arg(Arg::with_name("trigger")
+                        .short("t")
+                        .long("trigger")
+                        .help("Specifies the name of the trigger")
+                        .takes_value(true))
+                    .arg(Arg::with_name("num_sample")
+                        .short("n")
+                        .long("num_sample")
+                        .help("Specifies the number of samples per buffer")
+                        .takes_value(true))
+                    .arg(Arg::with_name("frequency")
+                        .short("f")
+                        .long("frequency")
+                        .help("Specifies the sampling frequency")
+                        .takes_value(true))
                     .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
     let chan_name = matches.value_of("chan").unwrap_or(DFLT_CHAN_NAME);
+    let trig_name = matches.value_of("trigger").unwrap_or(DFLT_TRIG_NAME);
 
-    let ctx = if let Some(hostname) = matches.value_of("network") {
-                  iio::Context::create_network(hostname)
-              }
-              else if let Some(uri) = matches.value_of("uri") {
-                  iio::Context::create_from_uri(uri)
-              }
-              else {
-                  iio::Context::new()
-              }
-              .unwrap_or_else(|_err| {
-                  println!("Couldn't open IIO context.");
-                  process::exit(1);
-              });
+    let mut ctx = if let Some(hostname) = matches.value_of("host") {
+                      iio::Context::create_network(hostname)
+                  }
+                  else if let Some(uri) = matches.value_of("uri") {
+                      iio::Context::create_from_uri(uri)
+                  }
+                  else {
+                      iio::Context::new()
+                  }
+                  .unwrap_or_else(|_err| {
+                      println!("Couldn't open IIO context.");
+                      process::exit(1);
+                  });
 
     let mut dev = ctx.find_device(dev_name).unwrap_or_else(|| {
         println!("No IIO device named '{}'", dev_name);
@@ -89,22 +111,20 @@ fn main() {
     ts_chan.enable();
     sample_chan.enable();
 
-    println!("Sample size: {}", dev.sample_size().unwrap());
-
     // ----- Set a trigger -----
 
-    // TODO: Make this a cmd-line option
-    const TRIGGER: &'static str = "trigger0";
-    const RATE_HZ: i64 = 100;
-
-    let trig = ctx.find_device(TRIGGER).unwrap_or_else(|| {
-        eprintln!("Couldn't find requested trigger: {}", TRIGGER);
+    let trig = ctx.find_device(trig_name).unwrap_or_else(|| {
+        eprintln!("Couldn't find requested trigger: {}", trig_name);
         process::exit(1);
     });
 
+    let freq = matches.value_of("frequency")
+                   .and_then(|s| s.parse::<i64>().ok())
+                   .unwrap_or(DFLT_FREQ);
+
     // Set the sampling rate
-    if let Err(err) = trig.attr_write_int("sampling_frequency", RATE_HZ) {
-        println!("Can't set sampling rate: {}", err);
+    if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
+        println!("Can't set sampling rate to {}Hz: {}", freq, err);
     }
 
     dev.set_trigger(&trig).unwrap_or_else(|err| {
@@ -114,10 +134,21 @@ fn main() {
 
     // ----- Create a buffer -----
 
-    let mut buf = dev.create_buffer(200, false).unwrap_or_else(|err| {
+    let n_sample = matches.value_of("num_sample")
+                       .and_then(|s| s.parse::<usize>().ok())
+                       .unwrap_or(DFLT_NUM_SAMPLE);
+
+    let mut buf = dev.create_buffer(n_sample, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
         process::exit(3);
     });
+
+    // Make sure the timeout is more than enough to gather each buffer
+    // Give 50% extra time, or at least 5sec.
+    let ms = cmp::max(5000, 1500 * (n_sample as u64) / (freq as u64));
+    if let Err(err) = ctx.set_timeout_ms(ms) {
+        eprintln!("Error setting timeout of {}ms: {}", ms, err);
+    }
 
     // ----- Capture data into the buffer -----
 
@@ -129,21 +160,17 @@ fn main() {
 
     // Extract and print the data
 
-    let mut ts_data = buf.channel_iter::<u64>(&ts_chan);
+    let ts_data = buf.channel_iter::<u64>(&ts_chan);
     let mut sample_data = buf.channel_iter::<u16>(&sample_chan);
 
-    loop {
-        // Get the next timestamp. It's represented as the 64-bit integer
-        // number of nanoseconds since the Unix Epoch. We convert to a
-        // Rust SystemTime, then a chrono DataTime for pretty printing.
-        if let Some(ts) = ts_data.next() {
-            let sys_tm = SystemTime::UNIX_EPOCH + Duration::from_nanos(ts);
-            let dt: DateTime<Utc> = sys_tm.into();
-            print!("[{}]: ", dt.format("%T%.6f"));
-        }
-        else {
-            break;
-        }
+    for ts in ts_data {
+        // The timestamp is represented as a 64-bit integer number of
+        // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
+        // then a chrono DataTime for pretty printing.
+        let sys_tm = SystemTime::UNIX_EPOCH + Duration::from_nanos(ts);
+        let dt: DateTime<Utc> = sys_tm.into();
+        print!("{}: ", dt.format("%T%.6f"));
+
         if let Some(val) = sample_data.next() {
             print!("{}", val);
         }

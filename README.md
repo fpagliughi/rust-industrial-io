@@ -11,7 +11,7 @@ The current version is a wrapper around the user-space C library, [libiio](https
 
 This is a pre-release verion of the crate. The API is stabilizing, but is still under active development and may change before a final release.
 
-This initial development work wrappers a _specific_ version (v0.18) of _libiio_. It assumes that the library is installed on the target system.
+This initial development work wrappers a _specific_ version (v0.18) of _libiio_. It assumes that the library is pre-installed on the target system.
 
 ## Latest News
 
@@ -21,7 +21,7 @@ An effort is underway to get this crate to production quality. This will hopeful
 - A complete set of working examples.
 - Unit tests and CI
 
-### Unreleased features in this branch:
+### New in v0.2
 
 - Support for libiio v0.18
 - Further implementation of _libiio_ functions for contexts, devices, channels, etc.

@@ -73,6 +73,11 @@ impl Buffer {
         sys_result(ret as i32, ret as usize)
     }
 
+    /// Cancel all buffer operations.
+    pub fn cancel(&mut self) {
+        unsafe { ffi::iio_buffer_cancel(self.buf); }
+    }
+
     /// Gets an iterator for the data from a channel.
     pub fn channel_iter<T>(&self, chan: &Channel) -> IntoIter<T> {
         unsafe {
@@ -81,12 +86,7 @@ impl Buffer {
             let ptr = begin;
             let step: isize = ffi::iio_buffer_step(self.buf)/mem::size_of::<T>() as isize;
 
-            IntoIter {
-                phantom: PhantomData,
-                ptr,
-                end,
-                step,
-            }
+            IntoIter { phantom: PhantomData, ptr, end, step, }
         }
     }
 }

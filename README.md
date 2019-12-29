@@ -21,6 +21,10 @@ An effort is underway to get this crate to production quality. This will hopeful
 - A complete set of working examples.
 - Unit tests and CI
 
+To keep up with the latest announcements for this project, follow:
+
+**Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
+
 ### New in v0.2
 
 - Support for libiio v0.18
@@ -30,7 +34,7 @@ An effort is underway to get this crate to production quality. This will hopeful
 - Contexts have a ref-counted "inner" representation using _Rc<>_, and can be "cloned" quickly by incrementing the count. (Thanks, @skrap!)
  - Devices carry a cloned reference to the context that created them, thus keeping the context alive until the last device using it gets dropped.
  - Some clippy-recommended lints.
- - Sample to collect and process data a buffer at a time.
+ - Example app to collect and process data a buffer at a time, with conversions.
 
 ## Testing the Crate
 

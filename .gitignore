@@ -4,6 +4,7 @@ target/
 Cargo.lock
 /.hg
 /.hgignore
+/.hgtags
 /doc/
 *.vpj
 

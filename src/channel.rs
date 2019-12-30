@@ -196,10 +196,7 @@ impl Channel {
 
     /// Determines if the channel has the specified attribute.
     pub fn has_attr(&self, attr: &str) -> bool {
-        let attr = match CString::new(attr) {
-            Ok(s) => s,
-            Err(_) => return false,
-        };
+        let attr = cstring_or_bail_false!(attr);
         unsafe { !ffi::iio_channel_find_attr(self.chan, attr.as_ptr()).is_null() }
     }
 
@@ -211,10 +208,7 @@ impl Channel {
 
     /// Try to find the channel-specific attribute by name.
     pub fn find_attr(&self, name: &str) -> Option<String> {
-        let cname = match CString::new(name) {
-            Ok(s) => s,
-            Err(_) => return None,
-        };
+        let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_channel_find_attr(self.chan, cname.as_ptr()) };
         cstring_opt(pstr)
     }

@@ -20,3 +20,12 @@ macro_rules! cstring_or_bail {
         }
     }
 }
+
+macro_rules! cstring_or_bail_false {
+    ($name:expr) => {
+        match CString::new($name) {
+            Ok(s) => s,
+            Err(_) => return false,
+        }
+    }
+}

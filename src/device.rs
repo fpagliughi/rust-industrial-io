@@ -63,8 +63,7 @@ impl Device {
 
     /// Gets the number of device-specific attributes
     pub fn num_attrs(&self) -> usize {
-        let n = unsafe { ffi::iio_device_get_attrs_count(self.dev) };
-        n as usize
+        unsafe { ffi::iio_device_get_attrs_count(self.dev) as usize }
     }
 
     /// Gets the name of the device-specific attribute at the index
@@ -82,10 +81,7 @@ impl Device {
 
     /// Determines if a buffer-specific attribute exists
     pub fn has_attr(&self, name: &str) -> bool {
-        let cname = match CString::new(name) {
-            Ok(s) => s,
-            Err(_) => return false,
-        };
+        let cname = cstring_or_bail_false!(name);
         let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
         !pstr.is_null()
     }
@@ -202,8 +198,7 @@ impl Device {
 
     /// Gets the number of channels on the device
     pub fn num_channels(&self) -> usize {
-        let n = unsafe { ffi::iio_device_get_channels_count(self.dev) };
-        n as usize
+        unsafe { ffi::iio_device_get_channels_count(self.dev) as usize }
     }
 
     /// Gets a channel by index
@@ -263,10 +258,7 @@ impl Device {
 
     /// Determines if a buffer-specific attribute exists
     pub fn has_buffer_attr(&self, name: &str) -> bool {
-        let cname = match CString::new(name) {
-            Ok(s) => s,
-            Err(_) => return false,
-        };
+        let cname = cstring_or_bail_false!(name);
         let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
         !pstr.is_null()
     }

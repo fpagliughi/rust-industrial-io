@@ -232,6 +232,7 @@ impl PartialEq for Context {
     }
 }
 
+/// Iterator over the Devices in a Context
 pub struct DeviceIterator<'a> {
     ctx: &'a Context,
     idx: usize,
@@ -251,6 +252,7 @@ impl<'a> Iterator for DeviceIterator<'a> {
     }
 }
 
+/// Iterator over the attributes in a Context
 pub struct AttrIterator<'a> {
     ctx: &'a Context,
     idx: usize,

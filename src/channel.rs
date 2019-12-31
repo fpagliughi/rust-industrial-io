@@ -499,6 +499,7 @@ impl Channel {
     }
 }
 
+/// Iterator over the attributes of a Channel
 pub struct AttrIterator<'a> {
     chan: &'a Channel,
     idx: usize,

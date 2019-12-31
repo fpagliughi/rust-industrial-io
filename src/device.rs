@@ -47,6 +47,18 @@ impl Device {
         cstring_opt(pstr)
     }
 
+    /// Determines if the device is capable of buffered I/O.
+    /// This is true if any of the channels are scan elements.
+    pub fn is_buffer_capable(&self) -> bool {
+        // This "trick" is from C lib 'iio_info.c'
+        for chan in self.channels() {
+            if chan.is_scan_element() {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Determines whether the device is a trigger
     pub fn is_trigger(&self) -> bool {
         unsafe { ffi::iio_device_is_trigger(self.dev) }
@@ -392,6 +404,7 @@ impl PartialEq for Device {
     }
 }
 
+/// Iterator over the Channels in a Device
 pub struct ChannelIterator<'a> {
     dev: &'a Device,
     idx: usize,
@@ -411,6 +424,7 @@ impl<'a> Iterator for ChannelIterator<'a> {
     }
 }
 
+/// Iterator over the attributes in a Device
 pub struct AttrIterator<'a> {
     dev: &'a Device,
     idx: usize,
@@ -430,6 +444,7 @@ impl<'a> Iterator for AttrIterator<'a> {
     }
 }
 
+/// Iterator over the buffer attributes in a Device
 pub struct BufferAttrIterator<'a> {
     dev: &'a Device,
     idx: usize,

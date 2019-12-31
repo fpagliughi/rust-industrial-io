@@ -1,6 +1,6 @@
 [package]
 name = "industrial-io"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
 repository = "https://github.com/fpagliughi/rust-industrial-io"
 license = "MIT"

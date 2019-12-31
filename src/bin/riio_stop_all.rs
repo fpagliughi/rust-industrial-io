@@ -30,6 +30,7 @@ fn main() {
     });
 
     for dev in ctx.devices() {
+        /*
         if dev.is_buffer_capable() {
             // The "buffer/enable" attribute isn't documented anywhere,
             // but was discovered in the internals of the libiio C sources.
@@ -37,9 +38,20 @@ fn main() {
                 eprintln!("Error disabling buffer: {}", err);
             }
         }
+        */
 
-        for mut chan in &mut dev.channels() {
-            chan.disable();
+        // We can disable a device by creating a buffer for it
+        // and then letting the inner library destroy it cleanly.
+
+        if dev.is_buffer_capable() {
+            for mut chan in &mut dev.channels() {
+                if chan.is_scan_element() {
+                    chan.enable();
+                    break;
+                }
+            }
+
+            let _ = dev.create_buffer(100, false);
         }
     }
 }

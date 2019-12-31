@@ -7,6 +7,7 @@
 // This file may not be copied, modified, or distributed except according
 // to those terms.
 //
+
 //! Rust application to gather information about Industrial I/O devices.
 //!
 

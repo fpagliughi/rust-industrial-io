@@ -25,6 +25,13 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
+### Unreleased Features in This Branch
+
+- New device capabilities:
+    - _remove_trigger()_
+    - _is_buffer_capable()_
+- New utility app: _riio_stop_all_
+
 ### New in v0.2
 
 - Support for libiio v0.18

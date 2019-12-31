@@ -10,7 +10,7 @@
 //! Industrial I/O Devices
 //!
 
-use std::str;
+use std::{str, ptr};
 use std::ffi::CString;
 use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
@@ -68,6 +68,12 @@ impl Device {
     /// `trigger` The device to be used as a trigger.
     pub fn set_trigger(&mut self, trigger: &Device) -> Result<()> {
         let ret = unsafe { ffi::iio_device_set_trigger(self.dev, trigger.dev) };
+        sys_result(ret, ())
+    }
+
+    /// Removes the trigger from the device.
+    pub fn remove_trigger(&mut self) -> Result<()> {
+        let ret = unsafe { ffi::iio_device_set_trigger(self.dev, ptr::null()) };
         sys_result(ret, ())
     }
 
@@ -133,7 +139,6 @@ impl Device {
         };
         sys_result(ret, val)
     }
-
 
     // Callback from the C lib to extract the collection of all
     // device-specific attributes. See attr_read_all().

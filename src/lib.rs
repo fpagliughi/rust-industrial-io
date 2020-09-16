@@ -27,11 +27,11 @@ use std::os::raw::{c_char, c_uint};
 use nix::errno;
 use nix::Error::Sys as SysError;
 
-pub use context::*;
-pub use device::*;
-pub use channel::*;
-pub use buffer::*;
-pub use errors::*;
+pub use crate::context::*;
+pub use crate::device::*;
+pub use crate::channel::*;
+pub use crate::buffer::*;
+pub use crate::errors::*;
 
 mod macros;
 

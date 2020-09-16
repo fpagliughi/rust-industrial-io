@@ -16,7 +16,7 @@ use std::any::TypeId;
 use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
 
-use ffi;
+use crate::ffi;
 use super::*;
 
 /// The type of data associated with a channel.

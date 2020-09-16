@@ -19,7 +19,7 @@ use std::rc::Rc;
 use nix::errno::Errno;
 use nix::Error::Sys as SysError;
 
-use ffi;
+use crate::ffi;
 use super::*;
 
 /// An Industrial I/O Context

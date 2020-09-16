@@ -14,7 +14,7 @@ use std::{mem, ptr};
 use std::os::raw::c_int;
 use std::marker::PhantomData;
 
-use ffi;
+use crate::ffi;
 use super::*;
 
 /// An Industrial I/O input or output buffer

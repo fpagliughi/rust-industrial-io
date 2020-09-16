@@ -1,6 +1,6 @@
 // industrial-io/src/lib.rs
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Copyright (c) 2018-2020, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -8,17 +8,32 @@
 // to those terms.
 //
 //!
+//! The Rust Industrial I/O crate for Linux.
+//!
+//! This is a Rust wrapper for _libiio_, a library for high-performance
+//! analog I/O from Linux user-space. It interacts with Linux Industrial I/O
+//! (IIO) devices such as A/D's, D/A's, accelerometers, pressure and
+//! temperature sensors, magnetometers, and so on.
+//!
+//! For more information, see:
+//!
+//!   [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio)
+//!
+//!   [libiio Wiki](https://wiki.analog.com/resources/tools-software/linux-software/libiio)
 //!
 
-extern crate libiio_sys as ffi;
-
-//use ffi;
-
-use std::{str, slice};
-use std::ffi::{CString, CStr};
-use std::os::raw::{c_char, c_uint};
+use std::{
+    str,
+    slice,
+    ffi::{CString, CStr},
+    os::raw::{c_char, c_uint}
+};
 
 use nix::errno;
+use libiio_sys::{
+    self as ffi,
+};
+
 
 pub use crate::context::*;
 pub use crate::device::*;

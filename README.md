@@ -2,20 +2,27 @@
 
 ![Crates.io](https://img.shields.io/crates/d/industrial-io)
 
-
-This is a Rust library crate for using the Linux Industrial I/O (IIO) subsytem, primarily used for the input and output of analog data from a Linux system. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
+Rust library crate for using the Linux Industrial I/O (IIO) subsytem, primarily used for the input and output of analog data from a Linux system in user space. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
 
 The current version is a wrapper around the user-space C library, [libiio](https://github.com/analogdevicesinc/libiio).  Subsequent versions may access the interface the kernel ABI directly.
+
+To use in an application, add this to _Cargo.toml:_
+
+```toml
+[dependencies]
+industrial-io = "0.3"
+```
+
 
 ## Pre-release notes
 
 This is a pre-release verion of the crate. The API is stabilizing, but is still under active development and may change before a final release.
 
-This initial development work wrappers a _specific_ version (v0.21) of _libiio_. It assumes that the library is pre-installed on the target system.
+This initial development work wrappers a _specific_ version (v0.21) of _libiio_. It assumes that the library is pre-installed on the build system and the target system.
 
 ## Latest News
 
-An effort is underway to get this crate to production quality. This will hopefully be complete by early 2020. It includes:
+An effort is underway to get this crate to production quality.  It includes:
 
 - Full coverage of the _libiio_ API - or as much as makes sense.
 - A complete set of working examples.
@@ -28,6 +35,10 @@ To keep up with the latest announcements for this project, follow:
 ### Unreleased Features in This Branch
 
 - Support for _libiio_ v0.21
+- Updated error handling:
+    - Support for `std::error`
+    - Implementation changed to use `thiserror` (from *error_chain*)
+    - Specific types defined for common errors intead of just string descriptions (`WrongDataType`, `BadReturnSize`, `InvalidIndex,` etc)
 - New device capabilities:
     - _remove_trigger()_
     - _is_buffer_capable()_
@@ -46,7 +57,9 @@ To keep up with the latest announcements for this project, follow:
 
 ## Testing the Crate
 
-A great thing about the user-space IIO libraries is that, if you're developing on a fairly recent Linux host, you can start experimenting without having to do development on a board. You can run the IIO server daemon on an embedded board, and then use this crate to communicate with it over a network connection. When your application is working, you can then compile it for the target board and test it natively. Alternately, you can test with a mock, "dummy" context on a development host.
+A great thing about the user-space IIO libraries is that, if you're developing on a fairly recent Linux host, you can start experimenting without having to do development on a board. You can run the IIO server daemon on an embedded board, and then use this crate to communicate with it over a network connection. When your application is working, you can then compile it for the target board, test it natively, and deploy. 
+
+Alternately, you can test with a mock, "dummy" context on a development host. This is a kernel module that simulates several devices. It can be used from a local context on a host machine to do some initial development and test of the library. See below for details on loading it into the kernel.
 
 ### BeagleBone
 

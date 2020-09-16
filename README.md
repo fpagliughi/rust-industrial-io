@@ -11,7 +11,7 @@ The current version is a wrapper around the user-space C library, [libiio](https
 
 This is a pre-release verion of the crate. The API is stabilizing, but is still under active development and may change before a final release.
 
-This initial development work wrappers a _specific_ version (v0.18) of _libiio_. It assumes that the library is pre-installed on the target system.
+This initial development work wrappers a _specific_ version (v0.21) of _libiio_. It assumes that the library is pre-installed on the target system.
 
 ## Latest News
 
@@ -27,6 +27,7 @@ To keep up with the latest announcements for this project, follow:
 
 ### Unreleased Features in This Branch
 
+- Support for _libiio_ v0.21
 - New device capabilities:
     - _remove_trigger()_
     - _is_buffer_capable()_
@@ -77,10 +78,10 @@ Log onto the board and check the version:
 
 ```
 $ iiod --version
-0.18
+0.21
 ```
 
-If this is less than 0.18, remove the Debian packages and install from sources.
+If this is less than 0.21, remove the Debian packages and install from sources.
 
 First, get rid of the existing library and utilities:
 
@@ -90,19 +91,19 @@ $ sudo apt-get purge libiio-utils libiio0
 
 ### Build from sources
 
-Then install the pre-requisites for the build:
+Install the pre-requisites for the build:
 
 ```
-$ sudo apt-get install cmake flex bison libxml2-dev
+$ sudo apt-get install cmake flex bison libxml2-dev libserialport-dev
 ```
 
 And then download the library sources and build:
 
 ```
 $ cd /tmp
-$ wget https://github.com/analogdevicesinc/libiio/archive/v0.18.tar.gz
-$ tar -xf v0.18.tar.gz 
-$ cd libiio-0.18/
+$ wget https://github.com/analogdevicesinc/libiio/archive/v0.21.tar.gz
+$ tar -xf v0.21.tar.gz 
+$ cd libiio-0.21/
 $ mkdir build ; cd build
 $ cmake .. && make && sudo make install
 ```
@@ -111,7 +112,7 @@ Then check that the version installed properly:
 
 ```
 $ iiod --version
-0.18
+0.21
 ```
 
 ## Build the Rust Crate

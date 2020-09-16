@@ -9,9 +9,16 @@ $ sudo apt install llvm
 $ cargo install bindgen
 ```
 
-The run bindgen over the library's single header file, _iio.h_, like this:_
+The run bindgen over the library's single header file, _iio.h_, like this:
 
+On a 64-bit target, run:
 ```
-$  bindgen iio.h > bindings-0.18.rs
+$ bindgen --size_t-is-usize /usr/include/iio.h > bindings-0.21_64.rs 
 ```
+
+On a 32-bit target, run:
+```
+$ bindgen --size_t-is-usize /usr/include/iio.h > bindings-0.21_32.rs 
+```
+
 Then update the _build.rs_ or _lib.rs_ files in this crate to use the new version.

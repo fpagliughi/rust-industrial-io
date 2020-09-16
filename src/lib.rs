@@ -10,12 +10,6 @@
 //!
 //!
 
-//#[macro_use]
-extern crate nix;
-
-#[macro_use]
-extern crate error_chain;
-
 extern crate libiio_sys as ffi;
 
 //use ffi;
@@ -25,7 +19,6 @@ use std::ffi::{CString, CStr};
 use std::os::raw::{c_char, c_uint};
 
 use nix::errno;
-use nix::Error::Sys as SysError;
 
 pub use crate::context::*;
 pub use crate::device::*;
@@ -59,9 +52,11 @@ fn cstring_opt(pstr: *const c_char) -> Option<String> {
 
 pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
     if ret < 0 {
-        bail!(SysError(errno::from_i32(-ret)))
+        Err(errno::from_i32(-ret).into())
     }
-    Ok(result)
+    else {
+        Ok(result)
+    }
 }
 
 // --------------------------------------------------------------------------

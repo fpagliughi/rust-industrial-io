@@ -203,7 +203,7 @@ impl Channel {
     /// Gets the channel-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_channel_get_attr(self.chan, idx as c_uint) };
-        cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
+        cstring_opt(pstr).ok_or_else(|| Error::InvalidIndex)
     }
 
     /// Try to find the channel-specific attribute by name.
@@ -411,7 +411,7 @@ impl Channel {
         where T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
-            bail!("Wrong data type");
+            return Err(Error::WrongDataType);
         }
 
         let n = buf.capacity();
@@ -424,7 +424,7 @@ impl Channel {
         };
 
         if sz > sz_in {
-            bail!("Bad return size");   // This should never happen.
+            return Err(Error::BadReturnSize);  // This should never happen.
         }
 
         if sz < sz_in {
@@ -438,7 +438,7 @@ impl Channel {
         where T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
-            bail!("Wrong data type");
+            return Err(Error::WrongDataType);
         }
 
         let n = buf.capacity();
@@ -451,7 +451,7 @@ impl Channel {
         };
 
         if sz > sz_in {
-            bail!("Bad return size");   // This should never happen.
+            return Err(Error::BadReturnSize);   // This should never happen.
         }
 
         if sz < sz_in {
@@ -466,7 +466,7 @@ impl Channel {
         where T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
-            bail!("Wrong data type");
+            return Err(Error::WrongDataType);
         }
 
         let sz_item = mem::size_of::<T>();
@@ -485,7 +485,7 @@ impl Channel {
         where T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
-            bail!("Wrong data type");
+            return Err(Error::WrongDataType);
         }
 
         let sz_item = mem::size_of::<T>();

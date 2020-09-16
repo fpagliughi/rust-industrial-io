@@ -17,7 +17,6 @@ use std::os::raw::c_uint;
 use std::rc::Rc;
 
 use nix::errno::Errno;
-use nix::Error::Sys as SysError;
 
 use crate::ffi;
 use super::*;
@@ -60,7 +59,7 @@ impl Context {
     /// will be created instead.
     pub fn new() -> Result<Context> {
         let ctx = unsafe { ffi::iio_create_default_context() };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        if ctx.is_null() { return Err(Errno::last().into()); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
@@ -76,7 +75,7 @@ impl Context {
     pub fn create_from_uri(uri: &str) -> Result<Context> {
         let uri = CString::new(uri)?;
         let ctx = unsafe { ffi::iio_create_context_from_uri(uri.as_ptr()) };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        if ctx.is_null() { return Err(Errno::last().into()); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
@@ -84,7 +83,7 @@ impl Context {
     #[cfg(target_os = "linux")]
     pub fn create_local() -> Result<Context> {
         let ctx = unsafe { ffi::iio_create_local_context() };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        if ctx.is_null() { return Err(Errno::last().into()); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
@@ -92,7 +91,7 @@ impl Context {
     pub fn create_network(host: &str) -> Result<Context> {
         let host = CString::new(host)?;
         let ctx = unsafe { ffi::iio_create_network_context(host.as_ptr()) };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        if ctx.is_null() { return Err(Errno::last().into()); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
@@ -100,7 +99,7 @@ impl Context {
     pub fn create_xml(xml_file: &str) -> Result<Context> {
         let xml_file = CString::new(xml_file)?;
         let ctx = unsafe { ffi::iio_create_xml_context(xml_file.as_ptr()) };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        if ctx.is_null() { return Err(Errno::last().into()); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
@@ -109,7 +108,7 @@ impl Context {
         let n = xml.len();
         let xml = CString::new(xml)?;
         let ctx = unsafe { ffi::iio_create_xml_context_mem(xml.as_ptr(), n) };
-        if ctx.is_null() { bail!(SysError(Errno::last())); }
+        if ctx.is_null() { return Err(Errno::last().into()); }
         Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
     }
 
@@ -151,12 +150,12 @@ impl Context {
                                       &mut pname, &mut pval)
         };
         if ret < 0 {
-            bail!(SysError(errno::from_i32(ret)))
+            return Err(errno::from_i32(ret).into());
         }
         let name = cstring_opt(pname);
         let val = cstring_opt(pval);
         if name.is_none() || val.is_none() {
-            bail!("String conversion error");
+            return Err(Error::General("String conversion error".into()));
         }
         Ok((name.unwrap(), val.unwrap()))
     }
@@ -193,7 +192,7 @@ impl Context {
     /// Gets a device by index
     pub fn get_device(&self, idx: usize) -> Result<Device> {
         let dev = unsafe { ffi::iio_context_get_device(self.inner.ctx, idx as c_uint) };
-        if dev.is_null() { bail!("Index out of range"); }
+        if dev.is_null() { return Err(Error::InvalidIndex); }
         Ok(Device { dev, ctx: self.clone() })
     }
 

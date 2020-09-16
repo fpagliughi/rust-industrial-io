@@ -16,7 +16,6 @@ use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
 
 use nix::errno::Errno;
-use nix::Error::Sys as SysError;
 
 use crate::ffi;
 use super::*;
@@ -87,7 +86,7 @@ impl Device {
     /// Gets the name of the device-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_device_get_attr(self.dev, idx as c_uint) };
-        cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
+        cstring_opt(pstr).ok_or_else(|| Error::InvalidIndex)
     }
 
     /// Try to find a device-specific attribute by its name
@@ -221,7 +220,7 @@ impl Device {
     /// Gets a channel by index
     pub fn get_channel(&self, idx: usize) -> Result<Channel> {
         let chan = unsafe { ffi::iio_device_get_channel(self.dev, idx as c_uint) };
-        if chan.is_null() { bail!("Index out of range"); }
+        if chan.is_null() { return Err(Error::InvalidIndex); }
         Ok(Channel { chan, ctx: self.context() })
     }
 
@@ -251,7 +250,7 @@ impl Device {
     /// `cyclic` Whether to enable cyclic mode.
     pub fn create_buffer(&self, sample_count: usize, cyclic: bool) -> Result<Buffer> {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
-        if buf.is_null() { bail!(SysError(Errno::last())); }
+        if buf.is_null() { return Err(Errno::last().into()); }
         Ok(Buffer { buf, cap: sample_count, ctx: self.context() })
     }
 
@@ -263,7 +262,7 @@ impl Device {
     /// Gets the name of the buffer-specific attribute at the index
     pub fn get_buffer_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_device_get_buffer_attr(self.dev, idx as c_uint) };
-        cstring_opt(pstr).ok_or_else(|| "Invalid index".into())
+        cstring_opt(pstr).ok_or_else(|| Error::InvalidIndex)
     }
 
     /// Try to find a buffer-specific attribute by its name

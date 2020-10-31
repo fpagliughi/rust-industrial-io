@@ -2,11 +2,18 @@
 #
 # load_dummy.sh
 #
-# Loads the IIO dummy device. 
+# Loads the required IIO kernel modules and then creates a dummy device
+# and one hrtimer.
+# 
 # This is useful for application testing and unit testing of the library.
+# 
+# The required IIO drivers must be comiled for the kernel as loadable modules.
+# This should be the case for Ubuntu 18.04 and Mint 19. Your mileage may vary.
 #
 
+# Names of the device and timer that will be created
 IIO_DEV_NAME=dummydev
+IIO_TIMER_NAME=timer0
 
 # ----- Must have root privleges to run this script -----
 
@@ -29,6 +36,18 @@ else
     printf "IIO dummy module loaded.\n"
 fi
 
+HRTIMER_LOADED=$(lsmod | grep ^iio_trig_hrtimer)
+
+if [ -n "${HRTIMER_LOADED}" ]; then
+    printf "IIO hrtimer module already loaded.\n"
+else
+    if ! modprobe iio_trig_hrtimer ; then
+        printf "Unable to load load the IIO hrtimer module.\n"
+    fi
+    printf "IIO hrtimer module loaded.\n"
+fi
+
+
 # ----- Mount the config filesystem -----
 
 CONFIG_PATH=$(mount | awk '/^configfs/ { print $3 }')
@@ -45,24 +64,41 @@ else
     printf "Mounted configfs at %s\n" "${CONFIG_PATH}"
 fi
 
+IIO_CONFIG_PATH=${CONFIG_PATH}/iio
+
 # ----- Create a dummy device -----
 
-if [ ! -d ${CONFIG_PATH}/iio/devices/dummy ]; then
+if [ ! -d ${IIO_CONFIG_PATH}/devices/dummy ]; then
     printf "No configfs path to create IIO devices.\n"
     exit 2
 fi
 
-DUMMY_CONFIG_PATH=${CONFIG_PATH}/iio/devices/dummy/${IIO_DEV_NAME}
+DEV_CONFIG_PATH=${IIO_CONFIG_PATH}/devices/dummy/${IIO_DEV_NAME}
 
-if [ -d ${DUMMY_CONFIG_PATH} ]; then
+if [ -d ${DEV_CONFIG_PATH} ]; then
     printf "IIO dummy device already exists.\n"
 else
-    mkdir ${DUMMY_CONFIG_PATH}
+    mkdir ${DEV_CONFIG_PATH}
     printf "Created IIO dummy device: '%s'\n" "${IIO_DEV_NAME}"
+fi
+
+# ----- Create a timer -----
+
+if [ ! -d ${IIO_CONFIG_PATH}/triggers/hrtimer ]; then
+    printf "No configfs path to create an IIO hrtimer.\n"
+else
+    TIMER_CONFIG_PATH=${IIO_CONFIG_PATH}/triggers/hrtimer/${IIO_TIMER_NAME}
+
+    if [ -d ${TIMER_CONFIG_PATH} ]; then
+        printf "IIO hrtimer already exists.\n"
+    else
+        mkdir ${TIMER_CONFIG_PATH}
+        printf "Created IIO hrtimer: '%s'\n" "${IIO_TIMER_NAME}"
+    fi
 fi
 
 # ----- Dump the device info -----
 
-printf "\n"
+printf "\n--- IIO Info ---\n\n"
 iio_info
 

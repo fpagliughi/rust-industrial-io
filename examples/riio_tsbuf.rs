@@ -74,7 +74,7 @@ fn main() {
                     .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
-    let chan_name = matches.value_of("chan").unwrap_or(DFLT_CHAN_NAME);
+    let chan_name = matches.value_of("channel").unwrap_or(DFLT_CHAN_NAME);
     let trig_name = matches.value_of("trigger").unwrap_or(DFLT_TRIG_NAME);
 
     let mut ctx = if let Some(hostname) = matches.value_of("host") {

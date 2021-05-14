@@ -10,15 +10,15 @@
 //! Industrial I/O Devices
 //!
 
-use std::{str, ptr};
-use std::ffi::CString;
-use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
+use std::ffi::CString;
+use std::os::raw::{c_int, c_longlong, c_uint, c_void};
+use std::{ptr, str};
 
 use nix::errno::Errno;
 
-use crate::ffi;
 use super::*;
+use crate::ffi;
 
 /// An Industrial I/O Device
 ///
@@ -109,9 +109,7 @@ impl Device {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_read_bool(self.dev, attr.as_ptr(), &mut val)
-        };
+        let ret = unsafe { ffi::iio_device_attr_read_bool(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -121,9 +119,7 @@ impl Device {
     pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_read_longlong(self.dev, attr.as_ptr(), &mut val)
-        };
+        let ret = unsafe { ffi::iio_device_attr_read_longlong(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val as i64)
     }
 
@@ -133,18 +129,19 @@ impl Device {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_read_double(self.dev, attr.as_ptr(), &mut val)
-        };
+        let ret = unsafe { ffi::iio_device_attr_read_double(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
     // Callback from the C lib to extract the collection of all
     // device-specific attributes. See attr_read_all().
-    unsafe extern "C" fn attr_read_all_cb(_chan: *mut ffi::iio_device,
-                                          attr: *const c_char,
-                                          val: *const c_char, _len: usize,
-                                          pmap: *mut c_void) -> c_int {
+    unsafe extern "C" fn attr_read_all_cb(
+        _chan: *mut ffi::iio_device,
+        attr: *const c_char,
+        val: *const c_char,
+        _len: usize,
+        pmap: *mut c_void,
+    ) -> c_int {
         if attr.is_null() || val.is_null() || pmap.is_null() {
             return -1;
         }
@@ -152,7 +149,7 @@ impl Device {
         let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
         // TODO: We could/should check val[len-1] == '\x0'
         let val = CStr::from_ptr(val).to_string_lossy().to_string();
-        let map: &mut HashMap<String,String> = &mut *(pmap as *mut _);
+        let map: &mut HashMap<String, String> = &mut *(pmap as *mut _);
         map.insert(attr, val);
         0
     }
@@ -160,7 +157,7 @@ impl Device {
     /// Reads all the device-specific attributes.
     /// This is especially useful when using the network backend to
     /// retrieve all the attributes with a single call.
-    pub fn attr_read_all(&self) -> Result<HashMap<String,String>> {
+    pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
         let pmap = &mut map as *mut _ as *mut c_void;
         let ret = unsafe {
@@ -175,9 +172,7 @@ impl Device {
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_write_bool(self.dev, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_device_attr_write_bool(self.dev, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -187,9 +182,7 @@ impl Device {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_write_longlong(self.dev, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_device_attr_write_longlong(self.dev, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -199,15 +192,13 @@ impl Device {
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_write_double(self.dev, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_device_attr_write_double(self.dev, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
     /// Gets an iterator for the attributes in the device
     pub fn attributes(&self) -> AttrIterator {
-        AttrIterator { dev: self, idx: 0, }
+        AttrIterator { dev: self, idx: 0 }
     }
 
     // ----- Channels -----
@@ -220,8 +211,13 @@ impl Device {
     /// Gets a channel by index
     pub fn get_channel(&self, idx: usize) -> Result<Channel> {
         let chan = unsafe { ffi::iio_device_get_channel(self.dev, idx as c_uint) };
-        if chan.is_null() { return Err(Error::InvalidIndex); }
-        Ok(Channel { chan, ctx: self.context() })
+        if chan.is_null() {
+            return Err(Error::InvalidIndex);
+        }
+        Ok(Channel {
+            chan,
+            ctx: self.context(),
+        })
     }
 
     /// Try to find a channel by its name or ID
@@ -233,13 +229,16 @@ impl Device {
             None
         }
         else {
-            Some(Channel { chan, ctx: self.context() })
+            Some(Channel {
+                chan,
+                ctx: self.context(),
+            })
         }
     }
 
     /// Gets an iterator for the channels in the device
     pub fn channels(&self) -> ChannelIterator {
-        ChannelIterator { dev: self, idx: 0, }
+        ChannelIterator { dev: self, idx: 0 }
     }
 
     // ----- Buffer Functions -----
@@ -250,8 +249,14 @@ impl Device {
     /// `cyclic` Whether to enable cyclic mode.
     pub fn create_buffer(&self, sample_count: usize, cyclic: bool) -> Result<Buffer> {
         let buf = unsafe { ffi::iio_device_create_buffer(self.dev, sample_count, cyclic) };
-        if buf.is_null() { return Err(Errno::last().into()); }
-        Ok(Buffer { buf, cap: sample_count, ctx: self.context() })
+        if buf.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Buffer {
+            buf,
+            cap: sample_count,
+            ctx: self.context(),
+        })
     }
 
     /// Gets the number of buffer-specific attributes
@@ -285,9 +290,8 @@ impl Device {
     pub fn buffer_attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_bool(self.dev, attr.as_ptr(), &mut val)
-        };
+        let ret =
+            unsafe { ffi::iio_device_buffer_attr_read_bool(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -297,9 +301,8 @@ impl Device {
     pub fn buffer_attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_longlong(self.dev, attr.as_ptr(), &mut val)
-        };
+        let ret =
+            unsafe { ffi::iio_device_buffer_attr_read_longlong(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val as i64)
     }
 
@@ -309,16 +312,15 @@ impl Device {
     pub fn buffer_attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_double(self.dev, attr.as_ptr(), &mut val)
-        };
+        let ret =
+            unsafe { ffi::iio_device_buffer_attr_read_double(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
     /// Reads all the buffer-specific attributes.
     /// This is especially useful when using the network backend to
     /// retrieve all the attributes with a single call.
-    pub fn buffer_attr_read_all(&self) -> Result<HashMap<String,String>> {
+    pub fn buffer_attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
         let pmap = &mut map as *mut _ as *mut c_void;
         let ret = unsafe {
@@ -333,9 +335,7 @@ impl Device {
     /// `val` The value to write
     pub fn buffer_attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_write_bool(self.dev, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_device_buffer_attr_write_bool(self.dev, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -345,9 +345,8 @@ impl Device {
     /// `val` The value to write
     pub fn buffer_attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_write_longlong(self.dev, attr.as_ptr(), val)
-        };
+        let ret =
+            unsafe { ffi::iio_device_buffer_attr_write_longlong(self.dev, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -357,22 +356,18 @@ impl Device {
     /// `val` The value to write
     pub fn buffer_attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_write_double(self.dev, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_device_buffer_attr_write_double(self.dev, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
     /// Gets an iterator for the buffer attributes in the device
     pub fn buffer_attributes(&self) -> BufferAttrIterator {
-        BufferAttrIterator { dev: self, idx: 0, }
+        BufferAttrIterator { dev: self, idx: 0 }
     }
 
     /// Set the number of kernel buffers for the device.
     pub fn set_num_kernel_buffers(&self, n: u32) -> Result<()> {
-        let ret = unsafe {
-            ffi::iio_device_set_kernel_buffers_count(self.dev, n as c_uint)
-        };
+        let ret = unsafe { ffi::iio_device_set_kernel_buffers_count(self.dev, n as c_uint) };
         sys_result(ret, ())
     }
 
@@ -422,8 +417,8 @@ impl<'a> Iterator for ChannelIterator<'a> {
             Ok(chan) => {
                 self.idx += 1;
                 Some(chan)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
@@ -442,8 +437,8 @@ impl<'a> Iterator for AttrIterator<'a> {
             Ok(name) => {
                 self.idx += 1;
                 Some(name)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
@@ -462,8 +457,8 @@ impl<'a> Iterator for BufferAttrIterator<'a> {
             Ok(name) => {
                 self.idx += 1;
                 Some(name)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
@@ -502,4 +497,3 @@ mod tests {
         assert!(dev.attributes().count() == n);
     }
 }
-

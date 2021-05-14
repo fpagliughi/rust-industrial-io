@@ -10,14 +10,14 @@
 //! Industrial I/O Channels
 //!
 
-use std::{mem, str};
-use std::ffi::CString;
 use std::any::TypeId;
-use std::os::raw::{c_void, c_int, c_uint, c_longlong};
 use std::collections::HashMap;
+use std::ffi::CString;
+use std::os::raw::{c_int, c_longlong, c_uint, c_void};
+use std::{mem, str};
 
-use crate::ffi;
 use super::*;
+use crate::ffi;
 
 /// The type of data associated with a channel.
 #[repr(u32)]
@@ -67,7 +67,7 @@ pub struct DataFormat {
 
 impl DataFormat {
     fn new(data_fmt: ffi::iio_data_format) -> Self {
-        DataFormat { data_fmt, }
+        DataFormat { data_fmt }
     }
 
     /// Gets total length of the sample, in bits.
@@ -134,7 +134,7 @@ impl DataFormat {
                 2 => Some(TypeId::of::<i16>()),
                 4 => Some(TypeId::of::<i32>()),
                 8 => Some(TypeId::of::<i64>()),
-                _ => None
+                _ => None,
             }
         }
         else {
@@ -143,7 +143,7 @@ impl DataFormat {
                 2 => Some(TypeId::of::<u16>()),
                 4 => Some(TypeId::of::<u32>()),
                 8 => Some(TypeId::of::<u64>()),
-                _ => None
+                _ => None,
             }
         }
     }
@@ -152,7 +152,8 @@ impl DataFormat {
 /// An Industrial I/O Device Channel
 pub struct Channel {
     pub(crate) chan: *mut ffi::iio_channel,
-    #[allow(dead_code)]  // looks like it's unused, but really it's holding the Device's lifetime for libiio safety.
+    #[allow(dead_code)]
+    // looks like it's unused, but really it's holding the Device's lifetime for libiio safety.
     pub(crate) ctx: Context,
 }
 
@@ -218,9 +219,7 @@ impl Channel {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val)
-        };
+        let ret = unsafe { ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -230,9 +229,8 @@ impl Channel {
     pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val)
-        };
+        let ret =
+            unsafe { ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val) };
         sys_result(ret, val as i64)
     }
 
@@ -242,18 +240,19 @@ impl Channel {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val)
-        };
+        let ret = unsafe { ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
     // Callback from the C lib to extract the collection of all
     // channel-specific attributes. See attr_read_all().
-    unsafe extern "C" fn attr_read_all_cb(_chan: *mut ffi::iio_channel,
-                                          attr: *const c_char,
-                                          val: *const c_char, _len: usize,
-                                          pmap: *mut c_void) -> c_int {
+    unsafe extern "C" fn attr_read_all_cb(
+        _chan: *mut ffi::iio_channel,
+        attr: *const c_char,
+        val: *const c_char,
+        _len: usize,
+        pmap: *mut c_void,
+    ) -> c_int {
         if attr.is_null() || val.is_null() || pmap.is_null() {
             return -1;
         }
@@ -261,7 +260,7 @@ impl Channel {
         let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
         // TODO: We could/should check val[len-1] == '\x0'
         let val = CStr::from_ptr(val).to_string_lossy().to_string();
-        let map: &mut HashMap<String,String> = &mut *(pmap as *mut _);
+        let map: &mut HashMap<String, String> = &mut *(pmap as *mut _);
         map.insert(attr, val);
         0
     }
@@ -269,7 +268,7 @@ impl Channel {
     /// Reads all the channel-specific attributes.
     /// This is especially useful when using the network backend to
     /// retrieve all the attributes with a single call.
-    pub fn attr_read_all(&self) -> Result<HashMap<String,String>> {
+    pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
         let pmap = &mut map as *mut _ as *mut c_void;
         let ret = unsafe {
@@ -284,9 +283,7 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -296,9 +293,7 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -308,18 +303,13 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val)
-        };
+        let ret = unsafe { ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
     /// Gets an iterator for the attributes of the channel
     pub fn attrs(&self) -> AttrIterator {
-        AttrIterator {
-            chan: self,
-            idx: 0
-        }
+        AttrIterator { chan: self, idx: 0 }
     }
 
     /// Enable the channel
@@ -374,14 +364,17 @@ impl Channel {
     /// the channel, including size and sign. If not, the original value is
     /// returned.
     pub fn convert<T>(&self, val: T) -> T
-        where T: Copy + 'static,
+    where
+        T: Copy + 'static,
     {
         let mut retval = val;
         if self.type_of() == Some(TypeId::of::<T>()) {
             unsafe {
-                ffi::iio_channel_convert(self.chan,
-                                         &mut retval as *mut T as *mut c_void,
-                                         &val as *const T as *const c_void);
+                ffi::iio_channel_convert(
+                    self.chan,
+                    &mut retval as *mut T as *mut c_void,
+                    &val as *const T as *const c_void,
+                );
             }
         }
         retval
@@ -393,14 +386,17 @@ impl Channel {
     /// the channel, including size and sign. If not, the original value is
     /// returned.
     pub fn convert_inverse<T>(&self, val: T) -> T
-        where T: Copy + 'static,
+    where
+        T: Copy + 'static,
     {
         let mut retval = val;
         if self.type_of() == Some(TypeId::of::<T>()) {
             unsafe {
-                ffi::iio_channel_convert_inverse(self.chan,
-                                                 &mut retval as *mut T as *mut c_void,
-                                                 &val as *const T as *const c_void);
+                ffi::iio_channel_convert_inverse(
+                    self.chan,
+                    &mut retval as *mut T as *mut c_void,
+                    &val as *const T as *const c_void,
+                );
             }
         }
         retval
@@ -408,7 +404,8 @@ impl Channel {
 
     /// Demultiplex and convert the samples of a given channel.
     pub fn read<T>(&self, buf: &Buffer) -> Result<Vec<T>>
-        where T: Default + Copy + 'static,
+    where
+        T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
             return Err(Error::WrongDataType);
@@ -418,24 +415,25 @@ impl Channel {
         let sz_item = mem::size_of::<T>();
         let sz_in = n * sz_item;
 
-        let mut v = vec![T::default() ; n];
+        let mut v = vec![T::default(); n];
         let sz = unsafe {
             ffi::iio_channel_read(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
         };
 
         if sz > sz_in {
-            return Err(Error::BadReturnSize);  // This should never happen.
+            return Err(Error::BadReturnSize); // This should never happen.
         }
 
         if sz < sz_in {
-            v.truncate(sz/sz_item);
+            v.truncate(sz / sz_item);
         }
         Ok(v)
     }
 
     /// Demultiplex the samples of a given channel.
     pub fn read_raw<T>(&self, buf: &Buffer) -> Result<Vec<T>>
-        where T: Default + Copy + 'static,
+    where
+        T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
             return Err(Error::WrongDataType);
@@ -445,17 +443,17 @@ impl Channel {
         let sz_item = mem::size_of::<T>();
         let sz_in = n * sz_item;
 
-        let mut v = vec![T::default() ; n];
+        let mut v = vec![T::default(); n];
         let sz = unsafe {
             ffi::iio_channel_read_raw(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
         };
 
         if sz > sz_in {
-            return Err(Error::BadReturnSize);   // This should never happen.
+            return Err(Error::BadReturnSize); // This should never happen.
         }
 
         if sz < sz_in {
-            v.truncate(sz/sz_item);
+            v.truncate(sz / sz_item);
         }
         Ok(v)
     }
@@ -463,7 +461,8 @@ impl Channel {
     /// Convert and multiplex the samples of a given channel.
     /// Returns the number of items written.
     pub fn write<T>(&self, buf: &Buffer, data: &[T]) -> Result<usize>
-        where T: Default + Copy + 'static,
+    where
+        T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
             return Err(Error::WrongDataType);
@@ -482,7 +481,8 @@ impl Channel {
     /// Multiplex the samples of a given channel.
     /// Returns the number of items written.
     pub fn write_raw<T>(&self, buf: &Buffer, data: &[T]) -> Result<usize>
-        where T: Default + Copy + 'static,
+    where
+        T: Default + Copy + 'static,
     {
         if self.type_of() != Some(TypeId::of::<T>()) {
             return Err(Error::WrongDataType);
@@ -513,12 +513,11 @@ impl<'a> Iterator for AttrIterator<'a> {
             Ok(name) => {
                 self.idx += 1;
                 Some(name)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
-
 
 // --------------------------------------------------------------------------
 //                              Unit Tests

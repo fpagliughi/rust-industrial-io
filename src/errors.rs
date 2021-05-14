@@ -10,8 +10,8 @@
 //!
 //! Error definitions for the Industrial I/O Library.
 
-use std::{io, result, ffi};
 use nix;
+use std::{ffi, io, result};
 use thiserror::Error;
 
 //type SysError = nix::Error::Sys;
@@ -44,4 +44,3 @@ impl From<nix::errno::Errno> for Error {
         nix::Error::Sys(err).into()
     }
 }
-

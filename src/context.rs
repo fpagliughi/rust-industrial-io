@@ -10,16 +10,16 @@
 //! Industrial I/O Contexts.
 //!
 
-use std::ptr;
-use std::time::Duration;
 use std::ffi::CString;
 use std::os::raw::c_uint;
+use std::ptr;
 use std::rc::Rc;
+use std::time::Duration;
 
 use nix::errno::Errno;
 
-use crate::ffi;
 use super::*;
+use crate::ffi;
 
 /// An Industrial I/O Context
 ///
@@ -31,7 +31,7 @@ use super::*;
 /// the Context object have been dropped, the underlying iio_context will be
 /// destroyed. This is done to make creation and use of a single Device more
 /// ergonomic by removing the need to manage the lifetime of the Context.
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Context {
     inner: Rc<InnerContext>,
 }
@@ -40,7 +40,7 @@ pub struct Context {
 /// When it is dropped, the library context is destroyed.
 #[derive(Debug)]
 struct InnerContext {
-    pub(crate) ctx: *mut ffi::iio_context
+    pub(crate) ctx: *mut ffi::iio_context,
 }
 
 impl Drop for InnerContext {
@@ -59,8 +59,12 @@ impl Context {
     /// will be created instead.
     pub fn new() -> Result<Context> {
         let ctx = unsafe { ffi::iio_create_default_context() };
-        if ctx.is_null() { return Err(Errno::last().into()); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+        if ctx.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Context {
+            inner: Rc::new(InnerContext { ctx }),
+        })
     }
 
     /// Creates a context from a URI
@@ -75,32 +79,48 @@ impl Context {
     pub fn create_from_uri(uri: &str) -> Result<Context> {
         let uri = CString::new(uri)?;
         let ctx = unsafe { ffi::iio_create_context_from_uri(uri.as_ptr()) };
-        if ctx.is_null() { return Err(Errno::last().into()); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+        if ctx.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Context {
+            inner: Rc::new(InnerContext { ctx }),
+        })
     }
 
     /// Creates a context from a local device (Linux only)
     #[cfg(target_os = "linux")]
     pub fn create_local() -> Result<Context> {
         let ctx = unsafe { ffi::iio_create_local_context() };
-        if ctx.is_null() { return Err(Errno::last().into()); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+        if ctx.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Context {
+            inner: Rc::new(InnerContext { ctx }),
+        })
     }
 
     /// Creates a context from a network device
     pub fn create_network(host: &str) -> Result<Context> {
         let host = CString::new(host)?;
         let ctx = unsafe { ffi::iio_create_network_context(host.as_ptr()) };
-        if ctx.is_null() { return Err(Errno::last().into()); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+        if ctx.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Context {
+            inner: Rc::new(InnerContext { ctx }),
+        })
     }
 
     /// Creates a context from an XML file
     pub fn create_xml(xml_file: &str) -> Result<Context> {
         let xml_file = CString::new(xml_file)?;
         let ctx = unsafe { ffi::iio_create_xml_context(xml_file.as_ptr()) };
-        if ctx.is_null() { return Err(Errno::last().into()); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+        if ctx.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Context {
+            inner: Rc::new(InnerContext { ctx }),
+        })
     }
 
     /// Creates a context from XML data in memory
@@ -108,8 +128,12 @@ impl Context {
         let n = xml.len();
         let xml = CString::new(xml)?;
         let ctx = unsafe { ffi::iio_create_xml_context_mem(xml.as_ptr(), n) };
-        if ctx.is_null() { return Err(Errno::last().into()); }
-        Ok(Context { inner: Rc::new(InnerContext{ ctx }) })
+        if ctx.is_null() {
+            return Err(Errno::last().into());
+        }
+        Ok(Context {
+            inner: Rc::new(InnerContext { ctx }),
+        })
     }
 
     /// Get the name of the context.
@@ -146,8 +170,7 @@ impl Context {
         let mut pval: *const c_char = ptr::null();
 
         let ret = unsafe {
-            ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint,
-                                      &mut pname, &mut pval)
+            ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint, &mut pname, &mut pval)
         };
         if ret < 0 {
             return Err(errno::from_i32(ret).into());
@@ -162,9 +185,8 @@ impl Context {
 
     /// Gets an iterator for the attributes in the context
     pub fn attributes(&self) -> AttrIterator {
-        AttrIterator { ctx: self, idx: 0, }
+        AttrIterator { ctx: self, idx: 0 }
     }
-
 
     /// Sets the timeout for I/O operations
     ///
@@ -192,8 +214,13 @@ impl Context {
     /// Gets a device by index
     pub fn get_device(&self, idx: usize) -> Result<Device> {
         let dev = unsafe { ffi::iio_context_get_device(self.inner.ctx, idx as c_uint) };
-        if dev.is_null() { return Err(Error::InvalidIndex); }
-        Ok(Device { dev, ctx: self.clone() })
+        if dev.is_null() {
+            return Err(Error::InvalidIndex);
+        }
+        Ok(Device {
+            dev,
+            ctx: self.clone(),
+        })
     }
 
     /// Try to find a device by name or ID
@@ -205,16 +232,16 @@ impl Context {
             None
         }
         else {
-            Some(Device { dev, ctx: self.clone() })
+            Some(Device {
+                dev,
+                ctx: self.clone(),
+            })
         }
     }
 
     /// Gets an iterator for all the devices in the context.
     pub fn devices(&self) -> DeviceIterator {
-        DeviceIterator {
-            ctx: self,
-            idx: 0,
-        }
+        DeviceIterator { ctx: self, idx: 0 }
     }
 
     /// Destroy the context
@@ -245,8 +272,8 @@ impl<'a> Iterator for DeviceIterator<'a> {
             Ok(dev) => {
                 self.idx += 1;
                 Some(dev)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
@@ -265,8 +292,8 @@ impl<'a> Iterator for AttrIterator<'a> {
             Ok(name_val) => {
                 self.idx += 1;
                 Some(name_val)
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 }
@@ -328,4 +355,3 @@ mod tests {
         assert!(!desc.is_empty());
     }
 }
-

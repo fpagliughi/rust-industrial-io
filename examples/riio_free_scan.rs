@@ -11,51 +11,58 @@
 // to those terms.
 //
 
-#[macro_use] extern crate clap;
+#[macro_use]
+extern crate clap;
 extern crate industrial_io as iio;
 
-use std::process;
+use clap::{App, Arg};
 use std::any::TypeId;
-use clap::{Arg, App};
+use std::process;
 
 const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
 
 fn main() {
     let matches = App::new("riio_free_scan")
-                    .version(crate_version!())
-                    .about("Rust IIO free scan buffered reads.")
-                    .arg(Arg::with_name("device")
-                         .short("d")
-                         .long("device")
-                         .help("Specifies the name of the IIO device to read")
-                         .takes_value(true))
-                    .arg(Arg::with_name("network")
-                         .short("n")
-                         .long("network")
-                         .help("Use the network backend with the provided hostname")
-                         .takes_value(true))
-                    .arg(Arg::with_name("uri")
-                         .short("u")
-                         .long("uri")
-                         .help("Use the context with the provided URI")
-                         .takes_value(true))
-                    .get_matches();
+        .version(crate_version!())
+        .about("Rust IIO free scan buffered reads.")
+        .arg(
+            Arg::with_name("device")
+                .short("d")
+                .long("device")
+                .help("Specifies the name of the IIO device to read")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("network")
+                .short("n")
+                .long("network")
+                .help("Use the network backend with the provided hostname")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("uri")
+                .short("u")
+                .long("uri")
+                .help("Use the context with the provided URI")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
 
     let ctx = if let Some(hostname) = matches.value_of("network") {
-                  iio::Context::create_network(hostname)
-              }
-              else if let Some(uri) = matches.value_of("uri") {
-                  iio::Context::create_from_uri(uri)
-              }
-              else {
-                  iio::Context::new()
-              }
-              .unwrap_or_else(|_err| {
-                  println!("Couldn't open IIO context.");
-                  process::exit(1);
-              });
+        iio::Context::create_network(hostname)
+    }
+    else if let Some(uri) = matches.value_of("uri") {
+        iio::Context::create_from_uri(uri)
+    }
+    else {
+        iio::Context::new()
+    }
+    .unwrap_or_else(|_err| {
+        println!("Couldn't open IIO context.");
+        process::exit(1);
+    });
 
     let dev = ctx.find_device(dev_name).unwrap_or_else(|| {
         println!("No IIO device named '{}'", dev_name);
@@ -94,4 +101,3 @@ fn main() {
         println!("{}: {:?}", chan.id().unwrap_or_default(), data);
     }
 }
-

@@ -18,7 +18,7 @@ macro_rules! cstring_or_bail {
             Ok(s) => s,
             Err(_) => return None,
         }
-    }
+    };
 }
 
 macro_rules! cstring_or_bail_false {
@@ -27,5 +27,5 @@ macro_rules! cstring_or_bail_false {
             Ok(s) => s,
             Err(_) => return false,
         }
-    }
+    };
 }

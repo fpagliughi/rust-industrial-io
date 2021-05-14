@@ -14,41 +14,46 @@
 // to those terms.
 //
 
-#[macro_use] extern crate clap;
+#[macro_use]
+extern crate clap;
 extern crate industrial_io as iio;
 
+use clap::{App, Arg};
 use std::process;
-use clap::{Arg, App};
 
 fn main() {
     let matches = App::new("riio_free_scan")
-                    .version(crate_version!())
-                    .about("Rust IIO free scan buffered reads.")
-                    .arg(Arg::with_name("network")
-                         .short("n")
-                         .long("network")
-                         .help("Use the network backend with the provided hostname")
-                         .takes_value(true))
-                    .arg(Arg::with_name("uri")
-                         .short("u")
-                         .long("uri")
-                         .help("Use the context with the provided URI")
-                         .takes_value(true))
-                    .get_matches();
+        .version(crate_version!())
+        .about("Rust IIO free scan buffered reads.")
+        .arg(
+            Arg::with_name("network")
+                .short("n")
+                .long("network")
+                .help("Use the network backend with the provided hostname")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("uri")
+                .short("u")
+                .long("uri")
+                .help("Use the context with the provided URI")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let ctx = if let Some(hostname) = matches.value_of("network") {
-                  iio::Context::create_network(hostname)
-              }
-              else if let Some(uri) = matches.value_of("uri") {
-                  iio::Context::create_from_uri(uri)
-              }
-              else {
-                  iio::Context::new()
-              }
-              .unwrap_or_else(|_err| {
-                  println!("Couldn't open IIO context.");
-                  process::exit(1);
-              });
+        iio::Context::create_network(hostname)
+    }
+    else if let Some(uri) = matches.value_of("uri") {
+        iio::Context::create_from_uri(uri)
+    }
+    else {
+        iio::Context::new()
+    }
+    .unwrap_or_else(|_err| {
+        println!("Couldn't open IIO context.");
+        process::exit(1);
+    });
 
     let mut trigs = Vec::new();
 
@@ -78,4 +83,3 @@ fn main() {
         }
     }
 }
-

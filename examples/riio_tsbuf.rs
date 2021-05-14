@@ -13,17 +13,18 @@
 // to those terms.
 //
 
-#[macro_use] extern crate clap;
-extern crate industrial_io as iio;
+#[macro_use]
+extern crate clap;
 extern crate chrono;
+extern crate industrial_io as iio;
 
-use std::{process, cmp};
-use std::time::{SystemTime, Duration};
-use clap::{Arg, App};
 use chrono::offset::Utc;
 use chrono::DateTime;
+use clap::{App, Arg};
+use std::time::{Duration, SystemTime};
+use std::{cmp, process};
 
-const DFLT_DEV_NAME:  &str = "ads1015";
+const DFLT_DEV_NAME: &str = "ads1015";
 const DFLT_CHAN_NAME: &str = "voltage0";
 const DFLT_TRIG_NAME: &str = "trigger0";
 
@@ -34,62 +35,76 @@ const DFLT_NUM_SAMPLE: usize = 100;
 
 fn main() {
     let matches = App::new("riio_tsbuf")
-                    .version(crate_version!())
-                    .about("Rust IIO timestamped buffered read example.")
-                    .arg(Arg::with_name("host")
-                        .short("h")
-                        .long("host")
-                        .help("Use the network backend with the provided hostname")
-                        .takes_value(true))
-                    .arg(Arg::with_name("uri")
-                        .short("u")
-                        .long("uri")
-                        .help("Use the context with the provided URI")
-                        .takes_value(true))
-                    .arg(Arg::with_name("device")
-                        .short("d")
-                        .long("device")
-                        .help("Specifies the name of the IIO device to read")
-                        .takes_value(true))
-                    .arg(Arg::with_name("channel")
-                        .short("c")
-                        .long("channel")
-                        .help("Specifies the name of the channel to read")
-                        .takes_value(true))
-                    .arg(Arg::with_name("trigger")
-                        .short("t")
-                        .long("trigger")
-                        .help("Specifies the name of the trigger")
-                        .takes_value(true))
-                    .arg(Arg::with_name("num_sample")
-                        .short("n")
-                        .long("num_sample")
-                        .help("Specifies the number of samples per buffer")
-                        .takes_value(true))
-                    .arg(Arg::with_name("frequency")
-                        .short("f")
-                        .long("frequency")
-                        .help("Specifies the sampling frequency")
-                        .takes_value(true))
-                    .get_matches();
+        .version(crate_version!())
+        .about("Rust IIO timestamped buffered read example.")
+        .arg(
+            Arg::with_name("host")
+                .short("h")
+                .long("host")
+                .help("Use the network backend with the provided hostname")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("uri")
+                .short("u")
+                .long("uri")
+                .help("Use the context with the provided URI")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("device")
+                .short("d")
+                .long("device")
+                .help("Specifies the name of the IIO device to read")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("channel")
+                .short("c")
+                .long("channel")
+                .help("Specifies the name of the channel to read")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("trigger")
+                .short("t")
+                .long("trigger")
+                .help("Specifies the name of the trigger")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("num_sample")
+                .short("n")
+                .long("num_sample")
+                .help("Specifies the number of samples per buffer")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("frequency")
+                .short("f")
+                .long("frequency")
+                .help("Specifies the sampling frequency")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
     let chan_name = matches.value_of("channel").unwrap_or(DFLT_CHAN_NAME);
     let trig_name = matches.value_of("trigger").unwrap_or(DFLT_TRIG_NAME);
 
     let mut ctx = if let Some(hostname) = matches.value_of("host") {
-                      iio::Context::create_network(hostname)
-                  }
-                  else if let Some(uri) = matches.value_of("uri") {
-                      iio::Context::create_from_uri(uri)
-                  }
-                  else {
-                      iio::Context::new()
-                  }
-                  .unwrap_or_else(|_err| {
-                      println!("Couldn't open IIO context.");
-                      process::exit(1);
-                  });
+        iio::Context::create_network(hostname)
+    }
+    else if let Some(uri) = matches.value_of("uri") {
+        iio::Context::create_from_uri(uri)
+    }
+    else {
+        iio::Context::new()
+    }
+    .unwrap_or_else(|_err| {
+        println!("Couldn't open IIO context.");
+        process::exit(1);
+    });
 
     let mut dev = ctx.find_device(dev_name).unwrap_or_else(|| {
         println!("No IIO device named '{}'", dev_name);
@@ -118,9 +133,10 @@ fn main() {
         process::exit(1);
     });
 
-    let freq = matches.value_of("frequency")
-                   .and_then(|s| s.parse::<i64>().ok())
-                   .unwrap_or(DFLT_FREQ);
+    let freq = matches
+        .value_of("frequency")
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(DFLT_FREQ);
 
     // Set the sampling rate
     if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
@@ -134,9 +150,10 @@ fn main() {
 
     // ----- Create a buffer -----
 
-    let n_sample = matches.value_of("num_sample")
-                       .and_then(|s| s.parse::<usize>().ok())
-                       .unwrap_or(DFLT_NUM_SAMPLE);
+    let n_sample = matches
+        .value_of("num_sample")
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(DFLT_NUM_SAMPLE);
 
     let mut buf = dev.create_buffer(n_sample, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
@@ -177,4 +194,3 @@ fn main() {
         println!();
     }
 }
-

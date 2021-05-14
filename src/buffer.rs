@@ -10,12 +10,12 @@
 //! Industrial I/O Buffers
 //!
 
-use std::{mem, ptr};
-use std::os::raw::c_int;
 use std::marker::PhantomData;
+use std::os::raw::c_int;
+use std::{mem, ptr};
 
-use crate::ffi;
 use super::*;
+use crate::ffi;
 
 /// An Industrial I/O input or output buffer
 pub struct Buffer {
@@ -31,7 +31,9 @@ pub struct Buffer {
 impl Buffer {
     /// Get the buffer capacity in number of samples from each channel that
     /// the buffer can hold.
-    pub fn capacity(&self) -> usize { self.cap }
+    pub fn capacity(&self) -> usize {
+        self.cap
+    }
 
     /// Gets a pollable file descriptor for the buffer.
     /// This can be used to determine when refill() or push() can be called
@@ -75,7 +77,9 @@ impl Buffer {
 
     /// Cancel all buffer operations.
     pub fn cancel(&mut self) {
-        unsafe { ffi::iio_buffer_cancel(self.buf); }
+        unsafe {
+            ffi::iio_buffer_cancel(self.buf);
+        }
     }
 
     /// Gets an iterator for the data from a channel.
@@ -84,9 +88,14 @@ impl Buffer {
             let begin = ffi::iio_buffer_first(self.buf, chan.chan) as *mut T;
             let end = ffi::iio_buffer_end(self.buf) as *const T;
             let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(self.buf)/mem::size_of::<T>() as isize;
+            let step: isize = ffi::iio_buffer_step(self.buf) / mem::size_of::<T>() as isize;
 
-            IntoIter { phantom: PhantomData, ptr, end, step, }
+            IntoIter {
+                phantom: PhantomData,
+                ptr,
+                end,
+                step,
+            }
         }
     }
 }
@@ -124,5 +133,3 @@ impl<T> Iterator for IntoIter<T> {
         }
     }
 }
-
-

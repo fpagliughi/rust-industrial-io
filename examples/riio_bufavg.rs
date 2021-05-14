@@ -20,21 +20,22 @@
 // to those terms.
 //
 
-#[macro_use] extern crate clap;
-extern crate industrial_io as iio;
+#[macro_use]
+extern crate clap;
 extern crate chrono;
 extern crate ctrlc;
+extern crate industrial_io as iio;
 
-use std::{process, cmp};
-use std::any::TypeId;
-use std::time::{SystemTime, Duration, UNIX_EPOCH};
-use std::thread::{spawn, JoinHandle};
-use std::sync::mpsc::{channel, Sender, Receiver, SendError};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use clap::{Arg, App};
 use chrono::offset::Utc;
 use chrono::DateTime;
+use clap::{App, Arg};
+use std::any::TypeId;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{channel, Receiver, SendError, Sender};
+use std::sync::Arc;
+use std::thread::{spawn, JoinHandle};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{cmp, process};
 
 // The type to use for raw samples.
 type RawSampleType = i16;
@@ -43,7 +44,7 @@ type RawSampleType = i16;
 type TsDataBuffer = (u64, Vec<RawSampleType>);
 
 // The defaults device and channel if none specified
-const DFLT_DEV_NAME:  &str = "ads1015";
+const DFLT_DEV_NAME: &str = "ads1015";
 const DFLT_CHAN_NAME: &str = "voltage0";
 const DFLT_TRIG_NAME: &str = "trigger0";
 
@@ -64,10 +65,8 @@ impl Averager {
     // Creates a new averager with the specified offset and scale.
     pub fn new(offset: f64, scale: f64) -> Self {
         let (sender, receiver) = channel();
-        let thr = spawn(move || {
-            Averager::thread_func(receiver, offset, scale)
-        });
-        Averager { sender, thr, }
+        let thr = spawn(move || Averager::thread_func(receiver, offset, scale));
+        Averager { sender, thr }
     }
 
     // The internal thread function.
@@ -78,7 +77,9 @@ impl Averager {
         loop {
             let (ts, data): TsDataBuffer = receiver.recv().unwrap();
 
-            if data.is_empty() { break; }
+            if data.is_empty() {
+                break;
+            }
 
             // Print the timestamp as the UTC time w/ millisec precision
             let sys_tm = SystemTime::UNIX_EPOCH + Duration::from_nanos(ts);
@@ -86,11 +87,9 @@ impl Averager {
             print!("{}: ", dt.format("%T%.6f"));
 
             // Compute the average, then scale the result.
-            let sum: f64 = data.iter()
-                               .map(|&x| f64::from(x))
-                               .sum();
+            let sum: f64 = data.iter().map(|&x| f64::from(x)).sum();
             let avg = sum / data.len() as f64;
-            let val = (avg + offset)*scale/1000.0;
+            let val = (avg + offset) * scale / 1000.0;
 
             // Print out the scaled average, along with
             // the first few raw values from the buffer
@@ -114,8 +113,7 @@ impl Averager {
 
 // If the IIO device doesn't have a timestamp channel, we can use this to
 // get an equivalent, though less accurate, timestamp.
-pub fn timestamp() -> u64
-{
+pub fn timestamp() -> u64 {
     let now = SystemTime::now();
     let t = now.duration_since(UNIX_EPOCH).expect("Clock error");
     t.as_secs() as u64 * 1_000_000_000u64 + t.subsec_micros() as u64
@@ -125,62 +123,76 @@ pub fn timestamp() -> u64
 
 fn main() {
     let matches = App::new("riio_tsbuf")
-                    .version(crate_version!())
-                    .about("Rust IIO timestamped buffered read example.")
-                    .arg(Arg::with_name("host")
-                        .short("h")
-                        .long("host")
-                        .help("Use the network backend with the provided hostname")
-                        .takes_value(true))
-                    .arg(Arg::with_name("uri")
-                        .short("u")
-                        .long("uri")
-                        .help("Use the context with the provided URI")
-                        .takes_value(true))
-                    .arg(Arg::with_name("device")
-                        .short("d")
-                        .long("device")
-                        .help("Specifies the name of the IIO device to read")
-                        .takes_value(true))
-                    .arg(Arg::with_name("channel")
-                        .short("c")
-                        .long("channel")
-                        .help("Specifies the name of the channel to read")
-                        .takes_value(true))
-                    .arg(Arg::with_name("trigger")
-                        .short("t")
-                        .long("trigger")
-                        .help("Specifies the name of the trigger")
-                        .takes_value(true))
-                    .arg(Arg::with_name("num_sample")
-                        .short("n")
-                        .long("num_sample")
-                        .help("Specifies the number of samples per buffer")
-                        .takes_value(true))
-                    .arg(Arg::with_name("frequency")
-                        .short("f")
-                        .long("frequency")
-                        .help("Specifies the sampling frequency")
-                        .takes_value(true))
-                    .get_matches();
+        .version(crate_version!())
+        .about("Rust IIO timestamped buffered read example.")
+        .arg(
+            Arg::with_name("host")
+                .short("h")
+                .long("host")
+                .help("Use the network backend with the provided hostname")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("uri")
+                .short("u")
+                .long("uri")
+                .help("Use the context with the provided URI")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("device")
+                .short("d")
+                .long("device")
+                .help("Specifies the name of the IIO device to read")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("channel")
+                .short("c")
+                .long("channel")
+                .help("Specifies the name of the channel to read")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("trigger")
+                .short("t")
+                .long("trigger")
+                .help("Specifies the name of the trigger")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("num_sample")
+                .short("n")
+                .long("num_sample")
+                .help("Specifies the number of samples per buffer")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("frequency")
+                .short("f")
+                .long("frequency")
+                .help("Specifies the sampling frequency")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
     let chan_name = matches.value_of("channel").unwrap_or(DFLT_CHAN_NAME);
     let trig_name = matches.value_of("trigger").unwrap_or(DFLT_TRIG_NAME);
 
     let mut ctx = if let Some(hostname) = matches.value_of("host") {
-                      iio::Context::create_network(hostname)
-                  }
-                  else if let Some(uri) = matches.value_of("uri") {
-                      iio::Context::create_from_uri(uri)
-                  }
-                  else {
-                      iio::Context::new()
-                  }
-                  .unwrap_or_else(|_err| {
-                      println!("Couldn't open IIO context.");
-                      process::exit(1);
-                  });
+        iio::Context::create_network(hostname)
+    }
+    else if let Some(uri) = matches.value_of("uri") {
+        iio::Context::create_from_uri(uri)
+    }
+    else {
+        iio::Context::new()
+    }
+    .unwrap_or_else(|_err| {
+        println!("Couldn't open IIO context.");
+        process::exit(1);
+    });
 
     let mut dev = ctx.find_device(dev_name).unwrap_or_else(|| {
         println!("No IIO device named '{}'", dev_name);
@@ -232,9 +244,10 @@ fn main() {
         process::exit(1);
     });
 
-    let freq = matches.value_of("frequency")
-                   .and_then(|s| s.parse::<i64>().ok())
-                   .unwrap_or(DFLT_FREQ);
+    let freq = matches
+        .value_of("frequency")
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(DFLT_FREQ);
 
     // Set the sampling rate
     if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
@@ -248,9 +261,10 @@ fn main() {
 
     // ----- Create a buffer -----
 
-    let n_sample = matches.value_of("num_sample")
-                       .and_then(|s| s.parse::<usize>().ok())
-                       .unwrap_or(DFLT_NUM_SAMPLE);
+    let n_sample = matches
+        .value_of("num_sample")
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(DFLT_NUM_SAMPLE);
 
     let mut buf = dev.create_buffer(n_sample, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
@@ -275,7 +289,8 @@ fn main() {
 
     ctrlc::set_handler(move || {
         q.store(true, Ordering::SeqCst);
-    }).expect("Error setting Ctrl-C handler");
+    })
+    .expect("Error setting Ctrl-C handler");
 
     // ----- Capture data into the buffer -----
 
@@ -290,7 +305,9 @@ fn main() {
         // Get the timestamp. Use the time of the _last_ sample.
 
         let ts: u64 = if let Some(ref chan) = ts_chan {
-            buf.channel_iter::<u64>(chan).nth(n_sample-1).unwrap_or_default()
+            buf.channel_iter::<u64>(chan)
+                .nth(n_sample - 1)
+                .unwrap_or_default()
         }
         else {
             timestamp()
@@ -316,7 +333,7 @@ fn main() {
             Err(err) => {
                 eprintln!("Error reading data: {}", err);
                 break;
-            },
+            }
         };
 
         avg.send((ts, data)).unwrap();
@@ -328,4 +345,3 @@ fn main() {
     avg.quit();
     println!("Done");
 }
-

@@ -23,32 +23,27 @@
 //!
 
 use std::{
-    str,
-    slice,
-    ffi::{CString, CStr},
-    os::raw::{c_char, c_uint}
+    ffi::{CStr, CString},
+    os::raw::{c_char, c_uint},
+    slice, str,
 };
 
+use libiio_sys::{self as ffi};
 use nix::errno;
-use libiio_sys::{
-    self as ffi,
-};
 
-
+pub use crate::buffer::*;
+pub use crate::channel::*;
 pub use crate::context::*;
 pub use crate::device::*;
-pub use crate::channel::*;
-pub use crate::buffer::*;
 pub use crate::errors::*;
 
 mod macros;
 
+pub mod buffer;
+pub mod channel;
 pub mod context;
 pub mod device;
-pub mod channel;
-pub mod buffer;
 pub mod errors;
-
 
 // --------------------------------------------------------------------------
 
@@ -82,7 +77,7 @@ pub fn library_version() -> (u32, u32, String) {
     let mut minor: c_uint = 0;
 
     const BUF_SZ: usize = 8;
-    let mut buf = vec![' ' as c_char ; BUF_SZ];
+    let mut buf = vec![' ' as c_char; BUF_SZ];
     let pbuf = buf.as_mut_ptr();
 
     unsafe { ffi::iio_library_get_version(&mut major, &mut minor, pbuf) };
@@ -96,7 +91,11 @@ pub fn library_version() -> (u32, u32, String) {
             CString::new(slc).unwrap()
         }
     };
-    (major as u32, minor as u32, sgit.to_string_lossy().into_owned())
+    (
+        major as u32,
+        minor as u32,
+        sgit.to_string_lossy().into_owned(),
+    )
 }
 
 // --------------------------------------------------------------------------

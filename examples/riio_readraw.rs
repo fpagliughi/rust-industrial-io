@@ -16,62 +16,69 @@
 // to those terms.
 //
 
-#[macro_use] extern crate clap;
+#[macro_use]
+extern crate clap;
 extern crate industrial_io as iio;
 extern crate schedule_recv;
 
+use clap::{App, Arg};
+use schedule_recv::periodic;
 use std::process;
 use std::time::Duration;
-use schedule_recv::periodic;
-use clap::{Arg, App};
 
 fn main() -> iio::Result<()> {
     let matches = App::new("riio_readraw")
-                    .version(crate_version!())
-                    .about("Rust IIO raw reads example.")
-                    .arg(Arg::with_name("device")
-                         .short("d")
-                         .long("device")
-                         .help("Specifies the name of the IIO device to read")
-                         .takes_value(true))
-                    .arg(Arg::with_name("network")
-                         .short("n")
-                         .long("network")
-                         .help("Use the network backend with the provided hostname")
-                         .takes_value(true))
-                    .arg(Arg::with_name("uri")
-                         .short("u")
-                         .long("uri")
-                         .help("Use the context with the provided URI")
-                         .takes_value(true))
-                    .get_matches();
+        .version(crate_version!())
+        .about("Rust IIO raw reads example.")
+        .arg(
+            Arg::with_name("device")
+                .short("d")
+                .long("device")
+                .help("Specifies the name of the IIO device to read")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("network")
+                .short("n")
+                .long("network")
+                .help("Use the network backend with the provided hostname")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("uri")
+                .short("u")
+                .long("uri")
+                .help("Use the context with the provided URI")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let ctx = if let Some(hostname) = matches.value_of("network") {
-                  iio::Context::create_network(hostname)
-              }
-              else if let Some(uri) = matches.value_of("uri") {
-                  iio::Context::create_from_uri(uri)
-              }
-              else {
-                  iio::Context::new()
-              }
-              .unwrap_or_else(|_err| {
-                  println!("Couldn't open IIO context.");
-                  process::exit(1);
-              });
+        iio::Context::create_network(hostname)
+    }
+    else if let Some(uri) = matches.value_of("uri") {
+        iio::Context::create_from_uri(uri)
+    }
+    else {
+        iio::Context::new()
+    }
+    .unwrap_or_else(|_err| {
+        println!("Couldn't open IIO context.");
+        process::exit(1);
+    });
 
     let dev = if let Some(dev_name) = matches.value_of("device") {
-                  ctx.find_device(dev_name).unwrap_or_else(|| {
-                      eprintln!("Couldn't find device: {}", dev_name);
-                      process::exit(1);
-                  })
-              }
-              else {
-                  ctx.get_device(0).unwrap_or_else(|err| {
-                      eprintln!("Error opening first device: {}", err);
-                      process::exit(1);
-                  })
-              };
+        ctx.find_device(dev_name).unwrap_or_else(|| {
+            eprintln!("Couldn't find device: {}", dev_name);
+            process::exit(1);
+        })
+    }
+    else {
+        ctx.get_device(0).unwrap_or_else(|err| {
+            eprintln!("Error opening first device: {}", err);
+            process::exit(1);
+        })
+    };
 
     let unknown = "unknown".to_string();
     let tick = periodic(Duration::from_millis(1000));
@@ -95,4 +102,3 @@ fn main() -> iio::Result<()> {
         println!();
     }
 }
-

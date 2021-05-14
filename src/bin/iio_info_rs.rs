@@ -34,13 +34,19 @@ fn main() -> iio::Result<()> {
     println!("IIO context has {} device(s):", ctx.num_devices());
     for dev in ctx.devices() {
         //assert_eq(ctx, dev.context());
-        println!("\t{}: {}", dev.id().unwrap_or_default(),
-                 dev.name().unwrap_or_else(|| "<unknown>".to_string()));
+        println!(
+            "\t{}: {}",
+            dev.id().unwrap_or_default(),
+            dev.name().unwrap_or_else(|| "<unknown>".to_string())
+        );
         println!("\t\t{} channels found:", dev.num_channels());
 
         for chan in dev.channels() {
             println!("\t\t\t{}", chan.id().unwrap_or_default());
-            println!("\t\t\t{} channel-specific attributes found:", chan.num_attrs());
+            println!(
+                "\t\t\t{} channel-specific attributes found:",
+                chan.num_attrs()
+            );
 
             // Note: We could get all the attr into a map and then print
             //let attrs = chan.attr_read_all();
@@ -65,4 +71,3 @@ fn main() -> iio::Result<()> {
 
     Ok(())
 }
-

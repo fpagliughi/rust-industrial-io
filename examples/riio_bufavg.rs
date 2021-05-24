@@ -270,13 +270,13 @@ fn main() {
         } else {
             eprintln!("{} {}", "Can't set sampling frequency! No suitable",
                 "attribute found in specified device and trigger...");
-            eprintln!("Sample rate not set... Continuing");
+            process::exit(2);
         }
     }
 
     dev.set_trigger(&trig).unwrap_or_else(|err| {
         println!("Error setting the trigger in the device: {}", err);
-        process::exit(2);
+        process::exit(3);
     });
 
     // ----- Create a buffer -----
@@ -288,7 +288,7 @@ fn main() {
 
     let mut buf = dev.create_buffer(n_sample, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
-        process::exit(3);
+        process::exit(4);
     });
 
     // Make sure the timeout is more than enough to gather each buffer

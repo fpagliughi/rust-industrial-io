@@ -239,19 +239,39 @@ fn main() {
 
     // ----- Set a trigger -----
 
-    let trig = ctx.find_device(trig_name).unwrap_or_else(|| {
-        eprintln!("Couldn't find requested trigger: {}", trig_name);
-        process::exit(1);
-    });
-
     let freq = matches
         .value_of("frequency")
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or(DFLT_FREQ);
 
-    // Set the sampling rate
-    if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
-        println!("Can't set sampling rate to {} Hz: {}", freq, err);
+    let trig = ctx.find_device(trig_name).unwrap_or_else(|| {
+        eprintln!("Couldn't find requested trigger: {}", trig_name);
+        process::exit(1);
+    });
+
+    // There is no unified way to handle setting sample rates across iio
+    // devices. Thus we have to do this handling ourselves.
+    // Set the sampling rate on the trigger
+    if trig.has_attr("sampling_frequency") {
+        if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
+            eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
+                freq, trig.name().unwrap(), err);
+        }
+    } else {
+        println!("{} {}", "Trigger doesn't have sampling frequency attribute!",
+            "Setting on device instead");
+
+        if dev.has_attr("sampling_frequency") {
+            // Set the sampling rate on the device
+            if let Err(err) = dev.attr_write_int("sampling_frequency", freq) {
+                eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
+                    freq, dev.name().unwrap(), err);
+            }
+        } else {
+            eprintln!("{} {}", "Can't set sampling frequency! No suitable",
+                "attribute found in specified device and trigger...");
+            eprintln!("Sample rate not set... Continuing");
+        }
     }
 
     dev.set_trigger(&trig).unwrap_or_else(|err| {

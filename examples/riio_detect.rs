@@ -42,13 +42,13 @@ fn main() {
         .get_matches();
 
     let ctx = if let Some(hostname) = matches.value_of("network") {
-        iio::Context::create_network(hostname)
+        iio::Context::new(iio::Backend::Ip(hostname))
     }
     else if let Some(uri) = matches.value_of("uri") {
-        iio::Context::create_from_uri(uri)
+        iio::Context::new(iio::Backend::FromUri(uri))
     }
     else {
-        iio::Context::new()
+        iio::Context::default()
     }
     .unwrap_or_else(|_err| {
         println!("Couldn't open IIO context.");

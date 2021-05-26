@@ -36,6 +36,61 @@ pub struct Context {
     inner: Rc<InnerContext>,
 }
 
+/// Backends for I/O Contexts.
+///
+/// An I/O [`Context`] relies on a backend that provides sensor data.
+#[derive(Debug)]
+pub enum Backend<'a> {
+    /// Local Backend, only available on Linux hosts. Sensors to work with are
+    /// part of the system and accessible in sysfs (under `/sys/...`).
+    Local,
+    /// XML Backend, creates a Context from an XML file. Example Parameter:
+    /// "/home/user/file.xml"
+    Xml(&'a str),
+    /// Network Backend, creates a Context through a network connection.
+    /// Requires a hostname, IPv4 or IPv6 address to connect to another host
+    /// that is running the [IIO Daemon]. If an empty string is provided,
+    /// automatic discovery through ZeroConf is performed (if available in IIO).
+    /// Example Parameter:
+    ///
+    /// - "192.168.2.1" to connect to given IPv4 host, **or**
+    /// - "localhost" to connect to localhost running IIOD, **or**
+    /// - "plutosdr.local" to connect to host with given hostname, **or**
+    /// - "" for automatic discovery
+    ///
+    /// [IIO Daemon]: https://github.com/analogdevicesinc/libiio/tree/master/iiod
+    Ip(&'a str),
+    /// USB Backend, creates a context through a USB connection.
+    /// If only a single USB device is attached, provide an empty String ("")
+    /// to use that. When more than one usb device is attached, requires bus,
+    /// address, and interface parts separated with a dot.
+    /// Example Parameter: "3.32.5"
+    Usb(&'a str),
+    /// Serial Backend, creates a context through a serial connection.
+    /// Requires (Values in parentheses show examples):
+    ///
+    /// - a port (/dev/ttyUSB0),
+    /// - baud_rate (default 115200)
+    /// - serial port configuration
+    ///     - data bits (5 6 7 8 9)
+    ///     - parity ('n' none, 'o' odd, 'e' even, 'm' mark, 's' space)
+    ///     - stop bits (1 2)
+    ///     - flow control ('\0' none, 'x' Xon Xoff, 'r' RTSCTS, 'd' DTRDSR)
+    ///
+    /// Example Parameters:
+    ///
+    /// - "/dev/ttyUSB0,115200", **or**
+    /// - "/dev/ttyUSB0,115200,8n1"
+    Serial(&'a str),
+    /// "Guess" the backend to use from the URI that's supplied. This merely
+    /// provides compatibility with [`iio_create_context_from_uri`] from the
+    /// underlying IIO C-library. Refer to the IIO docs for information on how
+    /// to format this parameter.
+    ///
+    /// [`iio_create_context_from_uri`]: https://analogdevicesinc.github.io/libiio/master/libiio/group__Context.html#gafdcee40508700fa395370b6c636e16fe
+    FromUri(&'a str)
+}
+
 /// This holds a pointer to the library context.
 /// When it is dropped, the library context is destroyed.
 #[derive(Debug)]
@@ -50,34 +105,71 @@ impl Drop for InnerContext {
 }
 
 impl Context {
-    /// Creates a default context from a local or remote IIO device.
+    /// Create an IIO Context.
     ///
-    /// @note This will create a network context if the IIOD_REMOTE
-    /// environment variable is set to the hostname where the IIOD server
-    /// runs. If set to an empty string, the server will be discovered using
-    /// ZeroConf. If the environment variable is not set, a local context
-    /// will be created instead.
-    pub fn new() -> Result<Context> {
-        let ctx = unsafe { ffi::iio_create_default_context() };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
-    }
+    /// A context contains one or more devices (i.e. sensors) that can provide
+    /// data. Note that any device can always only be associated with one
+    /// context!
+    ///
+    /// Contexts rely on [`Backend`]s to discover available sensors. Multiple
+    /// [`Backend`]s are supported.
+    ///
+    /// # Examples
+    ///
+    /// Create a context to work with sensors on the local system
+    /// (Only supported for Linux hosts):
+    ///
+    /// ```no_run
+    /// use industrial_io as iio;
+    ///
+    /// let ctx = iio::Context::new(iio::Backend::Local);
+    /// ```
+    ///
+    /// Create a context that works with senors on some network host:
+    ///
+    /// ```no_run
+    /// use industrial_io as iio;
+    ///
+    /// let ctx_ip = iio::Context::new(iio::Backend::Ip("192.168.2.1"));
+    /// let ctx_host = iio::Context::new(iio::Backend::Ip("runs-iiod.local"));
+    /// let ctx_auto = iio::Context::new(iio::Backend::Ip())
+    /// ```
+    ///
+    /// Creates a Context using some arbitrary URI (like it is used in the
+    /// underlying IIO C-library):
+    ///
+    /// ```no_run
+    /// use industrial_io as iio;
+    ///
+    /// let ctx = iio::Context::new(iio::Backend::FromUri("ip:192.168.2.1"));
+    /// ```
+    pub fn new(be: Backend) -> Result<Context> {
+        let uri = match be {
+            Backend::Local => {
+                if cfg!(target_os = "linux") {
+                    CString::new("local:")?
+                    // unsafe { ffi::iio_create_default_context() }
+                } else {
+                    panic!("Local context is only available on Linux hosts!");
+                }
+            },
+            Backend::Xml(xml_file) => {
+                CString::new(format!("xml:{}", xml_file))?
+            },
+            Backend::Ip(host) => {
+                CString::new(format!("ip:{}", host))?
+            },
+            Backend::Usb(device) => {
+                CString::new(format!("usb:{}", device))?
+            },
+            Backend::Serial(tty) => {
+                CString::new(format!("serial:{}", tty))?
+            },
+            Backend::FromUri(uri) => {
+                CString::new(uri)?
+            }
+        };
 
-    /// Creates a context from a URI
-    ///
-    /// This can create a local, network, or XML context as specified by
-    /// the URI using the preambles:
-    ///   * "local:"  - a local context
-    ///   * "xml:"  - an xml (file) context
-    ///   * "ip:"  - a network context
-    ///   * "usb:"  - a USB backend
-    ///   * "serial:"  - a serial backend
-    pub fn create_from_uri(uri: &str) -> Result<Context> {
-        let uri = CString::new(uri)?;
         let ctx = unsafe { ffi::iio_create_context_from_uri(uri.as_ptr()) };
         if ctx.is_null() {
             return Err(Errno::last().into());
@@ -87,34 +179,17 @@ impl Context {
         })
     }
 
-    /// Creates a context from a local device (Linux only)
-    #[cfg(target_os = "linux")]
-    pub fn create_local() -> Result<Context> {
-        let ctx = unsafe { ffi::iio_create_local_context() };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
-    }
-
-    /// Creates a context from a network device
-    pub fn create_network(host: &str) -> Result<Context> {
-        let host = CString::new(host)?;
-        let ctx = unsafe { ffi::iio_create_network_context(host.as_ptr()) };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
-    }
-
-    /// Creates a context from an XML file
-    pub fn create_xml(xml_file: &str) -> Result<Context> {
-        let xml_file = CString::new(xml_file)?;
-        let ctx = unsafe { ffi::iio_create_xml_context(xml_file.as_ptr()) };
+    /// Creates a default context from a local or remote IIO device.
+    ///
+    /// # Notes
+    ///
+    /// This will create a network context if the IIOD_REMOTE
+    /// environment variable is set to the hostname where the IIOD server
+    /// runs. If set to an empty string, the server will be discovered using
+    /// ZeroConf. If the environment variable is not set, a local context
+    /// will be created instead.
+    pub fn default() -> Result<Context> {
+        let ctx = unsafe { ffi::iio_create_default_context() };
         if ctx.is_null() {
             return Err(Errno::last().into());
         }

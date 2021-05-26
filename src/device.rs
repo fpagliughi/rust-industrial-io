@@ -477,7 +477,7 @@ mod tests {
     // Make sure we get a device
     #[test]
     fn get_device() {
-        let ctx = Context::default().unwrap();
+        let ctx = Context::new().unwrap();
         let dev = ctx.get_device(0);
         assert!(dev.is_ok());
 
@@ -489,7 +489,7 @@ mod tests {
     // See that attr iterator gets the correct number of attributes
     #[test]
     fn attr_iterator_count() {
-        let ctx = Context::default().unwrap();
+        let ctx = Context::new().unwrap();
         let dev = ctx.get_device(0).unwrap();
 
         let n = dev.num_attrs();

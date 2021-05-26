@@ -50,13 +50,13 @@ fn main() {
     let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
 
     let ctx = if let Some(hostname) = matches.value_of("network") {
-        iio::Context::new(iio::Backend::Ip(hostname))
+        iio::Context::with_backend(iio::Backend::Network(hostname))
     }
     else if let Some(uri) = matches.value_of("uri") {
-        iio::Context::new(iio::Backend::FromUri(uri))
+        iio::Context::from_uri(uri)
     }
     else {
-        iio::Context::default()
+        iio::Context::new()
     }
     .unwrap_or_else(|_err| {
         println!("Couldn't open IIO context.");

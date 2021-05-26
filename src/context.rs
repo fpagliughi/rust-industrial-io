@@ -41,12 +41,20 @@ pub struct Context {
 /// An I/O [`Context`] relies on a backend that provides sensor data.
 #[derive(Debug)]
 pub enum Backend<'a> {
-    /// Local Backend, only available on Linux hosts. Sensors to work with are
-    /// part of the system and accessible in sysfs (under `/sys/...`).
-    Local,
-    /// XML Backend, creates a Context from an XML file. Example Parameter:
+    /// Use the default backend. This will create a network context if the
+    /// IIOD_REMOTE environment variable is set to the hostname where the
+    /// IIOD server runs. If set to an empty string, the server will be
+    /// discovered using ZeroConf. If the environment variable is not set,
+    /// a local context will be created instead.
+    Default,
+    /// XML Backend, creates a Context from an XML file. Here the string is
+    /// the name of the file.
+    /// Example Parameter:
     /// "/home/user/file.xml"
     Xml(&'a str),
+    /// XML Backend, creates a Context from an in-memory XML string. Here
+    /// the string _is_ the XML description.
+    XmlMem(&'a str),
     /// Network Backend, creates a Context through a network connection.
     /// Requires a hostname, IPv4 or IPv6 address to connect to another host
     /// that is running the [IIO Daemon]. If an empty string is provided,
@@ -59,7 +67,7 @@ pub enum Backend<'a> {
     /// - "" for automatic discovery
     ///
     /// [IIO Daemon]: https://github.com/analogdevicesinc/libiio/tree/master/iiod
-    Ip(&'a str),
+    Network(&'a str),
     /// USB Backend, creates a context through a USB connection.
     /// If only a single USB device is attached, provide an empty String ("")
     /// to use that. When more than one usb device is attached, requires bus,
@@ -88,7 +96,11 @@ pub enum Backend<'a> {
     /// to format this parameter.
     ///
     /// [`iio_create_context_from_uri`]: https://analogdevicesinc.github.io/libiio/master/libiio/group__Context.html#gafdcee40508700fa395370b6c636e16fe
-    FromUri(&'a str),
+    Uri(&'a str),
+    /// Local Backend, only available on Linux hosts. Sensors to work with are
+    /// part of the system and accessible in sysfs (under `/sys/...`).
+    #[cfg(target_os = "linux")]
+    Local,
 }
 
 /// This holds a pointer to the library context.
@@ -105,6 +117,20 @@ impl Drop for InnerContext {
 }
 
 impl Context {
+    /// Creates a default context from a local or remote IIO device.
+    ///
+    /// # Notes
+    ///
+    /// This will create a network context if the IIOD_REMOTE
+    /// environment variable is set to the hostname where the IIOD server
+    /// runs. If set to an empty string, the server will be discovered using
+    /// ZeroConf. If the environment variable is not set, a local context
+    /// will be created instead.
+    pub fn new() -> Result<Context> {
+        Self::from_ptr(unsafe { ffi::iio_create_default_context() })
+    }
+
+
     /// Create an IIO Context.
     ///
     /// A context contains one or more devices (i.e. sensors) that can provide
@@ -122,7 +148,7 @@ impl Context {
     /// ```no_run
     /// use industrial_io as iio;
     ///
-    /// let ctx = iio::Context::new(iio::Backend::Local);
+    /// let ctx = iio::Context::with_backend(iio::Backend::Local);
     /// ```
     ///
     /// Create a context that works with senors on some network host:
@@ -130,9 +156,9 @@ impl Context {
     /// ```no_run
     /// use industrial_io as iio;
     ///
-    /// let ctx_ip = iio::Context::new(iio::Backend::Ip("192.168.2.1"));
-    /// let ctx_host = iio::Context::new(iio::Backend::Ip("runs-iiod.local"));
-    /// let ctx_auto = iio::Context::default();
+    /// let ctx_ip = iio::Context::with_backend(iio::Backend::Network("192.168.2.1"));
+    /// let ctx_host = iio::Context::with_backend(iio::Backend::Network("runs-iiod.local"));
+    /// let ctx_auto = iio::Context::with_backend(iio::Backend::Network(""));
     /// ```
     ///
     /// Creates a Context using some arbitrary URI (like it is used in the
@@ -141,65 +167,54 @@ impl Context {
     /// ```no_run
     /// use industrial_io as iio;
     ///
-    /// let ctx = iio::Context::new(iio::Backend::FromUri("ip:192.168.2.1"));
+    /// let ctx = iio::Context::with_backend(iio::Backend::Uri("ip:192.168.2.1"));
     /// ```
-    pub fn new(be: Backend) -> Result<Context> {
-        let uri = match be {
-            Backend::Local => {
-                if cfg!(target_os = "linux") {
-                    CString::new("local:")?
-                    // unsafe { ffi::iio_create_default_context() }
-                }
-                else {
-                    panic!("Local context is only available on Linux hosts!");
-                }
+    pub fn with_backend(be: Backend) -> Result<Context> {
+        Self::from_ptr(unsafe {
+            match be {
+                Backend::Default => ffi::iio_create_default_context(),
+                Backend::Xml(name) => {
+                    let name = CString::new(name)?;
+                    ffi::iio_create_xml_context(name.as_ptr())
+                },
+                Backend::XmlMem(xml) => {
+                    let n = xml.len();
+                    let xml = CString::new(xml)?;
+                    ffi::iio_create_xml_context_mem(xml.as_ptr(), n)
+                },
+                Backend::Network(host) => {
+                    let host = CString::new(host)?;
+                    ffi::iio_create_network_context(host.as_ptr())
+                },
+                Backend::Usb(device) => {
+                    let uri = CString::new(format!("usb:{}", device))?;
+                    ffi::iio_create_context_from_uri(uri.as_ptr())
+                },
+                Backend::Serial(tty) => {
+                    let uri = CString::new(format!("serial:{}", tty))?;
+                    ffi::iio_create_context_from_uri(uri.as_ptr())
+                },
+                Backend::Uri(uri) => {
+                    let uri = CString::new(uri)?;
+                    ffi::iio_create_context_from_uri(uri.as_ptr())
+                },
+                #[cfg(target_os = "linux")]
+                Backend::Local => ffi::iio_create_local_context(),
             }
-            Backend::Xml(xml_file) => CString::new(format!("xml:{}", xml_file))?,
-            Backend::Ip(host) => CString::new(format!("ip:{}", host))?,
-            Backend::Usb(device) => CString::new(format!("usb:{}", device))?,
-            Backend::Serial(tty) => CString::new(format!("serial:{}", tty))?,
-            Backend::FromUri(uri) => CString::new(uri)?,
-        };
-
-        let ctx = unsafe { ffi::iio_create_context_from_uri(uri.as_ptr()) };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
         })
     }
 
-    /// Creates a default context from a local or remote IIO device.
-    ///
-    /// # Notes
-    ///
-    /// This will create a network context if the IIOD_REMOTE
-    /// environment variable is set to the hostname where the IIOD server
-    /// runs. If set to an empty string, the server will be discovered using
-    /// ZeroConf. If the environment variable is not set, a local context
-    /// will be created instead.
-    pub fn default() -> Result<Context> {
-        let ctx = unsafe { ffi::iio_create_default_context() };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
+    /// Creates a context specified by the `uri`.
+    pub fn from_uri(uri: &str) -> Result<Self> {
+        Self::with_backend(Backend::Uri(uri))
     }
 
-    /// Creates a context from XML data in memory
-    pub fn create_xml_mem(xml: &str) -> Result<Context> {
-        let n = xml.len();
-        let xml = CString::new(xml)?;
-        let ctx = unsafe { ffi::iio_create_xml_context_mem(xml.as_ptr(), n) };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
+    /// Creates a Rust Context object from a C context pointer.
+    fn from_ptr(ctx: *mut ffi::iio_context) -> Result<Self> {
+        match ctx.is_null() {
+            true => Err(Error::from(Errno::last())),
+            false => Ok(Context { inner: Rc::new(InnerContext { ctx }) }),
         }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
     }
 
     /// Get the name of the context.
@@ -378,7 +393,7 @@ mod tests {
     // See that we get the default context.
     #[test]
     fn default_context() {
-        let ctx = Context::default();
+        let ctx = Context::new();
         assert!(ctx.is_ok());
         //let ctx = ctx.unwrap();
     }
@@ -386,7 +401,7 @@ mod tests {
     // Clone a context and make sure it's reported as same one.
     #[test]
     fn clone_context() {
-        let ctx = Context::default().unwrap();
+        let ctx = Context::new().unwrap();
         let ctx2 = ctx.clone();
         assert!(ctx == ctx2);
     }
@@ -394,7 +409,7 @@ mod tests {
     // See that device iterator gets the correct number of devices.
     #[test]
     fn dev_iterator_count() {
-        let ctx = Context::default().unwrap();
+        let ctx = Context::new().unwrap();
         let ndev = ctx.num_devices();
         assert!(ndev != 0);
         assert!(ctx.devices().count() == ndev);
@@ -403,7 +418,7 @@ mod tests {
     // See that the description gives back something.
     #[test]
     fn name() {
-        let ctx = Context::default().unwrap();
+        let ctx = Context::new().unwrap();
         let name = ctx.name();
         println!("Context name: {}", name);
         assert!(name == "local" || name == "network");
@@ -412,7 +427,7 @@ mod tests {
     // See that the description gives back something.
     #[test]
     fn description() {
-        let ctx = Context::default().unwrap();
+        let ctx = Context::new().unwrap();
         let desc = ctx.description();
         println!("Context description: {}", desc);
         assert!(!desc.is_empty());

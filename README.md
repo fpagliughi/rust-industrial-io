@@ -14,7 +14,7 @@ industrial-io = "0.3"
 ```
 
 
-## Pre-release notes
+## Pre-release Note
 
 This is a pre-release verion of the crate. The API is stabilizing, but is still under active development and may change before a final release.
 
@@ -32,7 +32,7 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
-### Unreleased Features in This Branch
+### New in v0.3
 
 - Support for _libiio_ v0.21
 - Updated error handling:
@@ -43,17 +43,6 @@ To keep up with the latest announcements for this project, follow:
     - _remove_trigger()_
     - _is_buffer_capable()_
 - New utility app: _riio_stop_all_
-
-### New in v0.2
-
-- Support for libiio v0.18
-- Further implementation of _libiio_ functions for contexts, devices, channels, etc.
-- Functions to read and write buffers, with and without conversions, and to convert individual samples to and from hardware format.
-- [Breaking] Removed previous `ChannelType` for Input/Output as it conflicted with the library's channel types of `Voltage`, `Current`, `Power`, etc, and implemented the library type.
-- Contexts have a ref-counted "inner" representation using _Rc<>_, and can be "cloned" quickly by incrementing the count. (Thanks, @skrap!)
- - Devices carry a cloned reference to the context that created them, thus keeping the context alive until the last device using it gets dropped.
- - Some clippy-recommended lints.
- - Example app to collect and process data a buffer at a time, with conversions.
 
 ## Testing the Crate
 

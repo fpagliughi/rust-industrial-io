@@ -179,34 +179,17 @@ impl Context {
         })
     }
 
-    /// Creates a context from a local device (Linux only)
-    #[cfg(target_os = "linux")]
-    pub fn create_local() -> Result<Context> {
-        let ctx = unsafe { ffi::iio_create_local_context() };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
-    }
-
-    /// Creates a context from a network device
-    pub fn create_network(host: &str) -> Result<Context> {
-        let host = CString::new(host)?;
-        let ctx = unsafe { ffi::iio_create_network_context(host.as_ptr()) };
-        if ctx.is_null() {
-            return Err(Errno::last().into());
-        }
-        Ok(Context {
-            inner: Rc::new(InnerContext { ctx }),
-        })
-    }
-
-    /// Creates a context from an XML file
-    pub fn create_xml(xml_file: &str) -> Result<Context> {
-        let xml_file = CString::new(xml_file)?;
-        let ctx = unsafe { ffi::iio_create_xml_context(xml_file.as_ptr()) };
+    /// Creates a default context from a local or remote IIO device.
+    ///
+    /// # Notes 
+    /// 
+    /// This will create a network context if the IIOD_REMOTE
+    /// environment variable is set to the hostname where the IIOD server
+    /// runs. If set to an empty string, the server will be discovered using
+    /// ZeroConf. If the environment variable is not set, a local context
+    /// will be created instead.
+    pub fn default() -> Result<Context> {
+        let ctx = unsafe { ffi::iio_create_default_context() };
         if ctx.is_null() {
             return Err(Errno::last().into());
         }

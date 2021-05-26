@@ -200,17 +200,13 @@ fn main() {
     let ts_data = buf.channel_iter::<u64>(&ts_chan);
     let mut sample_data = buf.channel_iter::<u16>(&sample_chan);
 
-    for ts in ts_data {
-        // The timestamp is represented as a 64-bit integer number of
-        // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
-        // then a chrono DataTime for pretty printing.
-        let sys_tm = SystemTime::UNIX_EPOCH + Duration::from_nanos(ts);
-        let dt: DateTime<Utc> = sys_tm.into();
-        print!("{}: ", dt.format("%T%.6f"));
-
-        if let Some(val) = sample_data.next() {
-            print!("{}", val);
-        }
-        println!();
-    }
+    // The timestamp is represented as a 64-bit integer number of
+    // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
+    // then a chrono DataTime for pretty printing.
+    sample_data.zip(
+            ts_data.map(|ts| DateTime::<Utc>::from(
+                    SystemTime::UNIX_EPOCH + Duration::from_nanos(ts))
+                    .format("%T%.6f")
+        ))
+        .for_each(|(data, time)| println!("{}: {}", time, data));
 }

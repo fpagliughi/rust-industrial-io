@@ -32,6 +32,11 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
+### Unreleased Features in This Branch
+
+- [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type. (Thanks @Funky185540)
+- Updates to the examples for more/different hardware.
+
 ### New in v0.3
 
 - Support for _libiio_ v0.21

@@ -128,24 +128,44 @@ fn main() {
 
     // ----- Set a trigger -----
 
-    let trig = ctx.find_device(trig_name).unwrap_or_else(|| {
-        eprintln!("Couldn't find requested trigger: {}", trig_name);
-        process::exit(1);
-    });
-
     let freq = matches
         .value_of("frequency")
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or(DFLT_FREQ);
 
-    // Set the sampling rate
-    if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
-        println!("Can't set sampling rate to {}Hz: {}", freq, err);
+    let trig = ctx.find_device(trig_name).unwrap_or_else(|| {
+        eprintln!("Couldn't find requested trigger: {}", trig_name);
+        process::exit(1);
+    });
+
+    // There is no unified way to handle setting sample rates across iio
+    // devices. Thus we have to do this handling ourselves.
+    // Set the sampling rate on the trigger
+    if trig.has_attr("sampling_frequency") {
+        if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
+            eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
+                freq, trig.name().unwrap(), err);
+        }
+    } else {
+        println!("{} {}", "Trigger doesn't have sampling frequency attribute!",
+            "Setting on device instead");
+
+        if dev.has_attr("sampling_frequency") {
+            // Set the sampling rate on the device
+            if let Err(err) = dev.attr_write_int("sampling_frequency", freq) {
+                eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
+                    freq, dev.name().unwrap(), err);
+            }
+        } else {
+            eprintln!("{} {}", "Can't set sampling frequency! No suitable",
+                "attribute found in specified device and trigger...");
+            process::exit(2);
+        }
     }
 
     dev.set_trigger(&trig).unwrap_or_else(|err| {
         println!("Error setting the trigger in the device: {}", err);
-        process::exit(2);
+        process::exit(3);
     });
 
     // ----- Create a buffer -----
@@ -157,7 +177,7 @@ fn main() {
 
     let mut buf = dev.create_buffer(n_sample, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
-        process::exit(3);
+        process::exit(4);
     });
 
     // Make sure the timeout is more than enough to gather each buffer
@@ -172,7 +192,7 @@ fn main() {
     println!("Capturing a buffer...");
     if let Err(err) = buf.refill() {
         eprintln!("Error filling the buffer: {}", err);
-        process::exit(4);
+        process::exit(5);
     }
 
     // Extract and print the data
@@ -180,17 +200,13 @@ fn main() {
     let ts_data = buf.channel_iter::<u64>(&ts_chan);
     let mut sample_data = buf.channel_iter::<u16>(&sample_chan);
 
-    for ts in ts_data {
-        // The timestamp is represented as a 64-bit integer number of
-        // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
-        // then a chrono DataTime for pretty printing.
-        let sys_tm = SystemTime::UNIX_EPOCH + Duration::from_nanos(ts);
-        let dt: DateTime<Utc> = sys_tm.into();
-        print!("{}: ", dt.format("%T%.6f"));
-
-        if let Some(val) = sample_data.next() {
-            print!("{}", val);
-        }
-        println!();
-    }
+    // The timestamp is represented as a 64-bit integer number of
+    // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
+    // then a chrono DataTime for pretty printing.
+    sample_data.zip(
+            ts_data.map(|ts| DateTime::<Utc>::from(
+                    SystemTime::UNIX_EPOCH + Duration::from_nanos(ts))
+                    .format("%T%.6f")
+        ))
+        .for_each(|(data, time)| println!("{}: {}", time, data));
 }

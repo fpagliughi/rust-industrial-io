@@ -36,6 +36,61 @@ pub struct Context {
     inner: Rc<InnerContext>,
 }
 
+/// Backends for I/O Contexts.
+/// 
+/// An I/O [`Context`] relies on a backend that provides sensor data.
+#[derive(Debug)]
+pub enum Backend<'a> {
+    /// Local Backend, only available on Linux hosts. Sensors to work with are 
+    /// part of the system and accessible in sysfs (under `/sys/...`).
+    Local,
+    /// XML Backend, creates a Context from an XML file. Example Parameter: 
+    /// "/home/user/file.xml"
+    Xml(&'a str),
+    /// Network Backend, creates a Context through a network connection. 
+    /// Requires a hostname, IPv4 or IPv6 address to connect to another host 
+    /// that is running the [IIO Daemon]. If an empty string is provided, 
+    /// automatic discovery through ZeroConf is performed (if available in IIO).
+    /// Example Parameter:
+    /// 
+    /// - "192.168.2.1" to connect to given IPv4 host, **or**
+    /// - "localhost" to connect to localhost running IIOD, **or**
+    /// - "plutosdr.local" to connect to host with given hostname, **or**
+    /// - "" for automatic discovery
+    /// 
+    /// [IIO Daemon]: https://github.com/analogdevicesinc/libiio/tree/master/iiod
+    Ip(&'a str),
+    /// USB Backend, creates a context through a USB connection.
+    /// If only a single USB device is attached, provide an empty String ("") 
+    /// to use that. When more than one usb device is attached, requires bus, 
+    /// address, and interface parts separated with a dot. 
+    /// Example Parameter: "3.32.5"
+    Usb(&'a str),
+    /// Serial Backend, creates a context through a serial connection.
+    /// Requires (Values in parentheses show examples):
+    /// 
+    /// - a port (/dev/ttyUSB0),
+    /// - baud_rate (default 115200)
+    /// - serial port configuration
+    ///     - data bits (5 6 7 8 9)
+    ///     - parity ('n' none, 'o' odd, 'e' even, 'm' mark, 's' space)
+    ///     - stop bits (1 2)
+    ///     - flow control ('\0' none, 'x' Xon Xoff, 'r' RTSCTS, 'd' DTRDSR)
+    /// 
+    /// Example Parameters:
+    /// 
+    /// - "/dev/ttyUSB0,115200", **or**
+    /// - "/dev/ttyUSB0,115200,8n1"
+    Serial(&'a str),
+    /// "Guess" the backend to use from the URI that's supplied. This merely 
+    /// provides compatibility with [`iio_create_context_from_uri`] from the 
+    /// underlying IIO C-library. Refer to the IIO docs for information on how 
+    /// to format this parameter.
+    /// 
+    /// [`iio_create_context_from_uri`]: https://analogdevicesinc.github.io/libiio/master/libiio/group__Context.html#gafdcee40508700fa395370b6c636e16fe
+    FromUri(&'a str)
+}
+
 /// This holds a pointer to the library context.
 /// When it is dropped, the library context is destroyed.
 #[derive(Debug)]

@@ -130,7 +130,6 @@ impl Context {
         Self::from_ptr(unsafe { ffi::iio_create_default_context() })
     }
 
-
     /// Create an IIO Context.
     ///
     /// A context contains one or more devices (i.e. sensors) that can provide
@@ -176,28 +175,28 @@ impl Context {
                 Backend::Xml(name) => {
                     let name = CString::new(name)?;
                     ffi::iio_create_xml_context(name.as_ptr())
-                },
+                }
                 Backend::XmlMem(xml) => {
                     let n = xml.len();
                     let xml = CString::new(xml)?;
                     ffi::iio_create_xml_context_mem(xml.as_ptr(), n)
-                },
+                }
                 Backend::Network(host) => {
                     let host = CString::new(host)?;
                     ffi::iio_create_network_context(host.as_ptr())
-                },
+                }
                 Backend::Usb(device) => {
                     let uri = CString::new(format!("usb:{}", device))?;
                     ffi::iio_create_context_from_uri(uri.as_ptr())
-                },
+                }
                 Backend::Serial(tty) => {
                     let uri = CString::new(format!("serial:{}", tty))?;
                     ffi::iio_create_context_from_uri(uri.as_ptr())
-                },
+                }
                 Backend::Uri(uri) => {
                     let uri = CString::new(uri)?;
                     ffi::iio_create_context_from_uri(uri.as_ptr())
-                },
+                }
                 #[cfg(target_os = "linux")]
                 Backend::Local => ffi::iio_create_local_context(),
             }
@@ -213,7 +212,9 @@ impl Context {
     fn from_ptr(ctx: *mut ffi::iio_context) -> Result<Self> {
         match ctx.is_null() {
             true => Err(Error::from(Errno::last())),
-            false => Ok(Context { inner: Rc::new(InnerContext { ctx }) }),
+            false => Ok(Context {
+                inner: Rc::new(InnerContext { ctx }),
+            }),
         }
     }
 

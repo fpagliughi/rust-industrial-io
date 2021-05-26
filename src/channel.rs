@@ -204,7 +204,7 @@ impl Channel {
     /// Gets the channel-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_channel_get_attr(self.chan, idx as c_uint) };
-        cstring_opt(pstr).ok_or_else(|| Error::InvalidIndex)
+        cstring_opt(pstr).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find the channel-specific attribute by name.

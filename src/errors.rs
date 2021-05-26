@@ -10,8 +10,7 @@
 //!
 //! Error definitions for the Industrial I/O Library.
 
-use nix;
-use std::{ffi, io, result};
+use std::{ffi, io};
 use thiserror::Error;
 
 //type SysError = nix::Error::Sys;
@@ -36,7 +35,7 @@ pub enum Error {
 }
 
 /// The default result type for the IIO library
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 impl From<nix::errno::Errno> for Error {
     /// Converts a *nix errno into an Error

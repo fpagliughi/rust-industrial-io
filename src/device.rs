@@ -86,7 +86,7 @@ impl Device {
     /// Gets the name of the device-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_device_get_attr(self.dev, idx as c_uint) };
-        cstring_opt(pstr).ok_or_else(|| Error::InvalidIndex)
+        cstring_opt(pstr).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find a device-specific attribute by its name
@@ -267,7 +267,7 @@ impl Device {
     /// Gets the name of the buffer-specific attribute at the index
     pub fn get_buffer_attr(&self, idx: usize) -> Result<String> {
         let pstr = unsafe { ffi::iio_device_get_buffer_attr(self.dev, idx as c_uint) };
-        cstring_opt(pstr).ok_or_else(|| Error::InvalidIndex)
+        cstring_opt(pstr).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find a buffer-specific attribute by its name

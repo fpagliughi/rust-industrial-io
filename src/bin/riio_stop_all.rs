@@ -24,7 +24,7 @@ use std::process;
 // --------------------------------------------------------------------------
 
 fn main() {
-    let ctx = iio::Context::new().unwrap_or_else(|err| {
+    let ctx = iio::Context::default().unwrap_or_else(|err| {
         eprintln!("Error getting the IIO Context: {}", err);
         process::exit(1);
     });

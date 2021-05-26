@@ -19,7 +19,7 @@ fn main() -> iio::Result<()> {
     let lib_ver = iio::library_version();
     println!("Library version: {:?}", lib_ver);
 
-    let ctx = iio::Context::new().unwrap_or_else(|err| {
+    let ctx = iio::Context::default().unwrap_or_else(|err| {
         eprintln!("Error getting the IIO Context: {}", err);
         process::exit(1);
     });

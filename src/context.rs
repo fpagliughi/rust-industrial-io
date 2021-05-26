@@ -88,7 +88,7 @@ pub enum Backend<'a> {
     /// to format this parameter.
     ///
     /// [`iio_create_context_from_uri`]: https://analogdevicesinc.github.io/libiio/master/libiio/group__Context.html#gafdcee40508700fa395370b6c636e16fe
-    FromUri(&'a str)
+    FromUri(&'a str),
 }
 
 /// This holds a pointer to the library context.
@@ -149,25 +149,16 @@ impl Context {
                 if cfg!(target_os = "linux") {
                     CString::new("local:")?
                     // unsafe { ffi::iio_create_default_context() }
-                } else {
+                }
+                else {
                     panic!("Local context is only available on Linux hosts!");
                 }
-            },
-            Backend::Xml(xml_file) => {
-                CString::new(format!("xml:{}", xml_file))?
-            },
-            Backend::Ip(host) => {
-                CString::new(format!("ip:{}", host))?
-            },
-            Backend::Usb(device) => {
-                CString::new(format!("usb:{}", device))?
-            },
-            Backend::Serial(tty) => {
-                CString::new(format!("serial:{}", tty))?
-            },
-            Backend::FromUri(uri) => {
-                CString::new(uri)?
             }
+            Backend::Xml(xml_file) => CString::new(format!("xml:{}", xml_file))?,
+            Backend::Ip(host) => CString::new(format!("ip:{}", host))?,
+            Backend::Usb(device) => CString::new(format!("usb:{}", device))?,
+            Backend::Serial(tty) => CString::new(format!("serial:{}", tty))?,
+            Backend::FromUri(uri) => CString::new(uri)?,
         };
 
         let ctx = unsafe { ffi::iio_create_context_from_uri(uri.as_ptr()) };

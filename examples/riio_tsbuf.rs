@@ -5,7 +5,7 @@
 //
 // This example requires a device with a timestamp channel.
 //
-// Copyright (c) 2018-2019, Frank Pagliughi
+// Copyright (c) 2018-2021, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -15,14 +15,14 @@
 
 #[macro_use]
 extern crate clap;
-extern crate chrono;
-extern crate industrial_io as iio;
 
-use chrono::offset::Utc;
-use chrono::DateTime;
+use chrono::{offset::Utc, DateTime};
 use clap::{App, Arg};
-use std::time::{Duration, SystemTime};
-use std::{cmp, process};
+use industrial_io as iio;
+use std::{
+    cmp, process,
+    time::{Duration, SystemTime},
+};
 
 const DFLT_DEV_NAME: &str = "ads1015";
 const DFLT_CHAN_NAME: &str = "voltage0";
@@ -143,22 +143,37 @@ fn main() {
     // Set the sampling rate on the trigger
     if trig.has_attr("sampling_frequency") {
         if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
-            eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
-                freq, trig.name().unwrap(), err);
+            eprintln!(
+                "Can't set sampling rate to {}Hz on {}: '{}'",
+                freq,
+                trig.name().unwrap(),
+                err
+            );
         }
-    } else {
-        println!("{} {}", "Trigger doesn't have sampling frequency attribute!",
-            "Setting on device instead");
+    }
+    else {
+        println!(
+            "{} {}",
+            "Trigger doesn't have sampling frequency attribute!", "Setting on device instead"
+        );
 
         if dev.has_attr("sampling_frequency") {
             // Set the sampling rate on the device
             if let Err(err) = dev.attr_write_int("sampling_frequency", freq) {
-                eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
-                    freq, dev.name().unwrap(), err);
+                eprintln!(
+                    "Can't set sampling rate to {}Hz on {}: '{}'",
+                    freq,
+                    dev.name().unwrap(),
+                    err
+                );
             }
-        } else {
-            eprintln!("{} {}", "Can't set sampling frequency! No suitable",
-                "attribute found in specified device and trigger...");
+        }
+        else {
+            eprintln!(
+                "{} {}",
+                "Can't set sampling frequency! No suitable",
+                "attribute found in specified device and trigger..."
+            );
             process::exit(2);
         }
     }
@@ -198,15 +213,14 @@ fn main() {
     // Extract and print the data
 
     let ts_data = buf.channel_iter::<u64>(&ts_chan);
-    let mut sample_data = buf.channel_iter::<u16>(&sample_chan);
 
     // The timestamp is represented as a 64-bit integer number of
     // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
     // then a chrono DataTime for pretty printing.
-    sample_data.zip(
-            ts_data.map(|ts| DateTime::<Utc>::from(
-                    SystemTime::UNIX_EPOCH + Duration::from_nanos(ts))
-                    .format("%T%.6f")
-        ))
+    buf.channel_iter::<u16>(&sample_chan)
+        .zip(ts_data.map(|ts| {
+            DateTime::<Utc>::from(SystemTime::UNIX_EPOCH + Duration::from_nanos(ts))
+                .format("%T%.6f")
+        }))
         .for_each(|(data, time)| println!("{}: {}", time, data));
 }

@@ -22,20 +22,22 @@
 
 #[macro_use]
 extern crate clap;
-extern crate chrono;
-extern crate ctrlc;
-extern crate industrial_io as iio;
 
 use chrono::offset::Utc;
 use chrono::DateTime;
 use clap::{App, Arg};
-use std::any::TypeId;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, SendError, Sender};
-use std::sync::Arc;
-use std::thread::{spawn, JoinHandle};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{cmp, process};
+use industrial_io as iio;
+use std::{
+    any::TypeId,
+    cmp, process,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc::{channel, Receiver, SendError, Sender},
+        Arc,
+    },
+    thread::{spawn, JoinHandle},
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 // The type to use for raw samples.
 type RawSampleType = i16;
@@ -254,22 +256,37 @@ fn main() {
     // Set the sampling rate on the trigger
     if trig.has_attr("sampling_frequency") {
         if let Err(err) = trig.attr_write_int("sampling_frequency", freq) {
-            eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
-                freq, trig.name().unwrap(), err);
+            eprintln!(
+                "Can't set sampling rate to {}Hz on {}: '{}'",
+                freq,
+                trig.name().unwrap(),
+                err
+            );
         }
-    } else {
-        println!("{} {}", "Trigger doesn't have sampling frequency attribute!",
-            "Setting on device instead");
+    }
+    else {
+        println!(
+            "{} {}",
+            "Trigger doesn't have sampling frequency attribute!", "Setting on device instead"
+        );
 
         if dev.has_attr("sampling_frequency") {
             // Set the sampling rate on the device
             if let Err(err) = dev.attr_write_int("sampling_frequency", freq) {
-                eprintln!("Can't set sampling rate to {}Hz on {}: '{}'", 
-                    freq, dev.name().unwrap(), err);
+                eprintln!(
+                    "Can't set sampling rate to {}Hz on {}: '{}'",
+                    freq,
+                    dev.name().unwrap(),
+                    err
+                );
             }
-        } else {
-            eprintln!("{} {}", "Can't set sampling frequency! No suitable",
-                "attribute found in specified device and trigger...");
+        }
+        else {
+            eprintln!(
+                "{} {}",
+                "Can't set sampling frequency! No suitable",
+                "attribute found in specified device and trigger..."
+            );
             process::exit(2);
         }
     }

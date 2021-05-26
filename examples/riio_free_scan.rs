@@ -3,7 +3,7 @@
 // Simple Rust IIO example for buffered, free-scan reading.
 // This does buffered reading without using a trigger.
 //
-// Copyright (c) 2018-2019, Frank Pagliughi
+// Copyright (c) 2018-2021, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -13,11 +13,10 @@
 
 #[macro_use]
 extern crate clap;
-extern crate industrial_io as iio;
 
 use clap::{App, Arg};
-use std::any::TypeId;
-use std::process;
+use industrial_io as iio;
+use std::{any::TypeId, process};
 
 const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
 

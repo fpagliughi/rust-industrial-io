@@ -16,9 +16,9 @@
 
 #[macro_use]
 extern crate clap;
-extern crate industrial_io as iio;
 
 use clap::{App, Arg};
+use industrial_io as iio;
 use std::process;
 
 fn main() {

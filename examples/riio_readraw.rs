@@ -18,13 +18,11 @@
 
 #[macro_use]
 extern crate clap;
-extern crate industrial_io as iio;
-extern crate schedule_recv;
 
 use clap::{App, Arg};
+use industrial_io as iio;
 use schedule_recv::periodic;
-use std::process;
-use std::time::Duration;
+use std::{process, time::Duration};
 
 fn main() -> iio::Result<()> {
     let matches = App::new("riio_readraw")

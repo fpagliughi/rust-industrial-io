@@ -11,8 +11,7 @@
 //! Rust application to gather information about Industrial I/O devices.
 //!
 
-extern crate industrial_io as iio;
-
+use industrial_io as iio;
 use std::process;
 
 fn main() -> iio::Result<()> {

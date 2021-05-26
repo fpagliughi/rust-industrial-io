@@ -132,7 +132,7 @@ impl Context {
     ///
     /// let ctx_ip = iio::Context::new(iio::Backend::Ip("192.168.2.1"));
     /// let ctx_host = iio::Context::new(iio::Backend::Ip("runs-iiod.local"));
-    /// let ctx_auto = iio::Context::new(iio::Backend::Ip())
+    /// let ctx_auto = iio::Context::default();
     /// ```
     ///
     /// Creates a Context using some arbitrary URI (like it is used in the
@@ -378,7 +378,7 @@ mod tests {
     // See that we get the default context.
     #[test]
     fn default_context() {
-        let ctx = Context::new();
+        let ctx = Context::default();
         assert!(ctx.is_ok());
         //let ctx = ctx.unwrap();
     }
@@ -386,10 +386,7 @@ mod tests {
     // Clone a context and make sure it's reported as same one.
     #[test]
     fn clone_context() {
-        let ctx = Context::new();
-        assert!(ctx.is_ok());
-        let ctx = ctx.unwrap();
-
+        let ctx = Context::default().unwrap();
         let ctx2 = ctx.clone();
         assert!(ctx == ctx2);
     }
@@ -397,7 +394,7 @@ mod tests {
     // See that device iterator gets the correct number of devices.
     #[test]
     fn dev_iterator_count() {
-        let ctx = Context::new().unwrap();
+        let ctx = Context::default().unwrap();
         let ndev = ctx.num_devices();
         assert!(ndev != 0);
         assert!(ctx.devices().count() == ndev);
@@ -406,7 +403,7 @@ mod tests {
     // See that the description gives back something.
     #[test]
     fn name() {
-        let ctx = Context::new().unwrap();
+        let ctx = Context::default().unwrap();
         let name = ctx.name();
         println!("Context name: {}", name);
         assert!(name == "local" || name == "network");
@@ -415,7 +412,7 @@ mod tests {
     // See that the description gives back something.
     #[test]
     fn description() {
-        let ctx = Context::new().unwrap();
+        let ctx = Context::default().unwrap();
         let desc = ctx.description();
         println!("Context description: {}", desc);
         assert!(!desc.is_empty());

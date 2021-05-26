@@ -533,7 +533,7 @@ mod tests {
     // See that we get the default context.
     #[test]
     fn default_context() {
-        let dev = Context::new().unwrap().get_device(0).unwrap();
+        let dev = Context::default().unwrap().get_device(0).unwrap();
         let chan = dev.get_channel(0);
         assert!(chan.is_ok());
     }

@@ -7,8 +7,48 @@
 // This file may not be copied, modified, or distributed except according
 // to those terms.
 //
-//! Industrial I/O Buffers
+//! Industrial I/O Buffers.
 //!
+//! The process of capturing samples from or uploading samples to hardware is
+//! managed using [`Buffer`] and related methods.
+//!
+//! It is important to keep in mind that an instance of [`Buffer`] is always
+//! coupled to exactly **one instance of [`Device`]**, and vice-versa.
+//! [`Buffer`]s are allocated on a per-[`Device`] basis, and not per
+//! [`Channel`]. In order to control which [`Channel`]s to capture in a
+//! [`Buffer`], the respective [`Channel`]s must be [enabled][enable_chan] or
+//! [disabled][disable_chan].
+//!
+//! The very first step when working with [`Buffer`]s is to
+//! [enable][enable_chan] the capture [`Channel`]s that we want to use, and
+//! [disable][disable_chan] those that we don't need. This is done with the
+//! functions [`Channel::enable()`] and [`Channel::disable()`]. Note that the
+//! [`Channel`]s will really be enabled or disabled when the [`Buffer`]-object
+//! is created.
+//!
+//! Also, not all [`Channel`]s can be enabled. To know whether or not one
+//! [`Channel`] can be enabled, use [`Channel::is_scan_element()`].
+//!
+//! Once the [`Channel`]s have been enabled, and [triggers assigned] (for
+//! triggered [`Buffer`]s) the [`Buffer`] object can be created from the
+//! [`Device`] object that will be used, with the function
+//! [`Device::create_buffer()`]. This call will fail if no [`Channel`]s have
+//! been enabled, or for triggered buffers, if the trigger has not been
+//! assigned.
+//!
+//! [`Buffer`] objects are automatically dropped when their scope ends.
+//!
+//! For additional information on actually working with [`Buffer`]s, including
+//! some examples, refer to the [`Buffer` documentation][`Buffer`].
+//!
+//! Most parts of the documentation for this module were taken from the [libiio
+//! documentation](https://analogdevicesinc.github.io/libiio/master/libiio/index.html)
+//!
+//! [enable_chan]: crate::channel::Channel::enable()
+//! [disable_chan]: crate::channel::Channel::disable()
+//! [triggers assigned]: crate::device::Device::set_trigger()
+#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(missing_docs)]
 
 use std::marker::PhantomData;
 use std::os::raw::c_int;
@@ -17,7 +57,13 @@ use std::{mem, ptr};
 use super::*;
 use crate::ffi;
 
-/// An Industrial I/O input or output buffer
+/// An Industrial I/O input or output buffer.
+///
+/// See [here][crate::buffer] for a detailed explanation of how buffers work.
+///
+/// # Examples
+///
+/// TODO
 pub struct Buffer {
     /// The underlying buffer from the C library
     pub(crate) buf: *mut ffi::iio_buffer,
@@ -29,6 +75,8 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    /// Get buffer size.
+    ///
     /// Get the buffer capacity in number of samples from each channel that
     /// the buffer can hold.
     pub fn capacity(&self) -> usize {
@@ -36,22 +84,25 @@ impl Buffer {
     }
 
     /// Gets a pollable file descriptor for the buffer.
-    /// This can be used to determine when refill() or push() can be called
-    /// without blocking.
+    ///
+    /// This can be used to determine when [`Buffer::refill()`] or
+    /// [`Buffer::push()`] can be called without blocking.
     pub fn poll_fd(&mut self) -> Result<c_int> {
         let ret = unsafe { ffi::iio_buffer_get_poll_fd(self.buf) };
         sys_result(i32::from(ret), ret)
     }
 
-    /// Make the push or refill calls blocking or not.
+    /// Make calls to [`Buffer::push()`] or [`Buffer::refill()`] blocking or not.
+    ///
+    /// A [`Device`] is blocking by default.
     pub fn set_blocking_mode(&mut self, blocking: bool) -> Result<()> {
         let ret = unsafe { ffi::iio_buffer_set_blocking_mode(self.buf, blocking) };
         sys_result(ret, ())
     }
 
-    /// Fetch more samples from the hardware
+    /// Fetch more samples from the hardware.
     ///
-    /// This is only valid for input buffers
+    /// This is only valid for input buffers.
     pub fn refill(&mut self) -> Result<usize> {
         let ret = unsafe { ffi::iio_buffer_refill(self.buf) };
         sys_result(ret as i32, ret as usize)
@@ -59,7 +110,7 @@ impl Buffer {
 
     /// Send the samples to the hardware.
     ///
-    /// Note that this is only valid for output buffers
+    /// This is only valid for output buffers.
     pub fn push(&mut self) -> Result<usize> {
         let ret = unsafe { ffi::iio_buffer_push(self.buf) };
         sys_result(ret as i32, ret as usize)
@@ -67,15 +118,35 @@ impl Buffer {
 
     /// Send a given number of samples to the hardware.
     ///
-    /// Note that this is only valid for output buffers
-    ///
-    /// `n` The number of samples to send
-    pub fn push_partial(&mut self, n: usize) -> Result<usize> {
-        let ret = unsafe { ffi::iio_buffer_push_partial(self.buf, n) };
+    /// This is only valid for output buffers. Note that the number of samples
+    /// explicitly doesn't refer to their size in bytes, but the actual number
+    /// of samples, regardless of the sample size in memory.
+    pub fn push_partial(&mut self, num_samples: usize) -> Result<usize> {
+        let ret = unsafe { ffi::iio_buffer_push_partial(self.buf, num_samples) };
         sys_result(ret as i32, ret as usize)
     }
 
     /// Cancel all buffer operations.
+    ///
+    /// This function cancels all outstanding [`Buffer`] operations previously
+    /// scheduled. This means any pending [`Buffer::push()`] or
+    /// [`Buffer::refill()`] operation will abort and return immediately, any
+    /// further invocations of these functions on the same buffer will return
+    /// immediately with an error.
+    ///
+    /// Usually [`Buffer::push()`] and [`Buffer::refill()`] will block until
+    /// either all data has been transferred or a timeout occurs. This can,
+    /// depending on the configuration, take a significant amount of time.
+    /// [`Buffer::cancel()`] is useful to bypass these conditions if the
+    /// [`Buffer`] operation is supposed to be stopped in response to an
+    /// external event (e.g. user input).
+    ///
+    /// TODO: @fpagliughi, is this true for the rust binding, too?
+    /// To be able to capture additional data after calling this function the
+    /// buffer should be destroyed and then re-created.
+    ///
+    /// This function can be called multiple times for the same buffer, but all
+    /// but the first invocation will be without additional effect.
     pub fn cancel(&mut self) {
         unsafe {
             ffi::iio_buffer_cancel(self.buf);
@@ -100,6 +171,7 @@ impl Buffer {
     }
 }
 
+/// Destroy the buffer when its scope ends.
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe { ffi::iio_buffer_destroy(self.buf) }

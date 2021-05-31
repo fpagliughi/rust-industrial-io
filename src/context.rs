@@ -106,15 +106,41 @@ pub enum Backend<'a> {
 /// This holds a pointer to the library context.
 /// When it is dropped, the library context is destroyed.
 #[derive(Debug)]
-struct InnerContext {
+pub struct InnerContext {
+    /// Pointer to a libiio Context object
     pub(crate) ctx: *mut ffi::iio_context,
 }
 
+impl InnerContext {
+    /// Tries to create the inner context from a C pointer.
+    /// This should be called _right after_ creating the C context as it
+    /// will use the last error on failure.
+    fn new(ctx: *mut ffi::iio_context) -> Result<Self> {
+        match ctx.is_null() {
+            true => Err(Error::from(Errno::last())),
+            false => Ok(Self { ctx }),
+        }
+    }
+
+    /// Create a clone of the underlying context that can be used in another thread.
+    pub fn try_clone(&self) -> Result<Self> {
+        let ctx = unsafe { ffi::iio_context_clone(self.ctx) };
+        if ctx.is_null() {
+            Err(Error::from(Errno::last()))?;
+        }
+        Ok(InnerContext { ctx })
+    }
+}
+
 impl Drop for InnerContext {
+    /// Dropping destroys the underlying context.
     fn drop(&mut self) {
         unsafe { ffi::iio_context_destroy(self.ctx) };
     }
 }
+
+// The inner context can be sent to another thread.
+unsafe impl Send for InnerContext {}
 
 impl Context {
     /// Creates a default context from a local or remote IIO device.
@@ -208,14 +234,22 @@ impl Context {
         Self::with_backend(Backend::Uri(uri))
     }
 
+    /// Creates a context from an existing "inner" object.
+    pub fn from_inner(inner: InnerContext) -> Self {
+        Self { inner: Rc::new(inner) }
+    }
+
     /// Creates a Rust Context object from a C context pointer.
     fn from_ptr(ctx: *mut ffi::iio_context) -> Result<Self> {
-        match ctx.is_null() {
-            true => Err(Error::from(Errno::last())),
-            false => Ok(Context {
-                inner: Rc::new(InnerContext { ctx }),
-            }),
-        }
+        let inner = InnerContext::new(ctx)?;
+        Ok(Self::from_inner(inner))
+    }
+
+    /// Try to create a clone of the inner underlying context that can be
+    /// used to create a new context object even in a different thread,
+    /// remembering that `InnerContext` implements the `Send` trait.
+    pub fn try_clone_inner(&self) -> Result<InnerContext> {
+        self.inner.try_clone()
     }
 
     /// Get the name of the context.
@@ -390,6 +424,7 @@ impl<'a> Iterator for AttrIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::thread;
 
     // See that we get the default context.
     #[test]
@@ -405,6 +440,18 @@ mod tests {
         let ctx = Context::new().unwrap();
         let ctx2 = ctx.clone();
         assert!(ctx == ctx2);
+    }
+
+    // Clone the inner context and send to another thread.
+    #[test]
+    fn multi_thread() {
+        let ctx = Context::new().unwrap();
+        let cti = ctx.try_clone_inner().unwrap();
+
+        let thr = thread::spawn(move || {
+            let _thr_ctx = Context::from_inner(cti);
+        });
+        thr.join().unwrap();
     }
 
     // See that device iterator gets the correct number of devices.

@@ -7,8 +7,48 @@
 // This file may not be copied, modified, or distributed except according
 // to those terms.
 //
-//! Industrial I/O Buffers
+//! Industrial I/O Buffers.
 //!
+//! The process of capturing samples from or uploading samples to hardware is
+//! managed using [`Buffer`] and related methods.
+//!
+//! It is important to keep in mind that an instance of [`Buffer`] is always
+//! coupled to exactly **one instance of [`Device`]**, and vice-versa.
+//! [`Buffer`]s are allocated on a per-[`Device`] basis, and not per
+//! [`Channel`]. In order to control which [`Channel`]s to capture in a
+//! [`Buffer`], the respective [`Channel`]s must be [enabled][enable_chan] or
+//! [disabled][disable_chan].
+//!
+//! The very first step when working with [`Buffer`]s is to
+//! [enable][enable_chan] the capture [`Channel`]s that we want to use, and
+//! [disable][disable_chan] those that we don't need. This is done with the
+//! functions [`Channel::enable()`] and [`Channel::disable()`]. Note that the
+//! [`Channel`]s will really be enabled or disabled when the [`Buffer`]-object
+//! is created.
+//!
+//! Also, not all [`Channel`]s can be enabled. To know whether or not one
+//! [`Channel`] can be enabled, use [`Channel::is_scan_element()`].
+//!
+//! Once the [`Channel`]s have been enabled, and [triggers assigned] (for
+//! triggered [`Buffer`]s) the [`Buffer`] object can be created from the
+//! [`Device`] object that will be used, with the function
+//! [`Device::create_buffer()`]. This call will fail if no [`Channel`]s have
+//! been enabled, or for triggered buffers, if the trigger has not been
+//! assigned.
+//!
+//! [`Buffer`] objects are automatically dropped when their scope ends.
+//!
+//! For additional information on actually working with [`Buffer`]s, including
+//! some examples, refer to the [`Buffer` documentation][`Buffer`].
+//!
+//! Most parts of the documentation for this module were taken from the [libiio
+//! documentation](https://analogdevicesinc.github.io/libiio/master/libiio/index.html)
+//!
+//! [enable_chan]: crate::channel::Channel::enable()
+//! [disable_chan]: crate::channel::Channel::disable()
+//! [triggers assigned]: crate::device::Device::set_trigger()
+#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(missing_docs)]
 
 use std::marker::PhantomData;
 use std::os::raw::c_int;

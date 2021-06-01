@@ -19,6 +19,18 @@ This is a pre-release verion of the crate. The API is stabilizing, but is still 
 
 This initial development work wrappers a _specific_ version (v0.21) of _libiio_. It assumes that the library is pre-installed on the build system and the target system.
 
+## Contributing
+
+Contributions to this project are gladly welcomed. Just keep a few things in mind:
+
+- Please make all Pull Requests against the `develop` branch of the repository. We prefer to keep the master branch relatively stable between releases and to do integration and testing in the develop branch.
+- Please keep individual Pull Requests to a single topic.
+- Please do not reformat code with other updates. Any code reformatting should be in a separate commit or PR. The formatting specification is in `.rustfmt.toml` and currently requires the _nightly_ release.
+
+Contributions are particularly welcome for any adjustments or feedback pertaining to different IIO device. If you test, work, or have any trouble with specific IIO hardware or drivers, let us know. 
+
+New examples for different hardware are also requested.
+
 ## Latest News
 
 An effort is underway to get this crate to production quality.  It includes:

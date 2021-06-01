@@ -22,6 +22,17 @@
 //!   [libiio Wiki](https://wiki.analog.com/resources/tools-software/linux-software/libiio)
 //!
 
+// Lints
+// This may be overkill.
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    unstable_features,
+    unused_import_braces,
+    unused_qualifications
+)]
+
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_uint},

@@ -23,8 +23,11 @@ use crate::ffi;
 /// An Industrial I/O Device
 ///
 /// This can not be created directly. It is obtained from a context.
+#[derive(Debug)]
 pub struct Device {
+    /// Pointer to the underlying device object.
     pub(crate) dev: *mut ffi::iio_device,
+    /// The IIO context containing the device.
     pub(crate) ctx: Context,
 }
 
@@ -404,8 +407,11 @@ impl PartialEq for Device {
 }
 
 /// Iterator over the Channels in a Device
+#[derive(Debug)]
 pub struct ChannelIterator<'a> {
+    /// Reference to the Device that we're scanning for Channels
     dev: &'a Device,
+    /// Index for the next Channel from the iterator.
     idx: usize,
 }
 
@@ -424,14 +430,18 @@ impl<'a> Iterator for ChannelIterator<'a> {
 }
 
 /// Iterator over the attributes in a Device
+#[derive(Debug)]
 pub struct AttrIterator<'a> {
+    /// Reference to the Device that we're scanning for attributes
     dev: &'a Device,
+    /// Index for the next Device attribute from the Iterator.
     idx: usize,
 }
 
 impl<'a> Iterator for AttrIterator<'a> {
     type Item = String;
 
+    /// Gets the next Device attribute from the iterator
     fn next(&mut self) -> Option<Self::Item> {
         match self.dev.get_attr(self.idx) {
             Ok(name) => {
@@ -444,14 +454,18 @@ impl<'a> Iterator for AttrIterator<'a> {
 }
 
 /// Iterator over the buffer attributes in a Device
+#[derive(Debug)]
 pub struct BufferAttrIterator<'a> {
+    /// Reference to the Buffer that we're scanning for attributes
     dev: &'a Device,
+    /// Index to the next Buffer attribute from the iterator
     idx: usize,
 }
 
 impl<'a> Iterator for BufferAttrIterator<'a> {
     type Item = String;
 
+    /// Gets the next Buffer attribute from the iterator
     fn next(&mut self) -> Option<Self::Item> {
         match self.dev.get_buffer_attr(self.idx) {
             Ok(name) => {
@@ -497,3 +511,4 @@ mod tests {
         assert!(dev.attributes().count() == n);
     }
 }
+

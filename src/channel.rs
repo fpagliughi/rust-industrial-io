@@ -20,6 +20,7 @@ use super::*;
 use crate::ffi;
 
 /// The type of data associated with a channel.
+#[allow(missing_docs)]
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ChannelType {
@@ -150,10 +151,12 @@ impl DataFormat {
 }
 
 /// An Industrial I/O Device Channel
+#[derive(Debug)]
 pub struct Channel {
+    /// Pointer to the underlying IIO channel object
     pub(crate) chan: *mut ffi::iio_channel,
     #[allow(dead_code)]
-    // looks like it's unused, but really it's holding the Device's lifetime for libiio safety.
+    /// Holder for the Device's lifetime for libiio safety.
     pub(crate) ctx: Context,
 }
 
@@ -184,6 +187,7 @@ impl Channel {
         unsafe { ffi::iio_channel_is_scan_element(self.chan) }
     }
 
+    /// Gets the index of the channel in the device
     pub fn index(&self) -> Result<usize> {
         let ret = unsafe { ffi::iio_channel_get_index(self.chan) };
         sys_result(ret as i32, ret as usize)
@@ -500,14 +504,18 @@ impl Channel {
 }
 
 /// Iterator over the attributes of a Channel
+#[derive(Debug)]
 pub struct AttrIterator<'a> {
+    /// Reference to the Channel that we're scanning for attributes
     chan: &'a Channel,
+    /// Index for the next Channel attribute from the iterator
     idx: usize,
 }
 
 impl<'a> Iterator for AttrIterator<'a> {
     type Item = String;
 
+    /// Gets the next Channel attribute from the iterator
     fn next(&mut self) -> Option<Self::Item> {
         match self.chan.get_attr(self.idx) {
             Ok(name) => {

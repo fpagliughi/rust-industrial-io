@@ -375,14 +375,18 @@ impl PartialEq for Context {
 }
 
 /// Iterator over the Devices in a Context
+#[derive(Debug)]
 pub struct DeviceIterator<'a> {
+    /// Reference to the IIO context containing the Device
     ctx: &'a Context,
+    /// The current Device index for the iterator
     idx: usize,
 }
 
 impl<'a> Iterator for DeviceIterator<'a> {
     type Item = Device;
 
+    /// Gets the next Device from the iterator.
     fn next(&mut self) -> Option<Self::Item> {
         match self.ctx.get_device(self.idx) {
             Ok(dev) => {
@@ -395,14 +399,18 @@ impl<'a> Iterator for DeviceIterator<'a> {
 }
 
 /// Iterator over the attributes in a Context
+#[derive(Debug)]
 pub struct AttrIterator<'a> {
+    /// Reference to the IIO context containing the Device
     ctx: &'a Context,
+    /// Index for the next Context attribute from the iterator
     idx: usize,
 }
 
 impl<'a> Iterator for AttrIterator<'a> {
     type Item = (String, String);
 
+    /// Gets the next Device attribute from the iterator.
     fn next(&mut self) -> Option<Self::Item> {
         match self.ctx.get_attr(self.idx) {
             Ok(name_val) => {

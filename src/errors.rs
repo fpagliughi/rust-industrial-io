@@ -18,18 +18,25 @@ use thiserror::Error;
 /// The Error type for the IIO library
 #[derive(Error, Debug)]
 pub enum Error {
+    /// A low-level I/O error
     #[error("{0}")]
     Io(#[from] io::Error),
+    /// An unexpected NUL value returned from the C library.
     #[error("{0}")]
     NulError(#[from] ffi::NulError),
+    /// A low-level Unix-style error
     #[error("{0}")]
     Nix(#[from] nix::Error),
+    /// The wrong data type used in an operation
     #[error("Wrong data type")]
     WrongDataType,
+    /// The size of a data or return value was different than expected.
     #[error("Bad return size")]
     BadReturnSize,
+    /// A device or channel index did not find a requested object
     #[error("Invalid index")]
     InvalidIndex,
+    /// A generic error with a string explaination
     #[error("{0}")]
     General(String),
 }

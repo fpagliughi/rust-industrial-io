@@ -1,6 +1,6 @@
 // libiio-sys/src/buffer.rs
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Copyright (c) 2018-2021, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -63,7 +63,7 @@ use crate::ffi;
 ///
 /// # Examples
 ///
-/// TODO
+#[derive(Debug)]
 pub struct Buffer {
     /// The underlying buffer from the C library
     pub(crate) buf: *mut ffi::iio_buffer,
@@ -179,6 +179,7 @@ impl Drop for Buffer {
 }
 
 /// An iterator that moves channel data out of a buffer.
+#[derive(Debug)]
 pub struct IntoIter<T> {
     phantom: PhantomData<T>,
     // Pointer to the current sample for a channel

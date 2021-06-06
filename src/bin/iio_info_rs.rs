@@ -66,6 +66,13 @@ fn main() -> iio::Result<()> {
                 }
             }
         }
+        if dev.has_attrs() {
+            println!("\t\tAttributes:");
+            for attr in dev.attributes() {
+                let val_str = dev.attr_read_str(&attr).unwrap_or("Unknown".into());
+                println!("\t\t\t{}: {}", attr, val_str);
+            }
+        }
     }
 
     Ok(())

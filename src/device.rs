@@ -1,6 +1,6 @@
 // libiio-sys/src/device.rs
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Copyright (c) 2018-2021, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -10,11 +10,12 @@
 //! Industrial I/O Devices
 //!
 
-use std::collections::HashMap;
-use std::ffi::CString;
-use std::os::raw::{c_int, c_longlong, c_uint, c_void};
-use std::{ptr, str};
-
+use std::{
+    ptr, str, fmt,
+    collections::HashMap,
+    ffi::CString,
+    os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
+};
 use nix::errno::Errno;
 
 use super::*;
@@ -81,6 +82,11 @@ impl Device {
 
     // ----- Attributes -----
 
+    /// Determines if the device has any attributes
+    pub fn has_attrs(&self) -> bool {
+        unsafe { ffi::iio_device_get_attrs_count(self.dev) > 0 }
+    }
+
     /// Gets the number of device-specific attributes
     pub fn num_attrs(&self) -> usize {
         unsafe { ffi::iio_device_get_attrs_count(self.dev) as usize }
@@ -104,6 +110,15 @@ impl Device {
         let cname = cstring_or_bail_false!(name);
         let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
         !pstr.is_null()
+    }
+
+    /// Reads a device-specific attribute
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read<T: str::FromStr>(&self, attr: &str) -> Result<T> {
+        let s = self.attr_read_str(attr)?;
+        let val = T::from_str(&s).map_err(|_| Error::StringConversionError)?;
+        Ok(val)
     }
 
     /// Reads a device-specific attribute as a boolean
@@ -134,6 +149,22 @@ impl Device {
         let attr = CString::new(attr)?;
         let ret = unsafe { ffi::iio_device_attr_read_double(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
+    }
+
+    /// Reads a device-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read_str(&self, attr: &str) -> Result<String> {
+        let mut buf = vec![0 as c_char; 256];
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
+        };
+        sys_result(ret as i32, ())?;
+        let s = unsafe {
+            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
+        };
+        Ok(s.into())
     }
 
     // Callback from the C lib to extract the collection of all
@@ -167,6 +198,18 @@ impl Device {
             ffi::iio_device_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap)
         };
         sys_result(ret, map)
+    }
+
+    /// Writes a device-specific attribute
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
+        let attr = CString::new(attr)?;
+        // TODO: Make a special case for bool?
+        let val = CString::new(format!("{}", val))?;
+        let ret = unsafe { ffi::iio_device_attr_write(self.dev, attr.as_ptr(), val.as_ptr()) };
+        sys_result(ret as i32, ())
     }
 
     /// Writes a device-specific attribute as a boolean
@@ -262,6 +305,11 @@ impl Device {
         })
     }
 
+    /// Determines if the device has any buffer-specific attributes
+    pub fn has_buffer_attrs(&self) -> bool {
+        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev) > 0 }
+    }
+
     /// Gets the number of buffer-specific attributes
     pub fn num_buffer_attrs(&self) -> usize {
         unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev) as usize }
@@ -285,6 +333,31 @@ impl Device {
         let cname = cstring_or_bail_false!(name);
         let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
         !pstr.is_null()
+    }
+
+    /// Reads a buffer-specific attribute
+    ///
+    /// `attr` The name of the attribute
+    pub fn buffer_attr_read<T: str::FromStr>(&self, attr: &str) -> Result<T> {
+        let s = self.buffer_attr_read_str(attr)?;
+        let val = T::from_str(&s).map_err(|_| Error::StringConversionError)?;
+        Ok(val)
+    }
+
+    /// Reads a buffer-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    pub fn buffer_attr_read_str(&self, attr: &str) -> Result<String> {
+        let mut buf = vec![0 as c_char; 256];
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
+        };
+        sys_result(ret as i32, ())?;
+        let s = unsafe {
+            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
+        };
+        Ok(s.into())
     }
 
     /// Reads a buffer-specific attribute as a boolean
@@ -330,6 +403,18 @@ impl Device {
             ffi::iio_device_buffer_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap)
         };
         sys_result(ret, map)
+    }
+
+    /// Writes a buffer-specific attribute
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn buffer_attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
+        let attr = CString::new(attr)?;
+        // TODO: Make a special case for bool?
+        let val = CString::new(format!("{}", val))?;
+        let ret = unsafe { ffi::iio_device_buffer_attr_write(self.dev, attr.as_ptr(), val.as_ptr()) };
+        sys_result(ret as i32, ())
     }
 
     /// Writes a buffer-specific attribute as a boolean

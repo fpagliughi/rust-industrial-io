@@ -27,6 +27,9 @@ pub enum Error {
     /// A low-level Unix-style error
     #[error("{0}")]
     Nix(#[from] nix::Error),
+    /// An error converting a value to/from a string representation.
+    #[error("String conversion error")]
+    StringConversionError,
     /// The wrong data type used in an operation
     #[error("Wrong data type")]
     WrongDataType,

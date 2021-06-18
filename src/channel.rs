@@ -1,6 +1,6 @@
 // libiio-sys/src/channel.rs
 //
-// Copyright (c) 2018-2019, Frank Pagliughi
+// Copyright (c) 2018-2021, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -10,14 +10,18 @@
 //! Industrial I/O Channels
 //!
 
-use std::any::TypeId;
-use std::collections::HashMap;
-use std::ffi::CString;
-use std::os::raw::{c_int, c_longlong, c_uint, c_void};
-use std::{mem, str};
-
+use std::{
+    mem, str, fmt,
+    any::TypeId,
+    collections::HashMap,
+    ffi::CString,
+    os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
+};
 use super::*;
-use crate::ffi;
+use crate::{
+    ATTR_BUF_SIZE,
+    ffi,
+};
 
 /// The type of data associated with a channel.
 #[allow(missing_docs)]
@@ -67,6 +71,7 @@ pub struct DataFormat {
 }
 
 impl DataFormat {
+    /// Creates a new data format from the underlyinh library type.
     fn new(data_fmt: ffi::iio_data_format) -> Self {
         DataFormat { data_fmt }
     }
@@ -193,7 +198,12 @@ impl Channel {
         sys_result(ret as i32, ret as usize)
     }
 
-    /// Gets the number of context-specific attributes
+    /// Determines if the channel has any attributes
+    pub fn has_attrs(&self) -> bool {
+        unsafe { ffi::iio_channel_get_attrs_count(self.chan) > 0 }
+    }
+
+    /// Gets the number of attributes for the channel
     pub fn num_attrs(&self) -> usize {
         let n = unsafe { ffi::iio_channel_get_attrs_count(self.chan) };
         n as usize
@@ -216,6 +226,31 @@ impl Channel {
         let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_channel_find_attr(self.chan, cname.as_ptr()) };
         cstring_opt(pstr)
+    }
+
+    /// Reads a channel-specific attribute
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read<T: str::FromStr>(&self, attr: &str) -> Result<T> {
+        let s = self.attr_read_str(attr)?;
+        let val = T::from_str(&s).map_err(|_| Error::StringConversionError)?;
+        Ok(val)
+    }
+
+    /// Reads a channel-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read_str(&self, attr: &str) -> Result<String> {
+        let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_channel_attr_read(self.chan, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
+        };
+        sys_result(ret as i32, ())?;
+        let s = unsafe {
+            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
+        };
+        Ok(s.into())
     }
 
     /// Reads a channel-specific attribute as a boolean
@@ -279,6 +314,18 @@ impl Channel {
             ffi::iio_channel_attr_read_all(self.chan, Some(Channel::attr_read_all_cb), pmap)
         };
         sys_result(ret, map)
+    }
+
+    /// Writes a channel-specific attribute
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
+        let attr = CString::new(attr)?;
+        // TODO: Make a special case for bool?
+        let val = CString::new(format!("{}", val))?;
+        let ret = unsafe { ffi::iio_channel_attr_write(self.chan, attr.as_ptr(), val.as_ptr()) };
+        sys_result(ret as i32, ())
     }
 
     /// Writes a channel-specific attribute as a boolean

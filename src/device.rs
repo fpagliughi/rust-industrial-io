@@ -17,9 +17,11 @@ use std::{
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
 };
 use nix::errno::Errno;
-
 use super::*;
-use crate::ffi;
+use crate::{
+    ffi,
+    ATTR_BUF_SIZE,
+};
 
 /// An Industrial I/O Device
 ///
@@ -155,7 +157,7 @@ impl Device {
     ///
     /// `attr` The name of the attribute
     pub fn attr_read_str(&self, attr: &str) -> Result<String> {
-        let mut buf = vec![0 as c_char; 256];
+        let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
         let attr = CString::new(attr)?;
         let ret = unsafe {
             ffi::iio_device_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
@@ -205,9 +207,18 @@ impl Device {
     /// `attr` The name of the attribute
     /// `val` The value to write
     pub fn attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
-        let attr = CString::new(attr)?;
         // TODO: Make a special case for bool?
-        let val = CString::new(format!("{}", val))?;
+        let val = format!("{}", val);
+        self.attr_write_str(attr, &val)
+    }
+
+    /// Writes a device-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write_str(&self, attr: &str, val: &str) -> Result<()> {
+        let attr = CString::new(attr)?;
+        let val = CString::new(val)?;
         let ret = unsafe { ffi::iio_device_attr_write(self.dev, attr.as_ptr(), val.as_ptr()) };
         sys_result(ret as i32, ())
     }
@@ -348,7 +359,7 @@ impl Device {
     ///
     /// `attr` The name of the attribute
     pub fn buffer_attr_read_str(&self, attr: &str) -> Result<String> {
-        let mut buf = vec![0 as c_char; 256];
+        let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
         let attr = CString::new(attr)?;
         let ret = unsafe {
             ffi::iio_device_buffer_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
@@ -410,6 +421,8 @@ impl Device {
     /// `attr` The name of the attribute
     /// `val` The value to write
     pub fn buffer_attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
+        // Do we need to do something different for bool?
+        //if TypeId::of::<T>() == TypeId::of::<bool>() {
         let attr = CString::new(attr)?;
         // TODO: Make a special case for bool?
         let val = CString::new(format!("{}", val))?;

@@ -265,10 +265,42 @@ impl Context {
         cstring_opt(pstr).unwrap_or_default()
     }
 
+    /// Get the version of the backend in use
+    pub fn version(&self) -> Version {
+        let mut major: c_uint = 0;
+        let mut minor: c_uint = 0;
+
+        const BUF_SZ: usize = 8;
+        let mut buf = vec![' ' as c_char; BUF_SZ];
+        let pbuf = buf.as_mut_ptr();
+
+        unsafe { ffi::iio_context_get_version(self.inner.ctx, &mut major, &mut minor, pbuf) };
+
+        let sgit = unsafe {
+            if buf.contains(&0) {
+                CStr::from_ptr(pbuf).to_owned()
+            }
+            else {
+                let slc = str::from_utf8(slice::from_raw_parts(pbuf as *mut u8, BUF_SZ)).unwrap();
+                CString::new(slc).unwrap()
+            }
+        };
+        Version {
+            major: major as u32,
+            minor: minor as u32,
+            git_tag: sgit.to_string_lossy().into_owned(),
+        }
+    }
+
     /// Obtain the XML representation of the context.
     pub fn xml(&self) -> String {
         let pstr = unsafe { ffi::iio_context_get_xml(self.inner.ctx) };
         cstring_opt(pstr).unwrap_or_default()
+    }
+
+    /// Determines if the context has any attributes
+    pub fn has_attrs(&self) -> bool {
+        unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) > 0 }
     }
 
     /// Gets the number of context-specific attributes

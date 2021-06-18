@@ -36,7 +36,7 @@
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_uint},
-    slice, str,
+    slice, str, fmt,
 };
 
 use libiio_sys::{self as ffi};
@@ -55,6 +55,10 @@ pub mod channel;
 pub mod context;
 pub mod device;
 pub mod errors;
+
+/// According to the IIO samples, internal buffers need to be big enough
+/// for attributes coming back from the kernel.
+const ATTR_BUF_SIZE: usize = 16384;
 
 // --------------------------------------------------------------------------
 
@@ -82,8 +86,27 @@ pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
 
 // --------------------------------------------------------------------------
 
+/// A struct to hold version numbers
+#[derive(Debug, PartialEq)]
+pub struct Version {
+    /// The Major version number
+    pub major: u32,
+    /// The Minor version number
+    pub minor: u32,
+    /// The git tag for the release
+    pub git_tag: String,
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{} tag: {}", self.major, self.minor, self.git_tag)
+    }
+}
+
+// --------------------------------------------------------------------------
+
 /// Gets the library version as (Major, Minor, Git Tag)
-pub fn library_version() -> (u32, u32, String) {
+pub fn library_version() -> Version {
     let mut major: c_uint = 0;
     let mut minor: c_uint = 0;
 
@@ -102,11 +125,11 @@ pub fn library_version() -> (u32, u32, String) {
             CString::new(slc).unwrap()
         }
     };
-    (
-        major as u32,
-        minor as u32,
-        sgit.to_string_lossy().into_owned(),
-    )
+    Version {
+        major: major as u32,
+        minor: minor as u32,
+        git_tag: sgit.to_string_lossy().into_owned(),
+    }
 }
 
 // --------------------------------------------------------------------------

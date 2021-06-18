@@ -16,7 +16,7 @@ use std::process;
 
 fn main() -> iio::Result<()> {
     let lib_ver = iio::library_version();
-    println!("Library version: {:?}", lib_ver);
+    println!("Library version: {}", lib_ver);
 
     let ctx = iio::Context::new().unwrap_or_else(|err| {
         eprintln!("Error getting the IIO Context: {}", err);

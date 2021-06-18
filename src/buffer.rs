@@ -50,9 +50,11 @@
 #![warn(rustdoc::broken_intra_doc_links)]
 #![warn(missing_docs)]
 
-use std::marker::PhantomData;
-use std::os::raw::c_int;
-use std::{mem, ptr};
+use std::{
+    mem, ptr,
+    marker::PhantomData,
+    os::raw::c_int,
+};
 
 use super::*;
 use crate::ffi;
@@ -75,7 +77,7 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    /// Get buffer size.
+    /// Get the buffer size.
     ///
     /// Get the buffer capacity in number of samples from each channel that
     /// the buffer can hold.

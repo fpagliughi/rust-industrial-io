@@ -11,8 +11,10 @@
 //!
 
 use std::{
-    mem, str, fmt,
-    any::TypeId,
+    mem,
+    any::{Any, TypeId},
+    fmt::Display,
+    str::FromStr,
     collections::HashMap,
     ffi::CString,
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
@@ -231,10 +233,9 @@ impl Channel {
     /// Reads a channel-specific attribute
     ///
     /// `attr` The name of the attribute
-    pub fn attr_read<T: str::FromStr>(&self, attr: &str) -> Result<T> {
-        let s = self.attr_read_str(attr)?;
-        let val = T::from_str(&s).map_err(|_| Error::StringConversionError)?;
-        Ok(val)
+    pub fn attr_read<T: FromStr + Any>(&self, attr: &str) -> Result<T> {
+        let sval = self.attr_read_str(attr)?;
+        string_to_attr(sval)
     }
 
     /// Reads a channel-specific attribute as a string
@@ -320,11 +321,19 @@ impl Channel {
     ///
     /// `attr` The name of the attribute
     /// `val` The value to write
-    pub fn attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
+    pub fn attr_write<T: Display + Any>(&self, attr: &str, val: T) -> Result<()> {
+        let sval = attr_to_string(val)?;
+        self.attr_write_str(attr, &sval)
+    }
+
+    /// Writes a channel-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn attr_write_str(&self, attr: &str, val: &str) -> Result<()> {
         let attr = CString::new(attr)?;
-        // TODO: Make a special case for bool?
-        let val = CString::new(format!("{}", val))?;
-        let ret = unsafe { ffi::iio_channel_attr_write(self.chan, attr.as_ptr(), val.as_ptr()) };
+        let sval = CString::new(val)?;
+        let ret = unsafe { ffi::iio_channel_attr_write(self.chan, attr.as_ptr(), sval.as_ptr()) };
         sys_result(ret as i32, ())
     }
 

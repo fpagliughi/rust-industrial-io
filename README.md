@@ -10,7 +10,7 @@ To use in an application, add this to _Cargo.toml:_
 
 ```toml
 [dependencies]
-industrial-io = "0.3"
+industrial-io = "0.4"
 ```
 
 ## Pre-release Note
@@ -47,7 +47,9 @@ To keep up with the latest announcements for this project, follow:
 
 - [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type. (Thanks @Funky185540)
 - The `InnerContext` is now public and can be cloned and sent to another thread to create a cloned context in the other thread.
+- [#15](https://github.com/fpagliughi/rust-industrial-io/issues/15) Generic `attr_read()` and `attr_write()` functions for devices, channels, and buffers.
 - Updates to the examples for more/different hardware.
+- New `Version` struct which is returned by the library and `Context` version query functions.
 
 ### New in v0.3
 

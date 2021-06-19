@@ -34,6 +34,8 @@
 )]
 
 use std::{
+    any::{Any, TypeId},
+    str::FromStr,
     ffi::{CStr, CString},
     os::raw::{c_char, c_uint},
     slice, str, fmt,
@@ -82,6 +84,38 @@ pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
     else {
         Ok(result)
     }
+}
+
+/// Converts the attribute name and value to CString's that can be sent to
+/// the C library.
+///
+/// `attr` The name of the attribute
+/// `val` The value to write. This should typically be an int, float, bool,
+///     or string type.
+pub(crate) fn attr_to_string<T>(val: T) -> Result<String>
+where
+    T: fmt::Display + Any,
+{
+    let mut sval = format!("{}", val);
+    if TypeId::of::<T>() == TypeId::of::<bool>() {
+        sval = (if sval == "true" { "1" } else { "0" }).into();
+    }
+    Ok(sval)
+}
+
+/// Converts a String to an atribute value.
+/// The type is typically an int, float, bool, or string.
+///
+/// `attr` The name of the attribute
+pub(crate) fn string_to_attr<T>(mut sval: String) -> Result<T>
+where
+    T: FromStr + Any,
+{
+    if TypeId::of::<T>() == TypeId::of::<bool>() {
+        sval = (if sval.trim() == "0" { "false" } else { "true" }).into();
+    }
+    let val = T::from_str(&sval).map_err(|_| Error::StringConversionError)?;
+    Ok(val)
 }
 
 // --------------------------------------------------------------------------
@@ -145,4 +179,35 @@ mod tests {
         let v2 = library_version();
         assert!(v1 == v2);
     }
+
+    #[test]
+    fn string_to_attr_val() {
+        let val: i32 = string_to_attr("123".to_string()).unwrap();
+        assert_eq!(val, 123);
+
+        let val = string_to_attr::<bool>("1".to_string()).unwrap();
+        assert_eq!(val, true);
+
+        let val: bool = string_to_attr(" 0 \n".to_string()).unwrap();
+        assert_eq!(val, false);
+
+        let val: String = string_to_attr("hello".to_string()).unwrap();
+        assert_eq!(&val, "hello");
+    }
+
+    #[test]
+    fn attr_val_to_string() {
+        let s = attr_to_string(123).unwrap();
+        assert_eq!(&s, "123");
+
+        let s = attr_to_string(true).unwrap();
+        assert_eq!(&s, "1");
+
+        let s = attr_to_string(false).unwrap();
+        assert_eq!(&s, "0");
+
+        let s = attr_to_string("hello").unwrap();
+        assert_eq!(&s, "hello");
+    }
 }
+

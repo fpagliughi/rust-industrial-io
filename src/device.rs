@@ -11,7 +11,10 @@
 //!
 
 use std::{
-    ptr, str, fmt,
+    ptr,
+    any::Any,
+    fmt::Display,
+    str::FromStr,
     collections::HashMap,
     ffi::CString,
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
@@ -117,10 +120,25 @@ impl Device {
     /// Reads a device-specific attribute
     ///
     /// `attr` The name of the attribute
-    pub fn attr_read<T: str::FromStr>(&self, attr: &str) -> Result<T> {
-        let s = self.attr_read_str(attr)?;
-        let val = T::from_str(&s).map_err(|_| Error::StringConversionError)?;
-        Ok(val)
+    pub fn attr_read<T: FromStr + Any>(&self, attr: &str) -> Result<T> {
+        let sval = self.attr_read_str(attr)?;
+        string_to_attr(sval)
+    }
+
+    /// Reads a device-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    pub fn attr_read_str(&self, attr: &str) -> Result<String> {
+        let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
+        let attr = CString::new(attr)?;
+        let ret = unsafe {
+            ffi::iio_device_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
+        };
+        sys_result(ret as i32, ())?;
+        let s = unsafe {
+            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
+        };
+        Ok(s.into())
     }
 
     /// Reads a device-specific attribute as a boolean
@@ -151,22 +169,6 @@ impl Device {
         let attr = CString::new(attr)?;
         let ret = unsafe { ffi::iio_device_attr_read_double(self.dev, attr.as_ptr(), &mut val) };
         sys_result(ret, val)
-    }
-
-    /// Reads a device-specific attribute as a string
-    ///
-    /// `attr` The name of the attribute
-    pub fn attr_read_str(&self, attr: &str) -> Result<String> {
-        let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
-        let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
-        };
-        sys_result(ret as i32, ())?;
-        let s = unsafe {
-            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
-        };
-        Ok(s.into())
     }
 
     // Callback from the C lib to extract the collection of all
@@ -206,10 +208,9 @@ impl Device {
     ///
     /// `attr` The name of the attribute
     /// `val` The value to write
-    pub fn attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
-        // TODO: Make a special case for bool?
-        let val = format!("{}", val);
-        self.attr_write_str(attr, &val)
+    pub fn attr_write<T: Display + Any>(&self, attr: &str, val: T) -> Result<()> {
+        let sval = attr_to_string(val)?;
+        self.attr_write_str(attr, &sval)
     }
 
     /// Writes a device-specific attribute as a string
@@ -349,10 +350,9 @@ impl Device {
     /// Reads a buffer-specific attribute
     ///
     /// `attr` The name of the attribute
-    pub fn buffer_attr_read<T: str::FromStr>(&self, attr: &str) -> Result<T> {
-        let s = self.buffer_attr_read_str(attr)?;
-        let val = T::from_str(&s).map_err(|_| Error::StringConversionError)?;
-        Ok(val)
+    pub fn buffer_attr_read<T: FromStr + Any>(&self, attr: &str) -> Result<T> {
+        let sval = self.buffer_attr_read_str(attr)?;
+        string_to_attr(sval)
     }
 
     /// Reads a buffer-specific attribute as a string
@@ -420,13 +420,19 @@ impl Device {
     ///
     /// `attr` The name of the attribute
     /// `val` The value to write
-    pub fn buffer_attr_write<T: fmt::Display>(&self, attr: &str, val: T) -> Result<()> {
-        // Do we need to do something different for bool?
-        //if TypeId::of::<T>() == TypeId::of::<bool>() {
+    pub fn buffer_attr_write<T: Display + Any>(&self, attr: &str, val: T) -> Result<()> {
+        let sval = attr_to_string(val)?;
+        self.buffer_attr_write_str(attr, &sval)
+    }
+
+    /// Writes a buffer-specific attribute as a string
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write
+    pub fn buffer_attr_write_str(&self, attr: &str, val: &str) -> Result<()> {
         let attr = CString::new(attr)?;
-        // TODO: Make a special case for bool?
-        let val = CString::new(format!("{}", val))?;
-        let ret = unsafe { ffi::iio_device_buffer_attr_write(self.dev, attr.as_ptr(), val.as_ptr()) };
+        let sval = CString::new(val)?;
+        let ret = unsafe { ffi::iio_device_buffer_attr_write(self.dev, attr.as_ptr(), sval.as_ptr()) };
         sys_result(ret as i32, ())
     }
 

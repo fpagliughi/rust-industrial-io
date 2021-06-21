@@ -10,19 +10,16 @@
 //! Industrial I/O Channels
 //!
 
+use super::*;
+use crate::{ffi, ATTR_BUF_SIZE};
 use std::{
-    mem,
     any::{Any, TypeId},
-    fmt::Display,
-    str::FromStr,
     collections::HashMap,
     ffi::CString,
+    fmt::Display,
+    mem,
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
-};
-use super::*;
-use crate::{
-    ATTR_BUF_SIZE,
-    ffi,
+    str::FromStr,
 };
 
 /// The type of data associated with a channel.
@@ -158,7 +155,7 @@ impl DataFormat {
 }
 
 /// An Industrial I/O Device Channel
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Channel {
     /// Pointer to the underlying IIO channel object
     pub(crate) chan: *mut ffi::iio_channel,
@@ -249,7 +246,9 @@ impl Channel {
         };
         sys_result(ret as i32, ())?;
         let s = unsafe {
-            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
+            CStr::from_ptr(buf.as_ptr())
+                .to_str()
+                .map_err(|_| Error::StringConversionError)?
         };
         Ok(s.into())
     }
@@ -376,12 +375,12 @@ impl Channel {
     ///
     /// Before creating a buffer, at least one channel of the device
     /// must be enabled.
-    pub fn enable(&mut self) {
+    pub fn enable(&self) {
         unsafe { ffi::iio_channel_enable(self.chan) };
     }
 
     /// Disable the channel
-    pub fn disable(&mut self) {
+    pub fn disable(&self) {
         unsafe { ffi::iio_channel_disable(self.chan) };
     }
 

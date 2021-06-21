@@ -48,6 +48,9 @@ To keep up with the latest announcements for this project, follow:
 - [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type. (Thanks @Funky185540)
 - The `InnerContext` is now public and can be cloned and sent to another thread to create a cloned context in the other thread.
 - [#15](https://github.com/fpagliughi/rust-industrial-io/issues/15) Generic `attr_read()` and `attr_write()` functions for devices, channels, and buffers.
+- Buffer attribute read/write functions and iterators moved into the `Buffer` struct.
+- `Buffer` struct now contains a clone of the `Device` from which it was created.
+- `Device` and `Channel` now support `Clone` trait.
 - Updates to the examples for more/different hardware.
 - New `Version` struct which is returned by the library and `Context` version query functions.
 
@@ -88,9 +91,25 @@ There are a number of applications in the [examples/](https://github.com/fpagliu
 
 The Linux IIO subsystem and _libiio_ abstract a large number of different types of hardware with considerably different feature sets. Between the different capabilities of the hardware and the drivers written for them, applications can often see weird and unexpected results when starting out with a new device. The example applications are not guaranteed to work out-of-the box with all different types of hardware. But they provide a decent template for the most common usage. Some modifications and experimentation are often required when working with new devices.
 
+## Implementation Details
+
+The Rust Industrial I/O library is a fairly thin wrapper around the C _libiio_, with some features thrown in to give it a more Rust-y feel.
+
+### Library Wrapper
+
+To do anything with _libiio_, the applcation must first create a `Context`to either maniplate the hardware on the local device (i.e. a _local_ context), or to communicate with hardware on a remote device such as over a network connection. Creating a context is a fairly heavyweight operation compared to other library operations in that it will scan the hardware and build up a local representation in memory.
+
+The context is thus a snapshot of the hardware at the time at which it was created. Any hardware that is added outside of the context - such as another process creating a new _hrtimer_, will not be reflected in it. A new context would need to be created to re-scan the hardware.
+
+But then, finding hardware is very efficient in that it just searches through the data structures in the context. A call like `ctx.find_device('adc0')` just looks for a string match in the list of hardware devices, and the pointer returned by the underlying library call is juts a reference to an existing context data structure.
+
+Nothing is created or destrioyed when new Rust hardware structures are declared, such as `Device` or `Channel`. Therefore the Rust structures can easily be cloned by copying the pointer to the library structure. These structs can not be sent across threads (as described in the next section), so this does not create race conditions for the context structure, since all the references live within the same thread.
+
 ### Thread Safety
 
-The contexts and devices in the underlying _libiio_ are not thread safe. Therefore, neither are the wrapped versions in this Rust library. But the Rust library will enforce the thread safety requirements. For the most part, objects from this library are neither `Send` nor `Sync`. A `Context` object can only be used in a single thread, and devices, channels, and buffers can only be used in the same thread as the context that created them.
+The contexts and devices in the underlying _libiio_ are not thread safe. Therefore, neither are the wrapped versions in this Rust library. But the Rust library will enforce the thread safety requirements. For the most part, objects from this library are neither `Send` nor `Sync`.
+
+A `Context` object can only be used in a single thread, and all the devices, channels, and buffers derived from it can only be used in the thread in which the context was created.
 
 The _physical_ devices described by an IIO context can sometimes be manipulated by different threads. This is highly hardware dependent, but when allowed, there way to so it is to use a separate `Context` instance for each thread. There are two ways to do this:
 
@@ -110,6 +129,8 @@ This second option can be done like this:
 Here the inner context is cloned to the `cti` object which is moved into the thread and consumed to create a new context object, `thr_ctx`.
 
 An alternate way to share devices across threads and processes is to run the IIO network daemon on the local machine and allow it to control the local context. Then multiple client applications can access it from _localhost_ using a network context. The daemon will serialize access to the device and let multiple clients share it. Each thread in the client would still need a separate network context.
+
+The thing to keep in mind is that although Rust can enforce thread safety within a single process, the overall IIO subsystem is exposed to the other processes. Different devices and drivers might expose access differently. It is up to the system designer to insure that processes using IIO don't interfere with each other.
 
 ## Testing the Crate
 

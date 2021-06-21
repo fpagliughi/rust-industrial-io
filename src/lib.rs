@@ -35,10 +35,12 @@
 
 use std::{
     any::{Any, TypeId},
-    str::FromStr,
+    collections::HashMap,
     ffi::{CStr, CString},
-    os::raw::{c_char, c_uint},
-    slice, str, fmt,
+    fmt,
+    os::raw::{c_char, c_int, c_uint, c_void},
+    slice, str,
+    str::FromStr,
 };
 
 use libiio_sys::{self as ffi};
@@ -116,6 +118,27 @@ where
     }
     let val = T::from_str(&sval).map_err(|_| Error::StringConversionError)?;
     Ok(val)
+}
+
+// Callback from the C lib to extract the collection of all
+// device-specific attributes. See attr_read_all().
+pub(crate) unsafe extern "C" fn attr_read_all_cb(
+    _chan: *mut ffi::iio_device,
+    attr: *const c_char,
+    val: *const c_char,
+    _len: usize,
+    pmap: *mut c_void,
+) -> c_int {
+    if attr.is_null() || val.is_null() || pmap.is_null() {
+        return -1;
+    }
+
+    let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
+    // TODO: We could/should check val[len-1] == '\x0'
+    let val = CStr::from_ptr(val).to_string_lossy().to_string();
+    let map: &mut HashMap<String, String> = &mut *(pmap as *mut _);
+    map.insert(attr, val);
+    0
 }
 
 // --------------------------------------------------------------------------
@@ -210,4 +233,3 @@ mod tests {
         assert_eq!(&s, "hello");
     }
 }
-

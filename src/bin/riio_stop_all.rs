@@ -44,7 +44,7 @@ fn main() {
         // and then letting the inner library destroy it cleanly.
 
         if dev.is_buffer_capable() {
-            for mut chan in &mut dev.channels() {
+            for chan in &mut dev.channels() {
                 if chan.is_scan_element() {
                     chan.enable();
                     break;

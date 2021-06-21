@@ -236,7 +236,9 @@ impl Context {
 
     /// Creates a context from an existing "inner" object.
     pub fn from_inner(inner: InnerContext) -> Self {
-        Self { inner: Rc::new(inner) }
+        Self {
+            inner: Rc::new(inner),
+        }
     }
 
     /// Creates a Rust Context object from a C context pointer.
@@ -340,7 +342,7 @@ impl Context {
     ///
     /// `timeout` The timeout. A value of zero specifies that no timeout
     ///     should be used.
-    pub fn set_timeout(&mut self, timeout: Duration) -> Result<()> {
+    pub fn set_timeout(&self, timeout: Duration) -> Result<()> {
         let ms: u64 = 1000 * timeout.as_secs() + u64::from(timeout.subsec_millis());
         self.set_timeout_ms(ms)
     }
@@ -349,7 +351,7 @@ impl Context {
     ///
     /// `timeout` The timeout, in ms. A value of zero specifies that no
     ///     timeout should be used.
-    pub fn set_timeout_ms(&mut self, ms: u64) -> Result<()> {
+    pub fn set_timeout_ms(&self, ms: u64) -> Result<()> {
         let ret = unsafe { ffi::iio_context_set_timeout(self.inner.ctx, ms as c_uint) };
         sys_result(ret, ())
     }

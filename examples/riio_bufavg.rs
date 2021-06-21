@@ -23,7 +23,7 @@
 #[macro_use]
 extern crate clap;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use chrono::offset::Utc;
 use chrono::DateTime;
 use clap::{App, Arg};
@@ -185,7 +185,7 @@ fn run() -> Result<()> {
     let dev_name = args.value_of("device").unwrap_or(DFLT_DEV_NAME);
     let chan_name = args.value_of("channel").unwrap_or(DFLT_CHAN_NAME);
 
-    let mut ctx = if let Some(hostname) = args.value_of("host") {
+    let ctx = if let Some(hostname) = args.value_of("host") {
         iio::Context::with_backend(iio::Backend::Network(hostname))
     }
     else if let Some(uri) = args.value_of("uri") {
@@ -196,7 +196,8 @@ fn run() -> Result<()> {
     }
     .context("Couldn't open IIO context.")?;
 
-    let mut dev = ctx.find_device(dev_name)
+    let dev = ctx
+        .find_device(dev_name)
         .with_context(|| format!("No IIO device named '{}'", dev_name))?;
 
     println!("Using device: {}", dev_name);
@@ -212,13 +213,17 @@ fn run() -> Result<()> {
         println!("No timestamp channel. Estimating timestamps.");
     }
 
-    let mut sample_chan = dev.find_channel(chan_name, false)
+    let sample_chan = dev
+        .find_channel(chan_name, false)
         .with_context(|| format!("No '{}' channel on this device", chan_name))?;
 
     println!("Using channel: {}", chan_name);
 
     if sample_chan.type_of() != Some(TypeId::of::<RawSampleType>()) {
-        bail!("The channel type ({:?}) is different than expected.", sample_chan.type_of());
+        bail!(
+            "The channel type ({:?}) is different than expected.",
+            sample_chan.type_of()
+        );
     }
 
     if let Some(ref mut chan) = ts_chan {
@@ -243,13 +248,13 @@ fn run() -> Result<()> {
 
     // If the user asked for a trigger device, see if we can use it
     if let Some(trig_name) = args.value_of("trigger") {
-        let trig = ctx.find_device(trig_name)
+        let trig = ctx
+            .find_device(trig_name)
             .context(format!("Couldn't find requested trigger: {}", trig_name))?;
 
         // Set the sampling rate on the trigger device
         trig.attr_write_int(SAMPLING_FREQ_ATTR, freq)
-            .with_context(|| format!("Can't set sampling rate to {}Hz on {}",
-                                     freq, trig_name))?;
+            .with_context(|| format!("Can't set sampling rate to {}Hz on {}", freq, trig_name))?;
 
         dev.set_trigger(&trig)
             .context("Error setting the trigger on the device")?;
@@ -257,8 +262,13 @@ fn run() -> Result<()> {
     else if dev.has_attr(SAMPLING_FREQ_ATTR) {
         // Try to set the sampling rate on the device itself, if supported
         dev.attr_write_int(SAMPLING_FREQ_ATTR, freq)
-            .with_context(|| format!("Can't set sampling rate to {}Hz on {}",
-                                     freq, dev.name().unwrap()))?;
+            .with_context(|| {
+                format!(
+                    "Can't set sampling rate to {}Hz on {}",
+                    freq,
+                    dev.name().unwrap()
+                )
+            })?;
     }
     else {
         bail!("No suitable trigger device found");
@@ -271,7 +281,8 @@ fn run() -> Result<()> {
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(DFLT_NUM_SAMPLE);
 
-    let mut buf = dev.create_buffer(n_sample, false)
+    let buf = dev
+        .create_buffer(n_sample, false)
         .context("Unable to create buffer")?;
 
     // Make sure the timeout is more than enough to gather each buffer
@@ -300,8 +311,7 @@ fn run() -> Result<()> {
     println!("Started capturing data...");
 
     while !quit.load(Ordering::SeqCst) {
-        buf.refill()
-            .context("Error filling the buffer")?;
+        buf.refill().context("Error filling the buffer")?;
 
         // Get the timestamp. Use the time of the _last_ sample.
 
@@ -357,4 +367,3 @@ fn main() {
         process::exit(1);
     }
 }
-

@@ -72,7 +72,7 @@ fn main() {
     // This is arbitrary for the purpose of example.
 
     let mut nchan = 0;
-    for mut chan in dev.channels() {
+    for chan in dev.channels() {
         if chan.type_of() == Some(TypeId::of::<u16>()) {
             nchan += 1;
             chan.enable();
@@ -84,7 +84,7 @@ fn main() {
         process::exit(2);
     }
 
-    let mut buf = dev.create_buffer(8, false).unwrap_or_else(|err| {
+    let buf = dev.create_buffer(8, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
         process::exit(3);
     });

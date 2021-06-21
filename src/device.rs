@@ -10,26 +10,23 @@
 //! Industrial I/O Devices
 //!
 
+use super::*;
+use crate::{ffi, ATTR_BUF_SIZE};
+use nix::errno::Errno;
 use std::{
-    ptr,
     any::Any,
-    fmt::Display,
-    str::FromStr,
     collections::HashMap,
     ffi::CString,
-    os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
-};
-use nix::errno::Errno;
-use super::*;
-use crate::{
-    ffi,
-    ATTR_BUF_SIZE,
+    fmt::Display,
+    os::raw::{c_char, c_longlong, c_uint, c_void},
+    ptr,
+    str::FromStr,
 };
 
 /// An Industrial I/O Device
 ///
 /// This can not be created directly. It is obtained from a context.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Device {
     /// Pointer to the underlying device object.
     pub(crate) dev: *mut ffi::iio_device,
@@ -74,13 +71,13 @@ impl Device {
 
     /// Associate a trigger for this device.
     /// `trigger` The device to be used as a trigger.
-    pub fn set_trigger(&mut self, trigger: &Device) -> Result<()> {
+    pub fn set_trigger(&self, trigger: &Device) -> Result<()> {
         let ret = unsafe { ffi::iio_device_set_trigger(self.dev, trigger.dev) };
         sys_result(ret, ())
     }
 
     /// Removes the trigger from the device.
-    pub fn remove_trigger(&mut self) -> Result<()> {
+    pub fn remove_trigger(&self) -> Result<()> {
         let ret = unsafe { ffi::iio_device_set_trigger(self.dev, ptr::null()) };
         sys_result(ret, ())
     }
@@ -136,7 +133,9 @@ impl Device {
         };
         sys_result(ret as i32, ())?;
         let s = unsafe {
-            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
+            CStr::from_ptr(buf.as_ptr())
+                .to_str()
+                .map_err(|_| Error::StringConversionError)?
         };
         Ok(s.into())
     }
@@ -171,36 +170,13 @@ impl Device {
         sys_result(ret, val)
     }
 
-    // Callback from the C lib to extract the collection of all
-    // device-specific attributes. See attr_read_all().
-    unsafe extern "C" fn attr_read_all_cb(
-        _chan: *mut ffi::iio_device,
-        attr: *const c_char,
-        val: *const c_char,
-        _len: usize,
-        pmap: *mut c_void,
-    ) -> c_int {
-        if attr.is_null() || val.is_null() || pmap.is_null() {
-            return -1;
-        }
-
-        let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
-        // TODO: We could/should check val[len-1] == '\x0'
-        let val = CStr::from_ptr(val).to_string_lossy().to_string();
-        let map: &mut HashMap<String, String> = &mut *(pmap as *mut _);
-        map.insert(attr, val);
-        0
-    }
-
     /// Reads all the device-specific attributes.
     /// This is especially useful when using the network backend to
     /// retrieve all the attributes with a single call.
     pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
         let pmap = &mut map as *mut _ as *mut c_void;
-        let ret = unsafe {
-            ffi::iio_device_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap)
-        };
+        let ret = unsafe { ffi::iio_device_attr_read_all(self.dev, Some(attr_read_all_cb), pmap) };
         sys_result(ret, map)
     }
 
@@ -313,169 +289,8 @@ impl Device {
         Ok(Buffer {
             buf,
             cap: sample_count,
-            ctx: self.context(),
+            dev: self.clone(),
         })
-    }
-
-    /// Determines if the device has any buffer-specific attributes
-    pub fn has_buffer_attrs(&self) -> bool {
-        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev) > 0 }
-    }
-
-    /// Gets the number of buffer-specific attributes
-    pub fn num_buffer_attrs(&self) -> usize {
-        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev) as usize }
-    }
-
-    /// Gets the name of the buffer-specific attribute at the index
-    pub fn get_buffer_attr(&self, idx: usize) -> Result<String> {
-        let pstr = unsafe { ffi::iio_device_get_buffer_attr(self.dev, idx as c_uint) };
-        cstring_opt(pstr).ok_or(Error::InvalidIndex)
-    }
-
-    /// Try to find a buffer-specific attribute by its name
-    pub fn find_buffer_attr(&self, name: &str) -> Option<String> {
-        let cname = cstring_or_bail!(name);
-        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
-        cstring_opt(pstr)
-    }
-
-    /// Determines if a buffer-specific attribute exists
-    pub fn has_buffer_attr(&self, name: &str) -> bool {
-        let cname = cstring_or_bail_false!(name);
-        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev, cname.as_ptr()) };
-        !pstr.is_null()
-    }
-
-    /// Reads a buffer-specific attribute
-    ///
-    /// `attr` The name of the attribute
-    pub fn buffer_attr_read<T: FromStr + Any>(&self, attr: &str) -> Result<T> {
-        let sval = self.buffer_attr_read_str(attr)?;
-        string_to_attr(sval)
-    }
-
-    /// Reads a buffer-specific attribute as a string
-    ///
-    /// `attr` The name of the attribute
-    pub fn buffer_attr_read_str(&self, attr: &str) -> Result<String> {
-        let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
-        let attr = CString::new(attr)?;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_read(self.dev, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
-        };
-        sys_result(ret as i32, ())?;
-        let s = unsafe {
-            CStr::from_ptr(buf.as_ptr()).to_str().map_err(|_| Error::StringConversionError)?
-        };
-        Ok(s.into())
-    }
-
-    /// Reads a buffer-specific attribute as a boolean
-    ///
-    /// `attr` The name of the attribute
-    pub fn buffer_attr_read_bool(&self, attr: &str) -> Result<bool> {
-        let mut val: bool = false;
-        let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_read_bool(self.dev, attr.as_ptr(), &mut val) };
-        sys_result(ret, val)
-    }
-
-    /// Reads a buffer-specific attribute as an integer (i64)
-    ///
-    /// `attr` The name of the attribute
-    pub fn buffer_attr_read_int(&self, attr: &str) -> Result<i64> {
-        let mut val: c_longlong = 0;
-        let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_read_longlong(self.dev, attr.as_ptr(), &mut val) };
-        sys_result(ret, val as i64)
-    }
-
-    /// Reads a buffer-specific attribute as a floating-point (f64) number
-    ///
-    /// `attr` The name of the attribute
-    pub fn buffer_attr_read_float(&self, attr: &str) -> Result<f64> {
-        let mut val: f64 = 0.0;
-        let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_read_double(self.dev, attr.as_ptr(), &mut val) };
-        sys_result(ret, val)
-    }
-
-    /// Reads all the buffer-specific attributes.
-    /// This is especially useful when using the network backend to
-    /// retrieve all the attributes with a single call.
-    pub fn buffer_attr_read_all(&self) -> Result<HashMap<String, String>> {
-        let mut map = HashMap::new();
-        let pmap = &mut map as *mut _ as *mut c_void;
-        let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_all(self.dev, Some(Device::attr_read_all_cb), pmap)
-        };
-        sys_result(ret, map)
-    }
-
-    /// Writes a buffer-specific attribute
-    ///
-    /// `attr` The name of the attribute
-    /// `val` The value to write
-    pub fn buffer_attr_write<T: Display + Any>(&self, attr: &str, val: T) -> Result<()> {
-        let sval = attr_to_string(val)?;
-        self.buffer_attr_write_str(attr, &sval)
-    }
-
-    /// Writes a buffer-specific attribute as a string
-    ///
-    /// `attr` The name of the attribute
-    /// `val` The value to write
-    pub fn buffer_attr_write_str(&self, attr: &str, val: &str) -> Result<()> {
-        let attr = CString::new(attr)?;
-        let sval = CString::new(val)?;
-        let ret = unsafe { ffi::iio_device_buffer_attr_write(self.dev, attr.as_ptr(), sval.as_ptr()) };
-        sys_result(ret as i32, ())
-    }
-
-    /// Writes a buffer-specific attribute as a boolean
-    ///
-    /// `attr` The name of the attribute
-    /// `val` The value to write
-    pub fn buffer_attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
-        let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_device_buffer_attr_write_bool(self.dev, attr.as_ptr(), val) };
-        sys_result(ret, ())
-    }
-
-    /// Writes a device-specific attribute as an integer (i64)
-    ///
-    /// `attr` The name of the attribute
-    /// `val` The value to write
-    pub fn buffer_attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
-        let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_longlong(self.dev, attr.as_ptr(), val) };
-        sys_result(ret, ())
-    }
-
-    /// Writes a device-specific attribute as a floating-point (f64) number
-    ///
-    /// `attr` The name of the attribute
-    /// `val` The value to write
-    pub fn buffer_attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
-        let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_device_buffer_attr_write_double(self.dev, attr.as_ptr(), val) };
-        sys_result(ret, ())
-    }
-
-    /// Gets an iterator for the buffer attributes in the device
-    pub fn buffer_attributes(&self) -> BufferAttrIterator {
-        BufferAttrIterator { dev: self, idx: 0 }
-    }
-
-    /// Set the number of kernel buffers for the device.
-    pub fn set_num_kernel_buffers(&self, n: u32) -> Result<()> {
-        let ret = unsafe { ffi::iio_device_set_kernel_buffers_count(self.dev, n as c_uint) };
-        sys_result(ret, ())
     }
 
     // ----- Low-level & Debug functions -----
@@ -557,30 +372,6 @@ impl<'a> Iterator for AttrIterator<'a> {
     }
 }
 
-/// Iterator over the buffer attributes in a Device
-#[derive(Debug)]
-pub struct BufferAttrIterator<'a> {
-    /// Reference to the Buffer that we're scanning for attributes
-    dev: &'a Device,
-    /// Index to the next Buffer attribute from the iterator
-    idx: usize,
-}
-
-impl<'a> Iterator for BufferAttrIterator<'a> {
-    type Item = String;
-
-    /// Gets the next Buffer attribute from the iterator
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.dev.get_buffer_attr(self.idx) {
-            Ok(name) => {
-                self.idx += 1;
-                Some(name)
-            }
-            Err(_) => None,
-        }
-    }
-}
-
 // --------------------------------------------------------------------------
 //                              Unit Tests
 // --------------------------------------------------------------------------
@@ -615,4 +406,3 @@ mod tests {
         assert!(dev.attributes().count() == n);
     }
 }
-

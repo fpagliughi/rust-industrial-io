@@ -23,7 +23,7 @@
 //!
 
 // Lints
-// This may be overkill.
+// This may be overkill, but it's keeping me honest.
 #![deny(
     missing_docs,
     missing_debug_implementations,
@@ -34,7 +34,6 @@
 )]
 
 use std::{
-    any::{Any, TypeId},
     collections::HashMap,
     ffi::{CStr, CString},
     fmt,
@@ -88,37 +87,56 @@ pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
     }
 }
 
-/// Converts the attribute name and value to CString's that can be sent to
-/// the C library.
-///
-/// `attr` The name of the attribute
-/// `val` The value to write. This should typically be an int, float, bool,
-///     or string type.
-pub(crate) fn attr_to_string<T>(val: T) -> Result<String>
-where
-    T: fmt::Display + Any,
-{
-    let mut sval = format!("{}", val);
-    if TypeId::of::<T>() == TypeId::of::<bool>() {
-        sval = (if sval == "true" { "1" } else { "0" }).into();
+/// Trait to convert a value to a proper attribute string.
+pub trait ToAttribute: fmt::Display + Sized {
+    /// Converts the attribute name and value to an attribute string that
+    /// can be sent to the C library.
+    ///
+    /// `attr` The name of the attribute
+    /// `val` The value to write.
+    fn to_attr(&self) -> Result<String> {
+        Ok(format!("{}", self))
     }
-    Ok(sval)
 }
 
-/// Converts a String to an atribute value.
-/// The type is typically an int, float, bool, or string.
-///
-/// `attr` The name of the attribute
-pub(crate) fn string_to_attr<T>(mut sval: String) -> Result<T>
-where
-    T: FromStr + Any,
-{
-    if TypeId::of::<T>() == TypeId::of::<bool>() {
-        sval = (if sval.trim() == "0" { "false" } else { "true" }).into();
+/// Trait to convert an attribute string to a typed value.
+pub trait FromAttribute: FromStr + Sized {
+    /// Converts a string attribute to a value type.
+    fn from_attr(s: &str) -> Result<Self> {
+        let val = Self::from_str(s).map_err(
+            |_| Error::StringConversionError)?;
+        Ok(val)
     }
-    let val = T::from_str(&sval).map_err(|_| Error::StringConversionError)?;
-    Ok(val)
 }
+
+/// Attribute conversion for the bool type.
+///
+/// The bool type needs a special implementation of the attribute conversion
+/// trait because it's default Rust string counterparts are "true" and "false"
+/// for true and false values respectively. However, sysfs expects these to be
+/// "1" or "0".
+impl ToAttribute for bool {
+    fn to_attr(&self) -> Result<String> {
+        Ok((if *self { "1" } else { "0" }).into())
+    }
+}
+
+impl FromAttribute for bool {
+    fn from_attr(s: &str) -> Result<bool> {
+        Ok(if s.trim() == "0" { false } else { true })
+    }
+}
+
+// Default trait implementations for the types in the IIO lib
+impl ToAttribute for i64 {}
+impl ToAttribute for f64 {}
+impl ToAttribute for &str {}
+impl ToAttribute for String {}
+
+impl FromAttribute for i64 {}
+impl FromAttribute for f64 {}
+impl FromAttribute for String {}
+
 
 // Callback from the C lib to extract the collection of all
 // device-specific attributes. See attr_read_all().

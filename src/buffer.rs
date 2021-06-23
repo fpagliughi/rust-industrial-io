@@ -51,9 +51,7 @@
 #![warn(missing_docs)]
 
 use std::{
-    any::Any,
     collections::HashMap,
-    fmt::Display,
     marker::PhantomData,
     mem,
     os::raw::{c_int, c_longlong, c_void},
@@ -196,9 +194,9 @@ impl Buffer {
     /// Reads a buffer-specific attribute
     ///
     /// `attr` The name of the attribute
-    pub fn attr_read<T: FromStr + Any>(&self, attr: &str) -> Result<T> {
+    pub fn attr_read<T: FromAttribute>(&self, attr: &str) -> Result<T> {
         let sval = self.attr_read_str(attr)?;
-        string_to_attr(sval)
+        T::from_attr(&sval)
     }
 
     /// Reads a buffer-specific attribute as a string
@@ -275,8 +273,8 @@ impl Buffer {
     ///
     /// `attr` The name of the attribute
     /// `val` The value to write
-    pub fn attr_write<T: Display + Any>(&self, attr: &str, val: T) -> Result<()> {
-        let sval = attr_to_string(val)?;
+    pub fn attr_write<T: ToAttribute>(&self, attr: &str, val: T) -> Result<()> {
+        let sval = T::to_attr(&val)?;
         self.attr_write_str(attr, &sval)
     }
 

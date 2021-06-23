@@ -139,7 +139,7 @@ fn run() -> Result<()> {
             .context(format!("Couldn't find requested trigger: {}", trig_name))?;
 
         // Set the sampling rate on the trigger device
-        trig.attr_write_int(SAMPLING_FREQ_ATTR, freq)
+        trig.attr_write(SAMPLING_FREQ_ATTR, freq)
             .with_context(|| format!("Can't set sampling rate to {}Hz on {}", freq, trig_name))?;
 
         dev.set_trigger(&trig)
@@ -147,7 +147,7 @@ fn run() -> Result<()> {
     }
     else if dev.has_attr(SAMPLING_FREQ_ATTR) {
         // Try to set the sampling rate on the device itself, if supported
-        dev.attr_write_int(SAMPLING_FREQ_ATTR, freq)
+        dev.attr_write(SAMPLING_FREQ_ATTR, freq)
             .with_context(|| {
                 format!(
                     "Can't set sampling rate to {}Hz on {}",

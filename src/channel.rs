@@ -13,13 +13,11 @@
 use super::*;
 use crate::{ffi, ATTR_BUF_SIZE};
 use std::{
-    any::{Any, TypeId},
+    any::TypeId,
     collections::HashMap,
     ffi::CString,
-    fmt::Display,
     mem,
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
-    str::FromStr,
 };
 
 /// The type of data associated with a channel.
@@ -230,9 +228,9 @@ impl Channel {
     /// Reads a channel-specific attribute
     ///
     /// `attr` The name of the attribute
-    pub fn attr_read<T: FromStr + Any>(&self, attr: &str) -> Result<T> {
+    pub fn attr_read<T: FromAttribute>(&self, attr: &str) -> Result<T> {
         let sval = self.attr_read_str(attr)?;
-        string_to_attr(sval)
+        T::from_attr(&sval)
     }
 
     /// Reads a channel-specific attribute as a string
@@ -320,8 +318,8 @@ impl Channel {
     ///
     /// `attr` The name of the attribute
     /// `val` The value to write
-    pub fn attr_write<T: Display + Any>(&self, attr: &str, val: T) -> Result<()> {
-        let sval = attr_to_string(val)?;
+    pub fn attr_write<T: ToAttribute>(&self, attr: &str, val: T) -> Result<()> {
+        let sval = T::to_attr(&val)?;
         self.attr_write_str(attr, &sval)
     }
 

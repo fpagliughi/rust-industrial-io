@@ -234,8 +234,8 @@ fn run() -> Result<()> {
 
     // ----- Check for a scale and offset -----
 
-    let offset = sample_chan.attr_read_float("offset").unwrap_or(0.0);
-    let scale = sample_chan.attr_read_float("scale").unwrap_or(1.0);
+    let offset: f64 = sample_chan.attr_read_float("offset").unwrap_or(0.0);
+    let scale: f64 = sample_chan.attr_read_float("scale").unwrap_or(1.0);
 
     println!("  Offset: {:.3}, Scale: {:.3}", offset, scale);
 
@@ -253,7 +253,7 @@ fn run() -> Result<()> {
             .context(format!("Couldn't find requested trigger: {}", trig_name))?;
 
         // Set the sampling rate on the trigger device
-        trig.attr_write_int(SAMPLING_FREQ_ATTR, freq)
+        trig.attr_write(SAMPLING_FREQ_ATTR, freq)
             .with_context(|| format!("Can't set sampling rate to {}Hz on {}", freq, trig_name))?;
 
         dev.set_trigger(&trig)
@@ -261,7 +261,7 @@ fn run() -> Result<()> {
     }
     else if dev.has_attr(SAMPLING_FREQ_ATTR) {
         // Try to set the sampling rate on the device itself, if supported
-        dev.attr_write_int(SAMPLING_FREQ_ATTR, freq)
+        dev.attr_write(SAMPLING_FREQ_ATTR, freq)
             .with_context(|| {
                 format!(
                     "Can't set sampling rate to {}Hz on {}",

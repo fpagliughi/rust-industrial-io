@@ -93,7 +93,7 @@ fn main() -> iio::Result<()> {
     loop {
         tick.recv().unwrap();
         for chan in dev.channels() {
-            match chan.attr_read_int("raw") {
+            match chan.attr_read::<i64>("raw") {
                 Ok(val) => print!(" {:>8} ", val),
                 _ => print!("######## "),
             }

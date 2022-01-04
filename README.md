@@ -156,6 +156,14 @@ Once loaded, the _configfs_ can be used to create devices and triggers. The _loa
 $ sudo ./load_dummy.sh
 ```
 
+### macOS
+
+The crate is also compatible with macOS, though only the network contexts are available. The libiio framework can be built from source or installed from a community homebrew formula:
+
+```
+brew install tfcollins/homebrew-formulae/libiio
+```
+
 ## Installing the C Library
 
 Install _libiio_ v0.21 on the target board. If you're developing on a Linux host, install the same version of the library there so that you can do some development on the host,

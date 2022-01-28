@@ -223,31 +223,31 @@ mod tests {
 
     #[test]
     fn string_to_attr_val() {
-        let val: i32 = string_to_attr("123".to_string()).unwrap();
+        let val: i64 = i64::from_attr("123").unwrap();
         assert_eq!(val, 123);
 
-        let val = string_to_attr::<bool>("1".to_string()).unwrap();
+        let val = bool::from_attr("1").unwrap();
         assert_eq!(val, true);
 
-        let val: bool = string_to_attr(" 0 \n".to_string()).unwrap();
+        let val: bool = bool::from_attr(" 0 \n").unwrap();
         assert_eq!(val, false);
 
-        let val: String = string_to_attr("hello".to_string()).unwrap();
+        let val: String = String::from_attr("hello").unwrap();
         assert_eq!(&val, "hello");
     }
 
     #[test]
     fn attr_val_to_string() {
-        let s = attr_to_string(123).unwrap();
+        let s = i64::to_attr(&123).unwrap();
         assert_eq!(&s, "123");
 
-        let s = attr_to_string(true).unwrap();
+        let s = bool::to_attr(&true).unwrap();
         assert_eq!(&s, "1");
 
-        let s = attr_to_string(false).unwrap();
+        let s = bool::to_attr(&false).unwrap();
         assert_eq!(&s, "0");
 
-        let s = attr_to_string("hello").unwrap();
+        let s = String::to_attr(&"hello".to_string()).unwrap();
         assert_eq!(&s, "hello");
     }
 }

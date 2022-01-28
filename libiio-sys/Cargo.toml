@@ -1,6 +1,6 @@
 [package]
 name = "libiio-sys"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2018"
 authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
 repository = "https://github.com/fpagliughi/rust-industrial-io"

@@ -3,8 +3,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-###  [v0.3](https://github.com/fpagliughi/rust-industrial-io/compare/v0.2..v0.3) - 2021-05-26
+###  [v0.4.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.3..v0.4.0) - 20222-01-28
 
+- [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type.
+- The `InnerContext` is now public and can be cloned and sent to another thread to create a cloned context in the other thread.
+- [#15](https://github.com/fpagliughi/rust-industrial-io/issues/15) Generic `attr_read()` and `attr_write()` functions for devices, channels, and buffers.
+- [#17](https://github.com/fpagliughi/rust-industrial-io/pull/17) macOS support (for network clients)
+- Buffer attribute read/write functions and iterators moved into the `Buffer` struct.
+- `Buffer` struct now contains a clone of the `Device` from which it was created.
+- `Device` and `Channel` now support `Clone` trait.
+- Updates to the examples for more/different hardware.
+- New `Version` struct which is returned by the library and `Context` version query functions.
+
+
+###  [v0.3](https://github.com/fpagliughi/rust-industrial-io/compare/v0.2..v0.3) - 2021-05-26
 
 - Support for _libiio_ v0.21
 - Updated error handling:

@@ -88,7 +88,7 @@ pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
 }
 
 /// Trait to convert a value to a proper attribute string.
-pub trait ToAttribute: fmt::Display + Sized {
+pub trait ToAttribute: fmt::Display {
     /// Converts the attribute name and value to an attribute string that
     /// can be sent to the C library.
     ///
@@ -100,7 +100,7 @@ pub trait ToAttribute: fmt::Display + Sized {
 }
 
 /// Trait to convert an attribute string to a typed value.
-pub trait FromAttribute: FromStr + Sized {
+pub trait FromAttribute: FromStr {
     /// Converts a string attribute to a value type.
     fn from_attr(s: &str) -> Result<Self> {
         let val = Self::from_str(s).map_err(
@@ -128,12 +128,23 @@ impl FromAttribute for bool {
 }
 
 // Default trait implementations for the types in the IIO lib
+impl ToAttribute for i32 {}
+impl ToAttribute for u32 {}
 impl ToAttribute for i64 {}
+impl ToAttribute for u64 {}
+impl ToAttribute for i128 {}
+impl ToAttribute for u128 {}
 impl ToAttribute for f64 {}
+impl ToAttribute for str {}
 impl ToAttribute for &str {}
 impl ToAttribute for String {}
 
+impl FromAttribute for i32 {}
+impl FromAttribute for u32 {}
 impl FromAttribute for i64 {}
+impl FromAttribute for u64 {}
+impl FromAttribute for i128 {}
+impl FromAttribute for u128 {}
 impl FromAttribute for f64 {}
 impl FromAttribute for String {}
 
@@ -222,14 +233,14 @@ mod tests {
     }
 
     #[test]
-    fn string_to_attr_val() {
-        let val: i64 = i64::from_attr("123").unwrap();
+    fn val_from_attr_str() {
+        let val: i32 = i32::from_attr("123").unwrap();
         assert_eq!(val, 123);
 
         let val = bool::from_attr("1").unwrap();
         assert_eq!(val, true);
 
-        let val: bool = bool::from_attr(" 0 \n").unwrap();
+        let val: bool = FromAttribute::from_attr(" 0 \n").unwrap();
         assert_eq!(val, false);
 
         let val: String = String::from_attr("hello").unwrap();
@@ -237,8 +248,8 @@ mod tests {
     }
 
     #[test]
-    fn attr_val_to_string() {
-        let s = i64::to_attr(&123).unwrap();
+    fn val_to_attr_string() {
+        let s = i32::to_attr(&123).unwrap();
         assert_eq!(&s, "123");
 
         let s = bool::to_attr(&true).unwrap();
@@ -247,7 +258,10 @@ mod tests {
         let s = bool::to_attr(&false).unwrap();
         assert_eq!(&s, "0");
 
-        let s = String::to_attr(&"hello".to_string()).unwrap();
+        let s = ToAttribute::to_attr("hello").unwrap();
         assert_eq!(&s, "hello");
+
+        let s = String::to_attr(&"hello".to_string()).unwrap();
+        assert_eq!(s.as_str(), "hello");
     }
 }

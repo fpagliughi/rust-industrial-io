@@ -18,7 +18,12 @@ fn main() {
     let tgt = env::var("TARGET").unwrap();
     println!("debug: Building for target: '{}'", tgt);
 
+    #[cfg(not(target_os = "macos"))]
     println!("cargo:rustc-link-lib=iio");
+
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-link-lib=framework=iio");
+
+    #[cfg(target_os = "macos")]
+    println!(r"cargo:rustc-link-search=framework=/opt/homebrew/Frameworks/");
 }
-
-

@@ -261,14 +261,13 @@ fn run() -> Result<()> {
     }
     else if dev.has_attr(SAMPLING_FREQ_ATTR) {
         // Try to set the sampling rate on the device itself, if supported
-        dev.attr_write(SAMPLING_FREQ_ATTR, freq)
-            .with_context(|| {
-                format!(
-                    "Can't set sampling rate to {}Hz on {}",
-                    freq,
-                    dev.name().unwrap()
-                )
-            })?;
+        dev.attr_write(SAMPLING_FREQ_ATTR, freq).with_context(|| {
+            format!(
+                "Can't set sampling rate to {}Hz on {}",
+                freq,
+                dev.name().unwrap()
+            )
+        })?;
     }
     else {
         bail!("No suitable trigger device found");

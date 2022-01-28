@@ -103,8 +103,7 @@ pub trait ToAttribute: fmt::Display {
 pub trait FromAttribute: FromStr {
     /// Converts a string attribute to a value type.
     fn from_attr(s: &str) -> Result<Self> {
-        let val = Self::from_str(s).map_err(
-            |_| Error::StringConversionError)?;
+        let val = Self::from_str(s).map_err(|_| Error::StringConversionError)?;
         Ok(val)
     }
 }
@@ -147,7 +146,6 @@ impl FromAttribute for i128 {}
 impl FromAttribute for u128 {}
 impl FromAttribute for f64 {}
 impl FromAttribute for String {}
-
 
 // Callback from the C lib to extract the collection of all
 // device-specific attributes. See attr_read_all().

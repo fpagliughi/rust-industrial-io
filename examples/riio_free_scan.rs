@@ -84,7 +84,7 @@ fn main() {
         process::exit(2);
     }
 
-    let buf = dev.create_buffer(8, false).unwrap_or_else(|err| {
+    let mut buf = dev.create_buffer(8, false).unwrap_or_else(|err| {
         eprintln!("Unable to create buffer: {}", err);
         process::exit(3);
     });

@@ -111,7 +111,7 @@ impl Buffer {
     /// Fetch more samples from the hardware.
     ///
     /// This is only valid for input buffers.
-    pub fn refill(&self) -> Result<usize> {
+    pub fn refill(&mut self) -> Result<usize> {
         let ret = unsafe { ffi::iio_buffer_refill(self.buf) };
         sys_result(ret as i32, ret as usize)
     }

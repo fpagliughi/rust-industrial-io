@@ -314,6 +314,9 @@ impl Device {
     }
 }
 
+// The Device can be sent to another thread.
+unsafe impl Send for Device {}
+
 impl PartialEq for Device {
     /// Two devices are the same if they refer to the same underlying
     /// object in the library.
@@ -401,5 +404,28 @@ mod tests {
         let n = dev.num_attrs();
         assert!(n != 0);
         assert!(dev.attributes().count() == n);
+    }
+
+    // Just the fact that this compiles is probably sufficient.
+    #[test]
+    fn test_device_send() {
+        use std::thread;
+
+        let ctx = Context::new().unwrap();
+        let dev = ctx.find_device("timer0").unwrap();
+
+        // Looks like this requires root access
+        //const FREQ: i64 = 1000;
+        //dev.attr_write_int("sampling_frequency", FREQ).unwrap();
+
+        let thr = thread::spawn(move || {
+            //let freq = dev.attr_read_int("sampling_frequency").unwrap();
+            //assert_eq!(FREQ, freq);
+
+            let name = dev.name().unwrap();
+            assert_eq!(name, "timer0");
+
+        });
+        let _ = thr.join();
     }
 }

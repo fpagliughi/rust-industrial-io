@@ -10,16 +10,16 @@
 //! Industrial I/O Contexts.
 //!
 
-use std::ffi::CString;
-use std::os::raw::c_uint;
-use std::ptr;
-use std::rc::Rc;
-use std::time::Duration;
-
-use nix::errno::Errno;
-
-use super::*;
-use crate::ffi;
+use crate::{cstring_opt, ffi, sys_result, Device, Error, Result, Version};
+use nix::errno::{self, Errno};
+use std::{
+    ffi::{CStr, CString},
+    os::raw::{c_char, c_uint},
+    ptr,
+    sync::Arc,
+    slice, str,
+    time::Duration,
+};
 
 /// An Industrial I/O Context
 ///
@@ -33,7 +33,7 @@ use crate::ffi;
 /// ergonomic by removing the need to manage the lifetime of the Context.
 #[derive(Debug, Clone)]
 pub struct Context {
-    inner: Rc<InnerContext>,
+    inner: Arc<InnerContext>,
 }
 
 /// Backends for I/O Contexts.
@@ -142,6 +142,9 @@ impl Drop for InnerContext {
 // The inner context can be sent to another thread.
 unsafe impl Send for InnerContext {}
 
+// The inner context can be shared with another thread.
+unsafe impl Sync for InnerContext {}
+
 impl Context {
     /// Creates a default context from a local or remote IIO device.
     ///
@@ -237,7 +240,7 @@ impl Context {
     /// Creates a context from an existing "inner" object.
     pub fn from_inner(inner: InnerContext) -> Self {
         Self {
-            inner: Rc::new(inner),
+            inner: Arc::new(inner),
         }
     }
 

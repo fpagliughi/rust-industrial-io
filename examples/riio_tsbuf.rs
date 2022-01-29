@@ -166,7 +166,7 @@ fn run() -> Result<()> {
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(DFLT_NUM_SAMPLE);
 
-    let buf = dev
+    let mut buf = dev
         .create_buffer(n_sample, false)
         .context("Unable to create buffer")?;
 

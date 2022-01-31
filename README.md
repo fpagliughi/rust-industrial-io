@@ -2,7 +2,7 @@
 
 ![Crates.io](https://img.shields.io/crates/d/industrial-io)
 
-Rust library crate for using the Linux Industrial I/O (IIO) subsytem, primarily used for the input and output of analog data from a Linux system in user space. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
+Rust library crate for using the Linux Industrial I/O (IIO) subsystem, primarily used for the input and output of analog data from a Linux system in user space. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
 
 The current version is a wrapper around the user-space C library, [libiio](https://github.com/analogdevicesinc/libiio).  Subsequent versions may access the interface the kernel ABI directly.
 
@@ -10,12 +10,12 @@ To use in an application, add this to _Cargo.toml:_
 
 ```toml
 [dependencies]
-industrial-io = "0.4"
+industrial-io = "0.5"
 ```
 
 ## Pre-release Note
 
-This is a pre-release verion of the crate. The API is stabilizing, but is still under active development and may change before a final release.
+This is a pre-release version of the crate. The API is stabilizing, but is still under active development and may change before a final release.
 
 This initial development work wrappers a _specific_ version (v0.21) of _libiio_. It assumes that the library is pre-installed on the build system and the target system.
 
@@ -33,8 +33,6 @@ New examples for different hardware are also requested.
 
 ## Latest News
 
-Work has started on v0.5. This will loosen restrictions on threading, allowing devices to be moved to different threads, and share an IIO context across threads.
-
 Overall, an effort is underway to get this crate to production quality.  It includes:
 
 - Full coverage of the _libiio_ API - or as much as makes sense.
@@ -45,10 +43,10 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
-### Unreleased Features in This Branch
+### New in Version 0.5.0
 
 - Started loosening thread safety restrictions:
-    - The `Context` is now `Send` and `Sync`. Internally it has canverted to using an `Arc` instead of an `Rc` to track it's internal data.
+    - The `Context` is now `Send` and `Sync`. Internally it has converted to using an `Arc` instead of an `Rc` to track it's internal data.
     - The `Device` is now `Send`.
     - For high performance with multiple device, though, it's still recommended to used fully-cloned contexts for each device
     - For now, `Channel` and `Buffer` objects are still `!Send` and `!Sync`. So they should live in the same thread as their channel.
@@ -56,17 +54,6 @@ To keep up with the latest announcements for this project, follow:
      - `Context::try_release_inner()` attempts to get the inner context out of the context wrapper.
      - `Context::try_deep_clone()` to make a new context around a deep copy of the inner context (and thus a copy of the C lib context).
      - `From<InnerContext> for Context`
-### New in Version 0.4.0
-
-- [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type.
-- The `InnerContext` is now public and can be cloned and sent to another thread to create a cloned context in the other thread.
-- [#15](https://github.com/fpagliughi/rust-industrial-io/issues/15) Generic `attr_read()` and `attr_write()` functions for devices, channels, and buffers.
-- [#17](https://github.com/fpagliughi/rust-industrial-io/pull/17) macOS support (for network clients)
-- Buffer attribute read/write functions and iterators moved into the `Buffer` struct.
-- `Buffer` struct now contains a clone of the `Device` from which it was created.
-- `Device` and `Channel` now support `Clone` trait.
-- Updates to the examples for more/different hardware.
-- New `Version` struct which is returned by the library and `Context` version query functions.
 
 ## The Basics
 
@@ -99,13 +86,13 @@ The Rust Industrial I/O library is a fairly thin wrapper around the C _libiio_, 
 
 ### Library Wrapper
 
-To do anything with _libiio_, the applcation must first create a `Context`to either maniplate the hardware on the local device (i.e. a _local_ context), or to communicate with hardware on a remote device such as over a network connection. Creating a local context is a fairly heavyweight operation compared to other library operations in that it will scan the hardware and build up a local representation in memory.
+To do anything with _libiio_, the application must first create a `Context`to either manipulate the hardware on the local device (i.e. a _local_ context), or to communicate with hardware on a remote device such as over a network connection. Creating a local context is a fairly heavyweight operation compared to other library operations in that it will scan the hardware and build up a local representation in memory.
 
 The context is thus a snapshot of the hardware at the time at which it was created. Any hardware that is added outside of the context - such as another process creating a new _hrtimer_, will not be reflected in it. A new context would need to be created to re-scan the hardware.
 
 But then, finding hardware is very efficient in that it just searches through the data structures in the context. A call like `ctx.find_device('adc0')` just looks for a string match in the list of hardware devices, and the pointer returned by the underlying library call is juts a reference to an existing context data structure.
 
-Nothing is created or destrioyed when new Rust hardware structures are declared, such as `Device` or `Channel`. Therefore the Rust structures can easily be cloned by copying the pointer to the library structure.
+Nothing is created or destroyed when new Rust hardware structures are declared, such as `Device` or `Channel`. Therefore the Rust structures can easily be cloned by copying the pointer to the library structure.
 
 The Rust `Context` object is just a reference-counted smart pointer to an `InnerContext`. This makes it easy to share the C context between different objects (devices, channels, etc), and to manage its lifetime. The `InnerContext` actually wraps the C context. When it goes out of scope, typically when the last reference disappears, the C context is destroyed. Cloning the `InnerContext` creates a full copy of the C library's context.
 
@@ -120,7 +107,7 @@ Early versions of this library (v0.4.x and before) were written with the mistake
 Starting in v0.5, the following is now possible:
 
 - `InnerContext`, which actually wraps the C library context, is now `Sync` in addition to being `Send`. It can be shared between threads.
-- `Context` is now implemented with an `Arc` to point to its `InnerContext`. So these references to the inner context can be sent to differet threads and those threads can share the same context.
+- `Context` is now implemented with an `Arc` to point to its `InnerContext`. So these references to the inner context can be sent to different threads and those threads can share the same context.
 - The `Device` objects, which hold a `Context` reference, are now `Send`. They can be moved to a different thread than the one that created the context.
 - For now, the `Channel` and `Buffer` objects are still `!Send` and `!Sync`, and need to live in the same thread with the `Device`, but these restrictions may be loosened as we figure out which specific operations are not thread safe.
 - The `Buffer::refill()` function now take a mutable reference to self, `&mut self`, in preparation of loosening thread restrictions on the buffer. The buffer definitely can not be filled by two different threads at the same time.
@@ -155,7 +142,7 @@ Alternately, to be explicit about cloning the inner context, this can be done:
         // ...
     });
 
-Here the inner context is cloned to the `cti` object which is moved into the thread and consumed to create a new context object, `thr_ctx`. This procedure was required in the earler versions of library, prior to v0.5.0.
+Here the inner context is cloned to the `cti` object which is moved into the thread and consumed to create a new context object, `thr_ctx`. This procedure was required in the earlier versions of library, prior to v0.5.0.
 
 An alternate way to share devices across threads and processes is to run the IIO network daemon on the local machine and allow it to control the local context. Then multiple client applications can access it from _localhost_ using a network context. The daemon will serialize access to the device and let multiple clients share it. Each thread in the client would still need a separate network context.
 
@@ -244,7 +231,7 @@ $ iiod --version
 
 ## Build the Rust Crate
 
-This is a fairly standard Rust wrapper project around a C library. It contains an unfafe _"-sys"_ sub-crate to wrap the C library API, and a higher-level, safe, Rust library in the main crate. To build them:
+This is a fairly standard Rust wrapper project around a C library. It contains an unsafe _"-sys"_ sub-crate to wrap the C library API, and a higher-level, safe, Rust library in the main crate. To build them:
 
 ```
 $ cargo build

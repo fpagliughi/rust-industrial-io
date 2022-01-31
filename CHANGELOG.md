@@ -1,9 +1,22 @@
 # Change Log
+# for Rust Industrial I/O
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-###  [v0.4.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.3..v0.4.0) - 20222-01-28
+###  [v0.5.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.4.0..v0.5.0) - 2022-01-30
+
+- Started loosening thread safety restrictions:
+    - The `Context` is now `Send` and `Sync`. Internally it has canverted to using an `Arc` instead of an `Rc` to track it's internal data.
+    - The `Device` is now `Send`.
+    - For high performance with multiple device, though, it's still recommended to used fully-cloned contexts for each device
+    - For now, `Channel` and `Buffer` objects are still `!Send` and `!Sync`. So they should live in the same thread as their channel.
+- New functions to manipulate `Context` and `InnerContext` objects:
+     - `Context::try_release_inner()` attempts to get the inner context out of the context wrapper.
+     - `Context::try_deep_clone()` to make a new context around a deep copy of the inner context (and thus a copy of the C lib context).
+     - `From<InnerContext> for Context`
+
+###  [v0.4.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.3..v0.4.0) - 2022-01-28
 
 - [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type.
 - The `InnerContext` is now public and can be cloned and sent to another thread to create a cloned context in the other thread.

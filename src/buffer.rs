@@ -100,7 +100,8 @@ impl Buffer {
         sys_result(i32::from(ret), ret)
     }
 
-    /// Make calls to [`Buffer::push()`] or [`Buffer::refill()`] blocking or not.
+    /// Make calls to [`push()`](Buffer::push) or [`refill()`](Buffer::refill)
+    /// blocking or not.
     ///
     /// A [`Device`] is blocking by default.
     pub fn set_blocking_mode(&self, blocking: bool) -> Result<()> {
@@ -136,20 +137,19 @@ impl Buffer {
 
     /// Cancel all buffer operations.
     ///
-    /// This function cancels all outstanding [`Buffer`] operations previously
-    /// scheduled. This means any pending [`Buffer::push()`] or
-    /// [`Buffer::refill()`] operation will abort and return immediately, any
-    /// further invocations of these functions on the same buffer will return
-    /// immediately with an error.
+    /// This function cancels all outstanding [`Buffer`] operations
+    /// previously scheduled. This means any pending [`push()`](Buffer::push)
+    /// or [`refill()`](Buffer::refill) operation will abort and return
+    /// immediately, any further invocations of these functions on the same
+    /// buffer will return immediately with an error.
     ///
-    /// Usually [`Buffer::push()`] and [`Buffer::refill()`] will block until
-    /// either all data has been transferred or a timeout occurs. This can,
-    /// depending on the configuration, take a significant amount of time.
-    /// [`Buffer::cancel()`] is useful to bypass these conditions if the
-    /// [`Buffer`] operation is supposed to be stopped in response to an
-    /// external event (e.g. user input).
+    /// Usually [`push()`](Buffer::push) and [`refill()`](Buffer::refill)
+    /// will block until either all data has been transferred or a timeout
+    /// occurs. This can, depending on the configuration, take a significant
+    /// amount of time. [`cancel()`](Buffer::cancel) is useful to bypass these
+    /// conditions if the [`Buffer`] operation is supposed to be stopped in
+    /// response to an external event (e.g. user input).
     ///
-    /// TODO: @fpagliughi, is this true for the rust binding, too?
     /// To be able to capture additional data after calling this function the
     /// buffer should be destroyed and then re-created.
     ///

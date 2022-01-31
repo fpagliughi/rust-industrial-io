@@ -15,9 +15,8 @@ use nix::errno::{self, Errno};
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_uint},
-    ptr,
+    ptr, slice, str,
     sync::Arc,
-    slice, str,
     time::Duration,
 };
 
@@ -112,7 +111,8 @@ pub struct InnerContext {
 }
 
 impl InnerContext {
-    /// Tries to create the inner context from a C pointer.
+    /// Tries to create the inner context from a C context pointer.
+    ///
     /// This should be called _right after_ creating the C context as it
     /// will use the last error on failure.
     fn new(ctx: *mut ffi::iio_context) -> Result<Self> {
@@ -122,18 +122,21 @@ impl InnerContext {
         }
     }
 
-    /// Create a clone of the underlying context that can be used in another thread.
+    /// Tries to create a full, deep, copy of the underlying context.
+    ///
+    /// This creates a full copy of the actual context held in the underlying
+    /// C library. This is useful if you want to give a separate copy to each
+    /// thread in an application, which could help performance.
     pub fn try_clone(&self) -> Result<Self> {
-        let ctx = unsafe { ffi::iio_context_clone(self.ctx) };
-        if ctx.is_null() {
-            Err(Error::from(Errno::last()))?;
-        }
-        Ok(InnerContext { ctx })
+        Self::new(unsafe { ffi::iio_context_clone(self.ctx) })
     }
 }
 
 impl Drop for InnerContext {
-    /// Dropping destroys the underlying context.
+    /// Dropping destroys the underlying C context.
+    ///
+    /// When held by [`Context`] references, this should happen when the last
+    /// context referring to it goes out of scope.
     fn drop(&mut self) {
         unsafe { ffi::iio_context_destroy(self.ctx) };
     }
@@ -239,9 +242,7 @@ impl Context {
 
     /// Creates a context from an existing "inner" object.
     pub fn from_inner(inner: InnerContext) -> Self {
-        Self {
-            inner: Arc::new(inner),
-        }
+        Self::from(inner)
     }
 
     /// Creates a Rust Context object from a C context pointer.
@@ -250,11 +251,32 @@ impl Context {
         Ok(Self::from_inner(inner))
     }
 
-    /// Try to create a clone of the inner underlying context that can be
-    /// used to create a new context object even in a different thread,
-    /// remembering that `InnerContext` implements the `Send` trait.
+    /// Try to create a clone of the inner underlying context.
+    ///
+    /// The inner context wraps the C library context. Cloning it makes
+    /// a full copy of the C context.
     pub fn try_clone_inner(&self) -> Result<InnerContext> {
         self.inner.try_clone()
+    }
+
+    /// Tries to release the inner context.
+    ///
+    /// This attempts to release and return the [`InnerContext`], which
+    /// succeeds if this is the only [`Context`] referring to it. If there are
+    /// other references, an error is returned with a [`Context`].
+    pub fn try_release_inner(self) -> std::result::Result<InnerContext, Context> {
+        match Arc::try_unwrap(self.inner) {
+            Ok(inner) => Ok(inner),
+            Err(inner_ptr) => Err(Context { inner: inner_ptr }),
+        }
+    }
+
+    /// Make a new context based on a full copy of underlying C context.
+    pub fn try_deep_clone(&self) -> Result<Context> {
+        let inner = self.inner.try_clone()?;
+        Ok(Self {
+            inner: Arc::new(inner),
+        })
     }
 
     /// Get the name of the context.
@@ -408,6 +430,15 @@ impl PartialEq for Context {
     /// object in the library.
     fn eq(&self, other: &Context) -> bool {
         self.inner.ctx == other.inner.ctx
+    }
+}
+
+impl From<InnerContext> for Context {
+    /// Makes a new [`Context`] from the [`InnerContext`]
+    fn from(inner: InnerContext) -> Self {
+        Self {
+            inner: Arc::new(inner),
+        }
     }
 }
 

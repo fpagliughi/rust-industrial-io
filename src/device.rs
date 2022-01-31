@@ -424,7 +424,6 @@ mod tests {
 
             let name = dev.name().unwrap();
             assert_eq!(name, "timer0");
-
         });
         let _ = thr.join();
     }

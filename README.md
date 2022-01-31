@@ -33,7 +33,7 @@ New examples for different hardware are also requested.
 
 ## Latest News
 
-Work has started on v0.5. This will loosen restrictions on threading, allowing devices to be moved ot different threads, and share an IIO context across threads.
+Work has started on v0.5. This will loosen restrictions on threading, allowing devices to be moved to different threads, and share an IIO context across threads.
 
 Overall, an effort is underway to get this crate to production quality.  It includes:
 
@@ -52,7 +52,10 @@ To keep up with the latest announcements for this project, follow:
     - The `Device` is now `Send`.
     - For high performance with multiple device, though, it's still recommended to used fully-cloned contexts for each device
     - For now, `Channel` and `Buffer` objects are still `!Send` and `!Sync`. So they should live in the same thread as their channel.
-     
+- New functions to manipulate `Context` and `InnerContext` objects:
+     - `Context::try_release_inner()` attempts to get the inner context out of the context wrapper.
+     - `Context::try_deep_clone()` to make a new context around a deep copy of the inner context (and thus a copy of the C lib context).
+     - `From<InnerContext> for Context`
 ### New in Version 0.4.0
 
 - [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type.
@@ -96,7 +99,7 @@ The Rust Industrial I/O library is a fairly thin wrapper around the C _libiio_, 
 
 ### Library Wrapper
 
-To do anything with _libiio_, the applcation must first create a `Context`to either maniplate the hardware on the local device (i.e. a _local_ context), or to communicate with hardware on a remote device such as over a network connection. Creating a context is a fairly heavyweight operation compared to other library operations in that it will scan the hardware and build up a local representation in memory.
+To do anything with _libiio_, the applcation must first create a `Context`to either maniplate the hardware on the local device (i.e. a _local_ context), or to communicate with hardware on a remote device such as over a network connection. Creating a local context is a fairly heavyweight operation compared to other library operations in that it will scan the hardware and build up a local representation in memory.
 
 The context is thus a snapshot of the hardware at the time at which it was created. Any hardware that is added outside of the context - such as another process creating a new _hrtimer_, will not be reflected in it. A new context would need to be created to re-scan the hardware.
 
@@ -104,40 +107,55 @@ But then, finding hardware is very efficient in that it just searches through th
 
 Nothing is created or destrioyed when new Rust hardware structures are declared, such as `Device` or `Channel`. Therefore the Rust structures can easily be cloned by copying the pointer to the library structure.
 
-Note that there is a slight confusion around "cloning" a Context. In the Rust library, the C context is wrapped by an `InnerContext` object. The `Context` is just a thread-safe, reference counted smart pointer to that inner context. Thus, cloning a Rust `Context` just creates a new, shared pointer to the existing C conext. This makes it easy to share the context and guarantee it's lifetime between multiple `Device` objects created from it. The C context will automatically be destroyed when the last device or other context reference goes out of scope. The application does not need to manually track and delete the context.
+The Rust `Context` object is just a reference-counted smart pointer to an `InnerContext`. This makes it easy to share the C context between different objects (devices, channels, etc), and to manage its lifetime. The `InnerContext` actually wraps the C context. When it goes out of scope, typically when the last reference disappears, the C context is destroyed. Cloning the `InnerContext` creates a full copy of the C library's context.
 
-Often, however, when using separate threads to manage each device, it can be more efficient to create a separate C context for each thread. To do this, a "deep" clone of the `Context` is necessary. This is simply a clone of the `InnerContext`, and creating new smart pointers around that inner context. So it is a clone of the `InnerContext` which actually makes a copy of the C library context.
+This creates some confusion around "cloning" a Context. Since a `Context` is just a thread-safe, reference counted smart pointer to that inner context, cloning it just creates a new, shared pointer to the existing inner/C context. This makes it easy to share the context and guarantee it's lifetime between multiple `Device` objects created from it. Cloning a `Context` and sending the clone to another thread will actually then _share_ the `InnerContext` (and thus C context) between the two threads.
+ 
+Often, however, when using separate threads to manage each device, it can be more efficient to create a fully separate C context for each thread. To do this, a "deep" clone of the `Context` is necessary. This is simply a clone of the `InnerContext`, and creating new smart pointers around that inner context. So it is a clone of the `InnerContext` which actually makes a copy of the C library context. See the next section for details.
  
 ### Thread Safety
 
-Early versions of this library (v0.4.x and before) were written with the belief that the underling _libiio_ was not thread-safe. Some public information about the library was a little misleading. With input from some of the maintainers of the library and additional information, thread restrictions are slowly being lifted from this library.
+Early versions of this library (v0.4.x and before) were written with the mistaken belief that the underling _libiio_ was not thread-safe. Some public information about the library was a little misleading, but with input from a maintainers of the library and additional published information, thread restrictions are slowly being lifted from this library.
 
 Starting in v0.5, the following is now possible:
 
 - `InnerContext`, which actually wraps the C library context, is now `Sync` in addition to being `Send`. It can be shared between threads.
 - `Context` is now implemented with an `Arc` to point to its `InnerContext`. So these references to the inner context can be sent to differet threads and those threads can share the same context.
-- The `Device` objects, which hold a `Context` reference, are now `Send`. They can now be moved to a different thread than the one that holds the context.
-- For now, the `Channel` and `Buffer` objects are still `!Send` and `!Sync`, and need to live in the same thread with the `Device`, but these restrictions may be loosened as we figure out what specific operations are not thread safe.
+- The `Device` objects, which hold a `Context` reference, are now `Send`. They can be moved to a different thread than the one that created the context.
+- For now, the `Channel` and `Buffer` objects are still `!Send` and `!Sync`, and need to live in the same thread with the `Device`, but these restrictions may be loosened as we figure out which specific operations are not thread safe.
 - The `Buffer::refill()` function now take a mutable reference to self, `&mut self`, in preparation of loosening thread restrictions on the buffer. The buffer definitely can not be filled by two different threads at the same time.
 
 Even with these new thread capabilities, when the _physical_ devices described by an IIO context can be manipulated by different threads, it is often still desirable to use a separate `Context` instance for each thread. There are two ways to do this:
 
-1. Simply create a new `Context` object in each thread using the same URI, etc.
+1. Simply create a new `Context` object in each thread using the same URI, etc. These might not be exactly the same if some new hardware was added or removed between the time any two contexts were created. But this is perhaps rare.
 2. Create a context and then make clones of its `InnerContext` object and send those to other threads. Each one can then be used to create a new `Context` instance in that thread.
 
-This second option can be done like this:
+This second option is considerably more efficient and can be done in several ways.
+
+One way is to do a "deep" clone of a context and send it to the other thread:
+
+    let ctx = Context::new()?;
+    let thr_ctx = ctx.try_deep_clone()?;
+    
+    thread::spawn(move || {
+        let dev = thr_ctx.find_device("somedevice")?
+        // ...
+    });
+
+This makes a copy of the inner context which clones the C library context. It then sends the one-and-only reference to the other thread, giving it exclusive access to that C context.
+
+Alternately, to be explicit about cloning the inner context, this can be done:
 
     let ctx = Context::new()?;
     let cti = ctx.try_clone_inner()?;
 
-    let thr = thread::spawn(move || {
-        let thr_ctx = Context::from_inner(cti);
+    thread::spawn(move || {
+        let thr_ctx = Context::from(cti);
+        let dev = thr_ctx.find_device("somedevice")?
         // ...
     });
 
-Here the inner context is cloned to the `cti` object which is moved into the thread and consumed to create a new context object, `thr_ctx`.
-
-_Note that this procedure was required in the earler versions of library. Prior to the release of 0.5.0, we'll make it easier to make a "deep" clone of the context to send across threads._
+Here the inner context is cloned to the `cti` object which is moved into the thread and consumed to create a new context object, `thr_ctx`. This procedure was required in the earler versions of library, prior to v0.5.0.
 
 An alternate way to share devices across threads and processes is to run the IIO network daemon on the local machine and allow it to control the local context. Then multiple client applications can access it from _localhost_ using a network context. The daemon will serialize access to the device and let multiple clients share it. Each thread in the client would still need a separate network context.
 

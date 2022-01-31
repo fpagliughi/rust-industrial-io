@@ -2,7 +2,7 @@
 //
 // The builder for the Linux Industrial I/O wrapper crate.
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Copyright (c) 2018-2022, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -11,6 +11,18 @@
 //
 
 use std::env;
+
+#[cfg(target_os = "macos")]
+fn config_macos() {
+    println!("cargo:rustc-link-lib=framework=iio");
+
+    if cfg!(target_arch = "x86_64") {
+        println!(r"cargo:rustc-link-search=framework=/usr/local/Frameworks/");
+    }
+    else {
+        println!(r"cargo:rustc-link-search=framework=/opt/homebrew/Frameworks/");
+    }
+}
 
 fn main() {
     // TODO: We should eventually find or regenerate the
@@ -22,8 +34,5 @@ fn main() {
     println!("cargo:rustc-link-lib=iio");
 
     #[cfg(target_os = "macos")]
-    println!("cargo:rustc-link-lib=framework=iio");
-
-    #[cfg(target_os = "macos")]
-    println!(r"cargo:rustc-link-search=framework=/opt/homebrew/Frameworks/");
+    config_macos();
 }

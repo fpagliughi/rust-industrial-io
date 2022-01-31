@@ -11,14 +11,47 @@
 //! Rust application to gather information about Industrial I/O devices.
 //!
 
+use clap::{App, Arg};
 use industrial_io as iio;
 use std::process;
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() -> iio::Result<()> {
     let lib_ver = iio::library_version();
     println!("Library version: {}", lib_ver);
 
-    let ctx = iio::Context::new().unwrap_or_else(|err| {
+    let args = App::new("iio_info_rs")
+        .version(VERSION)
+        .author("Frank Pagliughi")
+        .about("Rust IIO system information.")
+        .help_short("?")
+        .arg(
+            Arg::with_name("network")
+                .short("n")
+                .long("network")
+                .help("Use the network backend with the provided hostname")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("uri")
+                .short("u")
+                .long("uri")
+                .help("Use the context with the provided URI")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let ctx = if let Some(hostname) = args.value_of("network") {
+        iio::Context::with_backend(iio::Backend::Network(hostname))
+    }
+    else if let Some(uri) = args.value_of("uri") {
+        iio::Context::from_uri(uri)
+    }
+    else {
+        iio::Context::new()
+    }
+    .unwrap_or_else(|err| {
         eprintln!("Error getting the IIO Context: {}", err);
         process::exit(1);
     });

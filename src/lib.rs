@@ -121,8 +121,8 @@ impl ToAttribute for bool {
 }
 
 impl FromAttribute for bool {
-    fn from_attr(s: &str) -> Result<bool> {
-        Ok(if s.trim() == "0" { false } else { true })
+    fn from_attr(s: &str) -> Result<Self> {
+        Ok(s.trim() != "0")
     }
 }
 
@@ -163,7 +163,7 @@ pub(crate) unsafe extern "C" fn attr_read_all_cb(
     let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
     // TODO: We could/should check val[len-1] == '\x0'
     let val = CStr::from_ptr(val).to_string_lossy().to_string();
-    let map: &mut HashMap<String, String> = &mut *(pmap as *mut _);
+    let map: &mut HashMap<String, String> = &mut *pmap.cast();
     map.insert(attr, val);
     0
 }
@@ -205,7 +205,7 @@ pub fn library_version() -> Version {
             CStr::from_ptr(pbuf).to_owned()
         }
         else {
-            let slc = str::from_utf8(slice::from_raw_parts(pbuf as *mut u8, BUF_SZ)).unwrap();
+            let slc = str::from_utf8(slice::from_raw_parts(pbuf.cast(), BUF_SZ)).unwrap();
             CString::new(slc).unwrap()
         }
     };

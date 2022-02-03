@@ -54,7 +54,7 @@ use std::{
     collections::HashMap,
     marker::PhantomData,
     mem,
-    os::raw::{c_int, c_longlong, c_void},
+    os::raw::{c_int, c_longlong},
     ptr,
 };
 
@@ -262,7 +262,7 @@ impl Buffer {
     /// retrieve all the attributes with a single call.
     pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
-        let pmap = &mut map as *mut _ as *mut c_void;
+        let pmap = (&mut map as *mut HashMap<_, _>).cast();
         let ret = unsafe {
             ffi::iio_device_buffer_attr_read_all(self.dev.dev, Some(attr_read_all_cb), pmap)
         };
@@ -338,7 +338,7 @@ impl Buffer {
     /// Gets an iterator for the data from a channel.
     pub fn channel_iter<T>(&self, chan: &Channel) -> IntoIter<T> {
         unsafe {
-            let begin = ffi::iio_buffer_first(self.buf, chan.chan) as *mut T;
+            let begin = ffi::iio_buffer_first(self.buf, chan.chan).cast();
             let end = ffi::iio_buffer_end(self.buf) as *const T;
             let ptr = begin;
             let step: isize = ffi::iio_buffer_step(self.buf) / mem::size_of::<T>() as isize;
@@ -377,7 +377,7 @@ impl<T> Iterator for IntoIter<T> {
 
     fn next(&mut self) -> Option<T> {
         unsafe {
-            if self.ptr as *const _ >= self.end {
+            if self.ptr.cast() >= self.end {
                 None
             }
             else {

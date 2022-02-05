@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+###  [v0.5.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.0..v0.5.1) - 2022-02-05
+
+- `iio_info_rs` utility now supports network and URI contexts.
+- [PR #19](https://github.com/fpagliughi/rust-industrial-io/pull/19) macOS build makes a distinction for Intel and non-Intel builds when searching for Homebrew Frameworks (libiio library).
+- [PR #20](https://github.com/fpagliughi/rust-industrial-io/pull/20) Fix some clippy suggestions. Particularly cleaner casting of raw pointers, etc.
+
 ###  [v0.5.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.4.0..v0.5.0) - 2022-01-30
 
 - Started loosening thread safety restrictions:

@@ -43,7 +43,7 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
-### Unreleased Features in this Branch
+### New in Version 0.5.1
 
 - `iio_info_rs` utility now supports network and URI contexts.
 - [PR #19](https://github.com/fpagliughi/rust-industrial-io/pull/19) macOS build makes a distinction for Intel and non-Intel builds when searching for Homebrew Frameworks (libiio library).

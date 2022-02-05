@@ -70,7 +70,7 @@ pub struct DataFormat {
 impl DataFormat {
     /// Creates a new data format from the underlyinh library type.
     fn new(data_fmt: ffi::iio_data_format) -> Self {
-        DataFormat { data_fmt }
+        Self { data_fmt }
     }
 
     /// Gets total length of the sample, in bits.
@@ -108,7 +108,7 @@ impl DataFormat {
         self.data_fmt.with_scale
     }
 
-    /// Contains the scale to apply if with_scale is set
+    /// Contains the scale to apply if `with_scale` is set
     pub fn scale(&self) -> f64 {
         self.data_fmt.scale
     }
@@ -124,9 +124,9 @@ impl DataFormat {
         nbytes as usize
     }
 
-    /// Gets the TypeId for a single sample from the channel.
+    /// Gets the `TypeId` for a single sample from the channel.
     ///
-    /// This will get the TypeId for a sample if it can fit into a standard
+    /// This will get the `TypeId` for a sample if it can fit into a standard
     /// integer type, signed or unsigned, of 8, 16, 32, or 64 bits.
     pub fn type_of(&self) -> Option<TypeId> {
         let nbytes = self.byte_length();
@@ -297,7 +297,7 @@ impl Channel {
         let attr = CStr::from_ptr(attr).to_string_lossy().to_string();
         // TODO: We could/should check val[len-1] == '\x0'
         let val = CStr::from_ptr(val).to_string_lossy().to_string();
-        let map: &mut HashMap<String, String> = &mut *(pmap as *mut _);
+        let map: &mut HashMap<String, String> = &mut *pmap.cast();
         map.insert(attr, val);
         0
     }
@@ -307,7 +307,7 @@ impl Channel {
     /// retrieve all the attributes with a single call.
     pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
-        let pmap = &mut map as *mut _ as *mut c_void;
+        let pmap = (&mut map as *mut HashMap<_, _>).cast();
         let ret = unsafe {
             ffi::iio_channel_attr_read_all(self.chan, Some(Channel::attr_read_all_cb), pmap)
         };
@@ -397,9 +397,9 @@ impl Channel {
         }
     }
 
-    /// Gets the TypeId for a single sample from the channel.
+    /// Gets the `TypeId` for a single sample from the channel.
     ///
-    /// This will get the TypeId for a sample if it can fit into a standard
+    /// This will get the `TypeId` for a sample if it can fit into a standard
     /// integer type, signed or unsigned, of 8, 16, 32, or 64 bits.
     pub fn type_of(&self) -> Option<TypeId> {
         let dfmt = self.data_format();
@@ -429,8 +429,8 @@ impl Channel {
             unsafe {
                 ffi::iio_channel_convert(
                     self.chan,
-                    &mut retval as *mut T as *mut c_void,
-                    &val as *const T as *const c_void,
+                    (&mut retval as *mut T).cast(),
+                    (&val as *const T).cast(),
                 );
             }
         }
@@ -451,8 +451,8 @@ impl Channel {
             unsafe {
                 ffi::iio_channel_convert_inverse(
                     self.chan,
-                    &mut retval as *mut T as *mut c_void,
-                    &val as *const T as *const c_void,
+                    (&mut retval as *mut T).cast(),
+                    (&val as *const T).cast(),
                 );
             }
         }
@@ -473,9 +473,7 @@ impl Channel {
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
-        let sz = unsafe {
-            ffi::iio_channel_read(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
-        };
+        let sz = unsafe { ffi::iio_channel_read(self.chan, buf.buf, v.as_mut_ptr().cast(), sz_in) };
 
         if sz > sz_in {
             return Err(Error::BadReturnSize); // This should never happen.
@@ -501,9 +499,8 @@ impl Channel {
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
-        let sz = unsafe {
-            ffi::iio_channel_read_raw(self.chan, buf.buf, v.as_mut_ptr() as *mut c_void, sz_in)
-        };
+        let sz =
+            unsafe { ffi::iio_channel_read_raw(self.chan, buf.buf, v.as_mut_ptr().cast(), sz_in) };
 
         if sz > sz_in {
             return Err(Error::BadReturnSize); // This should never happen.
@@ -528,9 +525,7 @@ impl Channel {
         let sz_item = mem::size_of::<T>();
         let sz_in = data.len() * sz_item;
 
-        let sz = unsafe {
-            ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr() as *const c_void, sz_in)
-        };
+        let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
 
         Ok(sz / sz_item)
     }
@@ -548,9 +543,7 @@ impl Channel {
         let sz_item = mem::size_of::<T>();
         let sz_in = data.len() * sz_item;
 
-        let sz = unsafe {
-            ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr() as *const c_void, sz_in)
-        };
+        let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
 
         Ok(sz / sz_item)
     }

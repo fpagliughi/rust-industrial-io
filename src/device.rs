@@ -16,7 +16,7 @@ use nix::errno::Errno;
 use std::{
     collections::HashMap,
     ffi::CString,
-    os::raw::{c_char, c_longlong, c_uint, c_void},
+    os::raw::{c_char, c_longlong, c_uint},
     ptr,
 };
 
@@ -68,7 +68,7 @@ impl Device {
 
     /// Associate a trigger for this device.
     /// `trigger` The device to be used as a trigger.
-    pub fn set_trigger(&self, trigger: &Device) -> Result<()> {
+    pub fn set_trigger(&self, trigger: &Self) -> Result<()> {
         let ret = unsafe { ffi::iio_device_set_trigger(self.dev, trigger.dev) };
         sys_result(ret, ())
     }
@@ -172,7 +172,7 @@ impl Device {
     /// retrieve all the attributes with a single call.
     pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
-        let pmap = &mut map as *mut _ as *mut c_void;
+        let pmap = (&mut map as *mut HashMap<_, _>).cast();
         let ret = unsafe { ffi::iio_device_attr_read_all(self.dev, Some(attr_read_all_cb), pmap) };
         sys_result(ret, map)
     }
@@ -320,7 +320,7 @@ unsafe impl Send for Device {}
 impl PartialEq for Device {
     /// Two devices are the same if they refer to the same underlying
     /// object in the library.
-    fn eq(&self, other: &Device) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.dev == other.dev
     }
 }

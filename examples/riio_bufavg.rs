@@ -69,8 +69,8 @@ impl Averager {
     // Creates a new averager with the specified offset and scale.
     pub fn new(offset: f64, scale: f64) -> Self {
         let (sender, receiver) = channel();
-        let thr = spawn(move || Averager::thread_func(receiver, offset, scale));
-        Averager { sender, thr }
+        let thr = spawn(move || Self::thread_func(receiver, offset, scale));
+        Self { sender, thr }
     }
 
     // The internal thread function.

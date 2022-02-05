@@ -26,8 +26,8 @@ use std::{
 /// Sync.
 ///
 /// This object maintains a reference counted pointer to the context object
-/// of the underlying library's iio_context object. Once all references to
-/// the Context object have been dropped, the underlying iio_context will be
+/// of the underlying library's `iio_context` object. Once all references to
+/// the Context object have been dropped, the underlying `iio_context` will be
 /// destroyed. This is done to make creation and use of a single Device more
 /// ergonomic by removing the need to manage the lifetime of the Context.
 #[derive(Debug, Clone)]
@@ -116,9 +116,11 @@ impl InnerContext {
     /// This should be called _right after_ creating the C context as it
     /// will use the last error on failure.
     fn new(ctx: *mut ffi::iio_context) -> Result<Self> {
-        match ctx.is_null() {
-            true => Err(Error::from(Errno::last())),
-            false => Ok(Self { ctx }),
+        if ctx.is_null() {
+            Err(Error::from(Errno::last()))
+        }
+        else {
+            Ok(Self { ctx })
         }
     }
 
@@ -153,12 +155,12 @@ impl Context {
     ///
     /// # Notes
     ///
-    /// This will create a network context if the IIOD_REMOTE
+    /// This will create a network context if the `IIOD_REMOTE`
     /// environment variable is set to the hostname where the IIOD server
     /// runs. If set to an empty string, the server will be discovered using
-    /// ZeroConf. If the environment variable is not set, a local context
+    /// `ZeroConf`. If the environment variable is not set, a local context
     /// will be created instead.
-    pub fn new() -> Result<Context> {
+    pub fn new() -> Result<Self> {
         Self::from_ptr(unsafe { ffi::iio_create_default_context() })
     }
 
@@ -200,7 +202,7 @@ impl Context {
     ///
     /// let ctx = iio::Context::with_backend(iio::Backend::Uri("ip:192.168.2.1"));
     /// ```
-    pub fn with_backend(be: Backend) -> Result<Context> {
+    pub fn with_backend(be: Backend) -> Result<Self> {
         Self::from_ptr(unsafe {
             match be {
                 Backend::Default => ffi::iio_create_default_context(),
@@ -264,15 +266,15 @@ impl Context {
     /// This attempts to release and return the [`InnerContext`], which
     /// succeeds if this is the only [`Context`] referring to it. If there are
     /// other references, an error is returned with a [`Context`].
-    pub fn try_release_inner(self) -> std::result::Result<InnerContext, Context> {
+    pub fn try_release_inner(self) -> std::result::Result<InnerContext, Self> {
         match Arc::try_unwrap(self.inner) {
             Ok(inner) => Ok(inner),
-            Err(inner_ptr) => Err(Context { inner: inner_ptr }),
+            Err(inner_ptr) => Err(Self { inner: inner_ptr }),
         }
     }
 
     /// Make a new context based on a full copy of underlying C context.
-    pub fn try_deep_clone(&self) -> Result<Context> {
+    pub fn try_deep_clone(&self) -> Result<Self> {
         let inner = self.inner.try_clone()?;
         Ok(Self {
             inner: Arc::new(inner),
@@ -298,7 +300,7 @@ impl Context {
         let mut minor: c_uint = 0;
 
         const BUF_SZ: usize = 8;
-        let mut buf = vec![' ' as c_char; BUF_SZ];
+        let mut buf = vec![b' ' as c_char; BUF_SZ];
         let pbuf = buf.as_mut_ptr();
 
         unsafe { ffi::iio_context_get_version(self.inner.ctx, &mut major, &mut minor, pbuf) };
@@ -308,7 +310,7 @@ impl Context {
                 CStr::from_ptr(pbuf).to_owned()
             }
             else {
-                let slc = str::from_utf8(slice::from_raw_parts(pbuf as *mut u8, BUF_SZ)).unwrap();
+                let slc = str::from_utf8(slice::from_raw_parts(pbuf.cast(), BUF_SZ)).unwrap();
                 CString::new(slc).unwrap()
             }
         };
@@ -428,7 +430,7 @@ impl Context {
 impl PartialEq for Context {
     /// Two contexts are the same if they refer to the same underlying
     /// object in the library.
-    fn eq(&self, other: &Context) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.inner.ctx == other.inner.ctx
     }
 }

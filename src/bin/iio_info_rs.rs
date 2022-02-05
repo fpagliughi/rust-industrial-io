@@ -15,7 +15,7 @@ use clap::{App, Arg};
 use industrial_io as iio;
 use std::process;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     let lib_ver = iio::library_version();

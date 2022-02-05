@@ -33,6 +33,12 @@
     unused_qualifications
 )]
 
+// Enable this when MSRV supports it.
+//#![warn(rustdoc::broken_intra_doc_links)]
+
+// Conversions from "C" types (c_int, etc) may not be useless on all targets.
+#![allow(clippy::useless_conversion)]
+
 use std::{
     collections::HashMap,
     ffi::{CStr, CString},

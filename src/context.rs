@@ -242,6 +242,14 @@ impl Context {
         Self::with_backend(Backend::Uri(uri))
     }
 
+    /// Creates a network backend on the specified host.
+    ///
+    /// This is a convenience function to create a context with the network
+    /// back end.
+    pub fn from_network(hostname: &str) -> Result<Self> {
+        Self::with_backend(Backend::Network(hostname))
+    }
+
     /// Creates a context from an existing "inner" object.
     pub fn from_inner(inner: InnerContext) -> Self {
         Self::from(inner)

@@ -43,6 +43,11 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
+### Unreleased Features in this Branch
+
+- `iio_info_rs` utility now supports network and URI contexts.
+- [PR #20](https://github.com/fpagliughi/rust-industrial-io/pull/20) Fix some clippy suggestions. Particularly cleaner casting of raw pointers, etc.
+
 ### New in Version 0.5.0
 
 - Started loosening thread safety restrictions:

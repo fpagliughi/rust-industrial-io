@@ -47,8 +47,6 @@
 //! [enable_chan]: crate::channel::Channel::enable()
 //! [disable_chan]: crate::channel::Channel::disable()
 //! [triggers assigned]: crate::device::Device::set_trigger()
-#![warn(rustdoc::broken_intra_doc_links)]
-#![warn(missing_docs)]
 
 use std::{
     collections::HashMap,

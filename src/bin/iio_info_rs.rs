@@ -17,7 +17,7 @@ use std::process;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-fn main() -> iio::Result<()> {
+fn main() {
     let lib_ver = iio::library_version();
     println!("Library version: {}", lib_ver);
 
@@ -60,7 +60,7 @@ fn main() -> iio::Result<()> {
 
     println!("{} context attribute(s) found", ctx.num_attrs());
     for attr in ctx.attributes() {
-        println!("\t{}: {}", attr.0, attr.1)
+        println!("\t{}: {}", attr.0, attr.1);
     }
 
     println!("IIO context has {} device(s):", ctx.num_devices());
@@ -102,11 +102,11 @@ fn main() -> iio::Result<()> {
         if dev.has_attrs() {
             println!("\t\tAttributes:");
             for attr in dev.attributes() {
-                let val_str = dev.attr_read_str(&attr).unwrap_or("Unknown".into());
+                let val_str = dev
+                    .attr_read_str(&attr)
+                    .unwrap_or_else(|_| String::from("Unknown"));
                 println!("\t\t\t{}: {}", attr, val_str);
             }
         }
     }
-
-    Ok(())
 }

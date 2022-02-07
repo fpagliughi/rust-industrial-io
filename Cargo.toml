@@ -16,10 +16,10 @@ Linux Industrial I/O (IIO) Support
 libiio-sys = { version = "0.3", path = "libiio-sys" }
 thiserror = "1.0"
 nix = "0.23"
-clap = "2.33"
+clap = "2.34"
 
 [dev-dependencies]
 schedule_recv = "0.1"
 chrono = "0.4"
-ctrlc = "3.1"
+ctrlc = "3.2"
 anyhow = "1.0"

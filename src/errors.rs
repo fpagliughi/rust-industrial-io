@@ -46,10 +46,3 @@ pub enum Error {
 
 /// The default result type for the IIO library
 pub type Result<T> = std::result::Result<T, Error>;
-
-impl From<nix::errno::Errno> for Error {
-    /// Converts a *nix errno into an Error
-    fn from(err: nix::errno::Errno) -> Self {
-        nix::Error::Sys(err).into()
-    }
-}

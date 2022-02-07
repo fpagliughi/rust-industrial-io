@@ -43,6 +43,10 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
+### Unreleased Features in This Branch
+
+- [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) Updated the nix dependency to the latest verison (v0.23)
+
 ### New in Version 0.5.1
 
 - `iio_info_rs` utility now supports network and URI contexts.

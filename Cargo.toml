@@ -15,7 +15,7 @@ Linux Industrial I/O (IIO) Support
 [dependencies]
 libiio-sys = { version = "0.3", path = "libiio-sys" }
 thiserror = "1.0"
-nix = "0.16"
+nix = "0.23"
 clap = "2.33"
 
 [dev-dependencies]

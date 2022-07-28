@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
      - `Context::try_release_inner()` attempts to get the inner context out of the context wrapper.
      - `Context::try_deep_clone()` to make a new context around a deep copy of the inner context (and thus a copy of the C lib context).
      - `From<InnerContext> for Context`
+- Updates to dependencies with security issues:
+  - `chrono v0.4.19` is dependent on `time v0.1.44` which is vulnerable to [RUSTSEC-2020-0071](https://rustsec.org/advisories/RUSTSEC-2020-0071.html).  Disabling the default features will mitigate the issue until `chrono` updates its own dependencies.
 
 ###  [v0.4.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.3..v0.4.0) - 2022-01-28
 

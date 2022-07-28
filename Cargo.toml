@@ -20,6 +20,6 @@ clap = "2.34"
 
 [dev-dependencies]
 schedule_recv = "0.1"
-chrono = "0.4"
+chrono = { version = "0.4", default-features = false }
 ctrlc = "3.2"
 anyhow = "1.0"

@@ -177,7 +177,7 @@ pub(crate) unsafe extern "C" fn attr_read_all_cb(
 // --------------------------------------------------------------------------
 
 /// A struct to hold version numbers
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Version {
     /// The Major version number
     pub major: u32,
@@ -196,6 +196,7 @@ impl fmt::Display for Version {
 // --------------------------------------------------------------------------
 
 /// Gets the library version as (Major, Minor, Git Tag)
+#[must_use]
 pub fn library_version() -> Version {
     let mut major: c_uint = 0;
     let mut minor: c_uint = 0;

@@ -251,6 +251,7 @@ impl Context {
     }
 
     /// Creates a context from an existing "inner" object.
+    #[must_use]
     pub fn from_inner(inner: InnerContext) -> Self {
         Self::from(inner)
     }
@@ -291,18 +292,21 @@ impl Context {
 
     /// Get the name of the context.
     /// This should be "local", "xml", or "network" depending on how the context was created.
+    #[must_use]
     pub fn name(&self) -> String {
         let pstr = unsafe { ffi::iio_context_get_name(self.inner.ctx) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
     /// Get a description of the context
+    #[must_use]
     pub fn description(&self) -> String {
         let pstr = unsafe { ffi::iio_context_get_description(self.inner.ctx) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
     /// Get the version of the backend in use
+    #[must_use]
     pub fn version(&self) -> Version {
         let mut major: c_uint = 0;
         let mut minor: c_uint = 0;
@@ -330,17 +334,20 @@ impl Context {
     }
 
     /// Obtain the XML representation of the context.
+    #[must_use]
     pub fn xml(&self) -> String {
         let pstr = unsafe { ffi::iio_context_get_xml(self.inner.ctx) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
     /// Determines if the context has any attributes
+    #[must_use]
     pub fn has_attrs(&self) -> bool {
         unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) > 0 }
     }
 
     /// Gets the number of context-specific attributes
+    #[must_use]
     pub fn num_attrs(&self) -> usize {
         let n = unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) };
         n as usize
@@ -369,7 +376,8 @@ impl Context {
     }
 
     /// Gets an iterator for the attributes in the context
-    pub fn attributes(&self) -> AttrIterator {
+    #[must_use]
+    pub const fn attributes(&self) -> AttrIterator {
         AttrIterator { ctx: self, idx: 0 }
     }
 
@@ -392,6 +400,7 @@ impl Context {
     }
 
     /// Get the number of devices in the context
+    #[must_use]
     pub fn num_devices(&self) -> usize {
         unsafe { ffi::iio_context_get_devices_count(self.inner.ctx) as usize }
     }
@@ -410,6 +419,7 @@ impl Context {
 
     /// Try to find a device by name or ID
     /// `name` The name or ID of the device to find
+    #[must_use]
     pub fn find_device(&self, name: &str) -> Option<Device> {
         let name = CString::new(name).unwrap();
         let dev = unsafe { ffi::iio_context_find_device(self.inner.ctx, name.as_ptr()) };
@@ -425,7 +435,8 @@ impl Context {
     }
 
     /// Gets an iterator for all the devices in the context.
-    pub fn devices(&self) -> DeviceIterator {
+    #[must_use]
+    pub const fn devices(&self) -> DeviceIterator {
         DeviceIterator { ctx: self, idx: 0 }
     }
 

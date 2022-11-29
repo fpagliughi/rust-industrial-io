@@ -80,12 +80,14 @@ impl Buffer {
     ///
     /// Get the buffer capacity in number of samples from each channel that
     /// the buffer can hold.
-    pub fn capacity(&self) -> usize {
+    #[must_use]
+    pub const fn capacity(&self) -> usize {
         self.cap
     }
 
     /// Gets a reference to the device to which this buffer is attached.
-    pub fn device(&self) -> &Device {
+    #[must_use]
+    pub const fn device(&self) -> &Device {
         &self.dev
     }
 
@@ -160,11 +162,13 @@ impl Buffer {
     }
 
     /// Determines if the device has any buffer-specific attributes
+    #[must_use]
     pub fn has_attrs(&self) -> bool {
         unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev.dev) > 0 }
     }
 
     /// Gets the number of buffer-specific attributes
+    #[must_use]
     pub fn num_attrs(&self) -> usize {
         unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev.dev) as usize }
     }
@@ -176,6 +180,7 @@ impl Buffer {
     }
 
     /// Try to find a buffer-specific attribute by its name
+    #[must_use]
     pub fn find_attr(&self, name: &str) -> Option<String> {
         let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev.dev, cname.as_ptr()) };
@@ -183,6 +188,7 @@ impl Buffer {
     }
 
     /// Determines if a buffer-specific attribute exists
+    #[must_use]
     pub fn has_attr(&self, name: &str) -> bool {
         let cname = cstring_or_bail_false!(name);
         let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev.dev, cname.as_ptr()) };
@@ -323,7 +329,8 @@ impl Buffer {
     }
 
     /// Gets an iterator for the buffer attributes in the device
-    pub fn attributes(&self) -> AttrIterator {
+    #[must_use]
+    pub const fn attributes(&self) -> AttrIterator {
         AttrIterator { buf: self, idx: 0 }
     }
 
@@ -334,6 +341,7 @@ impl Buffer {
     }
 
     /// Gets an iterator for the data from a channel.
+    #[must_use]
     pub fn channel_iter<T>(&self, chan: &Channel) -> IntoIter<T> {
         unsafe {
             let begin = ffi::iio_buffer_first(self.buf, chan.chan).cast();

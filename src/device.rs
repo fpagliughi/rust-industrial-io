@@ -33,17 +33,20 @@ pub struct Device {
 
 impl Device {
     /// Gets the context to which the device belongs
+    #[must_use]
     pub fn context(&self) -> Context {
         self.ctx.clone()
     }
 
     /// Gets the device ID (e.g. <b><i>iio:device0</i></b>)
+    #[must_use]
     pub fn id(&self) -> Option<String> {
         let pstr = unsafe { ffi::iio_device_get_id(self.dev) };
         cstring_opt(pstr)
     }
 
     /// Gets the name of the device
+    #[must_use]
     pub fn name(&self) -> Option<String> {
         let pstr = unsafe { ffi::iio_device_get_name(self.dev) };
         cstring_opt(pstr)
@@ -51,6 +54,7 @@ impl Device {
 
     /// Determines if the device is capable of buffered I/O.
     /// This is true if any of the channels are scan elements.
+    #[must_use]
     pub fn is_buffer_capable(&self) -> bool {
         // This "trick" is from C lib 'iio_info.c'
         for chan in self.channels() {
@@ -62,6 +66,7 @@ impl Device {
     }
 
     /// Determines whether the device is a trigger
+    #[must_use]
     pub fn is_trigger(&self) -> bool {
         unsafe { ffi::iio_device_is_trigger(self.dev) }
     }
@@ -82,11 +87,13 @@ impl Device {
     // ----- Attributes -----
 
     /// Determines if the device has any attributes
+    #[must_use]
     pub fn has_attrs(&self) -> bool {
         unsafe { ffi::iio_device_get_attrs_count(self.dev) > 0 }
     }
 
     /// Gets the number of device-specific attributes
+    #[must_use]
     pub fn num_attrs(&self) -> usize {
         unsafe { ffi::iio_device_get_attrs_count(self.dev) as usize }
     }
@@ -98,6 +105,7 @@ impl Device {
     }
 
     /// Try to find a device-specific attribute by its name
+    #[must_use]
     pub fn find_attr(&self, name: &str) -> Option<String> {
         let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
@@ -105,6 +113,7 @@ impl Device {
     }
 
     /// Determines if a buffer-specific attribute exists
+    #[must_use]
     pub fn has_attr(&self, name: &str) -> bool {
         let cname = cstring_or_bail_false!(name);
         let pstr = unsafe { ffi::iio_device_find_attr(self.dev, cname.as_ptr()) };
@@ -228,13 +237,15 @@ impl Device {
     }
 
     /// Gets an iterator for the attributes in the device
-    pub fn attributes(&self) -> AttrIterator {
+    #[must_use]
+    pub const fn attributes(&self) -> AttrIterator {
         AttrIterator { dev: self, idx: 0 }
     }
 
     // ----- Channels -----
 
     /// Gets the number of channels on the device
+    #[must_use]
     pub fn num_channels(&self) -> usize {
         unsafe { ffi::iio_device_get_channels_count(self.dev) as usize }
     }
@@ -252,6 +263,7 @@ impl Device {
     }
 
     /// Try to find a channel by its name or ID
+    #[must_use]
     pub fn find_channel(&self, name: &str, is_output: bool) -> Option<Channel> {
         let cname = cstring_or_bail!(name);
         let chan = unsafe { ffi::iio_device_find_channel(self.dev, cname.as_ptr(), is_output) };
@@ -268,7 +280,8 @@ impl Device {
     }
 
     /// Gets an iterator for the channels in the device
-    pub fn channels(&self) -> ChannelIterator {
+    #[must_use]
+    pub const fn channels(&self) -> ChannelIterator {
         ChannelIterator { dev: self, idx: 0 }
     }
 

@@ -23,7 +23,7 @@ use std::{
 /// The type of data associated with a channel.
 #[allow(missing_docs)]
 #[repr(u32)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelType {
     Voltage = ffi::iio_chan_type_IIO_VOLTAGE,
     Current = ffi::iio_chan_type_IIO_CURRENT,
@@ -69,56 +69,66 @@ pub struct DataFormat {
 
 impl DataFormat {
     /// Creates a new data format from the underlyinh library type.
-    fn new(data_fmt: ffi::iio_data_format) -> Self {
+    const fn new(data_fmt: ffi::iio_data_format) -> Self {
         Self { data_fmt }
     }
 
     /// Gets total length of the sample, in bits.
+    #[must_use]
     pub fn length(&self) -> u32 {
         u32::from(self.data_fmt.length)
     }
 
     /// Gets the length of valid data in the sample, in bits.
+    #[must_use]
     pub fn bits(&self) -> u32 {
         u32::from(self.data_fmt.bits)
     }
 
     /// Right-shift to apply when converting sample.
+    #[must_use]
     pub fn shift(&self) -> u32 {
         u32::from(self.data_fmt.shift)
     }
 
     /// Determines if the sample is signed
-    pub fn is_signed(&self) -> bool {
+    #[must_use]
+    pub const fn is_signed(&self) -> bool {
         self.data_fmt.is_signed
     }
 
     /// Determines if the sample is fully defined, sign extended, etc.
-    pub fn is_fully_defined(&self) -> bool {
+    #[must_use]
+    pub const fn is_fully_defined(&self) -> bool {
         self.data_fmt.is_fully_defined
     }
 
     /// Determines if the sample is in big-endian format
-    pub fn is_big_endian(&self) -> bool {
+    #[must_use]
+    pub const fn is_big_endian(&self) -> bool {
         self.data_fmt.is_be
     }
 
     /// Determinesif the sample should be scaled when converted
-    pub fn with_scale(&self) -> bool {
+    #[must_use]
+    pub const fn with_scale(&self) -> bool {
         self.data_fmt.with_scale
     }
 
     /// Contains the scale to apply if `with_scale` is set
-    pub fn scale(&self) -> f64 {
+    #[must_use]
+    pub const fn scale(&self) -> f64 {
         self.data_fmt.scale
     }
 
     /// Number of times length repeats
+    #[must_use]
     pub fn repeat(&self) -> u32 {
         u32::from(self.data_fmt.repeat)
     }
 
     /// The number of bytes required to hold a single sample from the channel.
+    #[must_use]
     pub fn byte_length(&self) -> usize {
         let nbytes = (self.length() / 8) * self.repeat();
         nbytes as usize
@@ -128,6 +138,7 @@ impl DataFormat {
     ///
     /// This will get the `TypeId` for a sample if it can fit into a standard
     /// integer type, signed or unsigned, of 8, 16, 32, or 64 bits.
+    #[must_use]
     pub fn type_of(&self) -> Option<TypeId> {
         let nbytes = self.byte_length();
 
@@ -164,18 +175,21 @@ pub struct Channel {
 
 impl Channel {
     /// Retrieves the name of the channel (e.g. <b><i>vccint</i></b>)
+    #[must_use]
     pub fn name(&self) -> Option<String> {
         let pstr = unsafe { ffi::iio_channel_get_name(self.chan) };
         cstring_opt(pstr)
     }
 
     /// Retrieve the channel ID (e.g. <b><i>voltage0</i></b>)
+    #[must_use]
     pub fn id(&self) -> Option<String> {
         let pstr = unsafe { ffi::iio_channel_get_id(self.chan) };
         cstring_opt(pstr)
     }
 
     /// Determines if this is an output channel.
+    #[must_use]
     pub fn is_output(&self) -> bool {
         unsafe { ffi::iio_channel_is_output(self.chan) }
     }
@@ -185,6 +199,7 @@ impl Channel {
     /// A scan element is a channel that can generate samples (for an
     /// input  channel) or receive samples (for an output channel) after
     /// being enabled.
+    #[must_use]
     pub fn is_scan_element(&self) -> bool {
         unsafe { ffi::iio_channel_is_scan_element(self.chan) }
     }
@@ -196,17 +211,20 @@ impl Channel {
     }
 
     /// Determines if the channel has any attributes
+    #[must_use]
     pub fn has_attrs(&self) -> bool {
         unsafe { ffi::iio_channel_get_attrs_count(self.chan) > 0 }
     }
 
     /// Gets the number of attributes for the channel
+    #[must_use]
     pub fn num_attrs(&self) -> usize {
         let n = unsafe { ffi::iio_channel_get_attrs_count(self.chan) };
         n as usize
     }
 
     /// Determines if the channel has the specified attribute.
+    #[must_use]
     pub fn has_attr(&self, attr: &str) -> bool {
         let attr = cstring_or_bail_false!(attr);
         unsafe { !ffi::iio_channel_find_attr(self.chan, attr.as_ptr()).is_null() }
@@ -219,6 +237,7 @@ impl Channel {
     }
 
     /// Try to find the channel-specific attribute by name.
+    #[must_use]
     pub fn find_attr(&self, name: &str) -> Option<String> {
         let cname = cstring_or_bail!(name);
         let pstr = unsafe { ffi::iio_channel_find_attr(self.chan, cname.as_ptr()) };
@@ -309,7 +328,7 @@ impl Channel {
         let mut map = HashMap::new();
         let pmap = (&mut map as *mut HashMap<_, _>).cast();
         let ret = unsafe {
-            ffi::iio_channel_attr_read_all(self.chan, Some(Channel::attr_read_all_cb), pmap)
+            ffi::iio_channel_attr_read_all(self.chan, Some(Self::attr_read_all_cb), pmap)
         };
         sys_result(ret, map)
     }
@@ -365,7 +384,8 @@ impl Channel {
     }
 
     /// Gets an iterator for the attributes of the channel
-    pub fn attrs(&self) -> AttrIterator {
+    #[must_use]
+    pub const fn attrs(&self) -> AttrIterator {
         AttrIterator { chan: self, idx: 0 }
     }
 
@@ -383,6 +403,7 @@ impl Channel {
     }
 
     /// Determines if the channel is enabled
+    #[must_use]
     pub fn is_enabled(&self) -> bool {
         unsafe { ffi::iio_channel_is_enabled(self.chan) }
     }
@@ -390,6 +411,7 @@ impl Channel {
     // ----- Data Type and Conversion -----
 
     /// Gets the data format for the channel
+    #[must_use]
     pub fn data_format(&self) -> DataFormat {
         unsafe {
             let pfmt = ffi::iio_channel_get_data_format(self.chan);
@@ -401,12 +423,14 @@ impl Channel {
     ///
     /// This will get the `TypeId` for a sample if it can fit into a standard
     /// integer type, signed or unsigned, of 8, 16, 32, or 64 bits.
+    #[must_use]
     pub fn type_of(&self) -> Option<TypeId> {
         let dfmt = self.data_format();
         dfmt.type_of()
     }
 
     /// Gets the type of data associated with the channel
+    #[must_use]
     pub fn channel_type(&self) -> ChannelType {
         // TODO: We're trusting that the lib returns a valid enum.
         unsafe {

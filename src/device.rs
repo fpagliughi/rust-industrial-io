@@ -49,6 +49,13 @@ impl Device {
         cstring_opt(pstr)
     }
 
+    /// Gets the label of the device (if any).
+    /// Labels are define in the device-tree element as "label" attribute.
+    pub fn label(&self) -> Option<String> {
+        let pstr = unsafe { ffi::iio_device_get_label(self.dev) };
+        cstring_opt(pstr)
+    }
+
     /// Determines if the device is capable of buffered I/O.
     /// This is true if any of the channels are scan elements.
     pub fn is_buffer_capable(&self) -> bool {

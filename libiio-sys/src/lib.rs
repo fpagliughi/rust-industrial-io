@@ -14,10 +14,8 @@
 #![allow(improper_ctypes)]
 
 // Bring in the bindgen bindings of "iio.h"
-#[cfg(all(unix, target_pointer_width = "64"))]
-include!(concat!(env!("CARGO_MANIFEST_DIR"), "/bindings/bindings-0.21_64.rs"));
+#[cfg(unix)]
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/bindings/bindings-0.23.rs"));
 
-#[cfg(all(unix, target_pointer_width = "32"))]
-include!(concat!(env!("CARGO_MANIFEST_DIR"), "/bindings/bindings-0.21_32.rs"));
 
 

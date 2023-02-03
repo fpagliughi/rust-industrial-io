@@ -46,6 +46,7 @@ To keep up with the latest announcements for this project, follow:
 ### Unreleased Features in This Branch
 
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) Updated the nix dependency to the latest verison (v0.23)
+- Create separate on-by-default 'utilities' feature to reduce dependencies for lib-only builds
 
 ### New in Version 0.5.1
 
@@ -241,10 +242,16 @@ $ iiod --version
 
 ## Build the Rust Crate
 
-This is a fairly standard Rust wrapper project around a C library. It contains an unsafe _"-sys"_ sub-crate to wrap the C library API, and a higher-level, safe, Rust library in the main crate. To build them:
+This is a fairly standard Rust wrapper project around a C library. It contains an unsafe _"-sys"_ sub-crate to wrap the C library API, and a higher-level, safe, Rust library in the main crate. The crate also contains utilities that interface with IIO devices via the library. To build the library and utilities:
 
 ```
 $ cargo build
+```
+
+The library can be built with fewer dependencies. To build just the library:
+
+```
+$ cargo build --lib --no-default-features
 ```
 
 There are also a number of example applications. They can all be built with:

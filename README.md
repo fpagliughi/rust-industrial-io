@@ -46,6 +46,7 @@ To keep up with the latest announcements for this project, follow:
 ### Unreleased Features in This Branch
 
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) Updated the nix dependency to the latest verison (v0.23)
+- Updated additional dependencies
 
 ### New in Version 0.5.1
 

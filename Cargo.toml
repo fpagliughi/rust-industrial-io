@@ -16,10 +16,25 @@ Linux Industrial I/O (IIO) Support
 libiio-sys = { version = "0.3", path = "libiio-sys" }
 thiserror = "1.0"
 nix = "0.23"
-clap = "2.34"
+clap = { version = "2.34", optional = true }
 
 [dev-dependencies]
 schedule_recv = "0.1"
 chrono = "0.4"
 ctrlc = "3.2"
 anyhow = "1.0"
+clap = "2.34"
+
+[features]
+default = ["utilities"]
+utilities = ["clap"]
+
+# ----- Utilities -----
+
+[[bin]]
+name = "iio_info_rs"
+required-features = ["utilities"]
+
+[[bin]]
+name = "riio_stop_all"
+required-features = ["utilities"]

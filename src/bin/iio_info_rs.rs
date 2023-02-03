@@ -11,7 +11,7 @@
 //! Rust application to gather information about Industrial I/O devices.
 //!
 
-use clap::{App, Arg};
+use clap::{Command, Arg, ArgAction};
 use industrial_io as iio;
 use std::process;
 
@@ -21,31 +21,39 @@ fn main() {
     let lib_ver = iio::library_version();
     println!("Library version: {}", lib_ver);
 
-    let args = App::new("iio_info_rs")
+    let args = Command::new("iio_info_rs")
         .version(VERSION)
         .author("Frank Pagliughi")
         .about("Rust IIO system information.")
-        .help_short("?")
+        .disable_help_flag(true)
         .arg(
-            Arg::with_name("network")
-                .short("n")
-                .long("network")
-                .help("Use the network backend with the provided hostname")
-                .takes_value(true),
+            Arg::new("help")
+                .short('?')
+                .long("help")
+                .global(true)
+                .action(ArgAction::Help)
+                .help("Print help information")
         )
         .arg(
-            Arg::with_name("uri")
-                .short("u")
+            Arg::new("network")
+                .short('n')
+                .long("network")
+                .action(ArgAction::Set)
+                .help("Use the network backend with the provided hostname")
+        )
+        .arg(
+            Arg::new("uri")
+                .short('u')
                 .long("uri")
+                .action(ArgAction::Set)
                 .help("Use the context with the provided URI")
-                .takes_value(true),
         )
         .get_matches();
 
-    let ctx = if let Some(hostname) = args.value_of("network") {
+    let ctx = if let Some(hostname) = args.get_one::<String>("network") {
         iio::Context::with_backend(iio::Backend::Network(hostname))
     }
-    else if let Some(uri) = args.value_of("uri") {
+    else if let Some(uri) = args.get_one::<String>("uri") {
         iio::Context::from_uri(uri)
     }
     else {

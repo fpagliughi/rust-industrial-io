@@ -13,12 +13,9 @@
 // to those terms.
 //
 
-#[macro_use]
-extern crate clap;
-
 use anyhow::{bail, Context, Result};
 use chrono::{offset::Utc, DateTime};
-use clap::{App, Arg};
+use clap::{App, ArgAction, arg, value_parser};
 use industrial_io as iio;
 use std::{
     cmp, process,
@@ -41,66 +38,43 @@ const DFLT_NUM_SAMPLE: usize = 100;
 
 fn run() -> Result<()> {
     let args = App::new("riio_tsbuf")
-        .version(crate_version!())
-        .about("Rust IIO timestamped buffered read example.")
-        .arg(
-            Arg::with_name("host")
-                .short("h")
-                .long("host")
-                .help("Use the network backend with the provided hostname")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("uri")
-                .short("u")
-                .long("uri")
-                .help("Use the context with the provided URI")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("device")
-                .short("d")
-                .long("device")
-                .help("Specifies the name of the IIO device to read")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("channel")
-                .short("c")
-                .long("channel")
-                .help("Specifies the name of the channel to read")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("trigger")
-                .short("t")
-                .long("trigger")
-                .help("Specifies the name of the trigger")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("num_sample")
-                .short("n")
-                .long("num_sample")
-                .help("Specifies the number of samples per buffer")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("frequency")
-                .short("f")
-                .long("frequency")
-                .help("Specifies the sampling frequency")
-                .takes_value(true),
-        )
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!())
+        .about("Rust IIO timestamped buffered read & average example.")
+        .disable_help_flag(true)
+        .disable_version_flag(true)
+        .args(&[
+            arg!(-h --host "Use the network backend with the specified host")
+                .action(ArgAction::Set),
+            arg!(-u --uri "Use the context with the provided URI")
+                .action(ArgAction::Set),
+            arg!(-d --device "Specifies the name of the IIO device to read")
+                .default_value(DFLT_DEV_NAME),
+            arg!(-c --channel "Specifies the name of the channel to read")
+                .default_value(DFLT_CHAN_NAME),
+            arg!(-t --trigger "Specifies the name of the trigger")
+                .action(ArgAction::Set),
+            arg!(-n --num_sample "Specifies the number of samples per buffer")
+                .action(ArgAction::Set)
+                .value_parser(value_parser!(usize)),
+            arg!(-f --frequency "Specifies the sampling frequency")
+                .action(ArgAction::Set)
+                .value_parser(value_parser!(i64)),
+            arg!(-'v' --version "Print version information")
+                .action(ArgAction::Version),
+            arg!(-'?' --help "Print help information")
+                .global(true)
+                .action(ArgAction::Help),
+        ])
         .get_matches();
 
-    let dev_name = args.value_of("device").unwrap_or(DFLT_DEV_NAME);
-    let chan_name = args.value_of("channel").unwrap_or(DFLT_CHAN_NAME);
+    let dev_name = args.get_one::<String>("device").unwrap();
+    let chan_name = args.get_one::<String>("channel").unwrap();
 
-    let ctx = if let Some(hostname) = args.value_of("host") {
-        iio::Context::with_backend(iio::Backend::Network(hostname))
+    let ctx = if let Some(host) = args.get_one::<String>("host") {
+        iio::Context::with_backend(iio::Backend::Network(host))
     }
-    else if let Some(uri) = args.value_of("uri") {
+    else if let Some(uri) = args.get_one::<String>("uri") {
         iio::Context::from_uri(uri)
     }
     else {
@@ -127,10 +101,9 @@ fn run() -> Result<()> {
 
     // ----- Set sample frequency and trigger -----
 
-    let freq = args
-        .value_of("frequency")
-        .and_then(|s| s.parse::<i64>().ok())
-        .unwrap_or(DFLT_FREQ);
+    let freq = *args
+        .get_one("frequency")
+        .unwrap_or(&DFLT_FREQ);
 
     // If the user asked for a trigger device, see if we can use it
     if let Some(trig_name) = args.value_of("trigger") {
@@ -161,10 +134,9 @@ fn run() -> Result<()> {
 
     // ----- Create a buffer -----
 
-    let n_sample = args
-        .value_of("num_sample")
-        .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(DFLT_NUM_SAMPLE);
+    let n_sample = *args
+        .get_one("num_sample")
+        .unwrap_or(&DFLT_NUM_SAMPLE);
 
     let mut buf = dev
         .create_buffer(n_sample, false)

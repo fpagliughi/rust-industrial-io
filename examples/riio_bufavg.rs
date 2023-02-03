@@ -132,11 +132,6 @@ fn run() -> Result<()> {
         .disable_help_flag(true)
         .disable_version_flag(true)
         .args(&[
-            arg!(-'?' --help "Print help information")
-                .global(true)
-                .action(ArgAction::Help),
-            arg!(-'v' --version "Print version information")
-                .action(ArgAction::Version),
             arg!(-h --host "Use the network backend with the specified host")
                 .action(ArgAction::Set),
             arg!(-u --uri "Use the context with the provided URI")
@@ -153,6 +148,11 @@ fn run() -> Result<()> {
             arg!(-f --frequency "Specifies the sampling frequency")
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(i64)),
+            arg!(-'v' --version "Print version information")
+                .action(ArgAction::Version),
+            arg!(-'?' --help "Print help information")
+                .global(true)
+                .action(ArgAction::Help),
         ])
         .get_matches();
 

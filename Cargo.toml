@@ -1,7 +1,7 @@
 [package]
 name = "industrial-io"
-version = "0.5.2"
-edition = "2018"
+version = "0.6.0"
+edition = "2021"
 authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
 repository = "https://github.com/fpagliughi/rust-industrial-io"
 license = "MIT"
@@ -15,8 +15,8 @@ Linux Industrial I/O (IIO) Support
 [dependencies]
 libiio-sys = { version = "0.3", path = "libiio-sys" }
 thiserror = "1.0"
-nix = "0.23"
-clap = { version = "2.34", optional = true }
+nix = "0.25"
+clap = { version = "3.2", features = ["cargo"], optional = true }
 
 [dev-dependencies]
 schedule_recv = "0.1"

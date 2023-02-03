@@ -43,28 +43,17 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
-### Unreleased Features in This Branch
+### New in Version 0.5.2
 
-- [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) Updated the nix dependency to the latest verison (v0.23)
-- Create separate on-by-default 'utilities' feature to reduce dependencies for lib-only builds
+- [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
+- [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version
+- Updated dependencies for `clp` and `ctrlc` crates.
 
 ### New in Version 0.5.1
 
 - `iio_info_rs` utility now supports network and URI contexts.
 - [PR #19](https://github.com/fpagliughi/rust-industrial-io/pull/19) macOS build makes a distinction for Intel and non-Intel builds when searching for Homebrew Frameworks (libiio library).
 - [PR #20](https://github.com/fpagliughi/rust-industrial-io/pull/20) Fix some clippy suggestions. Particularly cleaner casting of raw pointers, etc.
-
-### New in Version 0.5.0
-
-- Started loosening thread safety restrictions:
-    - The `Context` is now `Send` and `Sync`. Internally it has converted to using an `Arc` instead of an `Rc` to track it's internal data.
-    - The `Device` is now `Send`.
-    - For high performance with multiple device, though, it's still recommended to used fully-cloned contexts for each device
-    - For now, `Channel` and `Buffer` objects are still `!Send` and `!Sync`. So they should live in the same thread as their channel.
-- New functions to manipulate `Context` and `InnerContext` objects:
-     - `Context::try_release_inner()` attempts to get the inner context out of the context wrapper.
-     - `Context::try_deep_clone()` to make a new context around a deep copy of the inner context (and thus a copy of the C lib context).
-     - `From<InnerContext> for Context`
 
 ## The Basics
 

@@ -47,7 +47,7 @@ To keep up with the latest announcements for this project, follow:
 
 - [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version
-- Updated dependencies for `clp` and `ctrlc` crates.
+- Updated dependencies for `clap` and `ctrlc` crates.
 
 ### New in Version 0.5.1
 

@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version
-- Updated dependencies for `clp` and `ctrlc` crates.
+- Updated dependencies for `clap` and `ctrlc` crates.
 
 
 ###  [v0.5.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.0..v0.5.1) - 2022-02-05

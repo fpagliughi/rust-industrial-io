@@ -1,6 +1,6 @@
 // industrial-io/src/lib.rs
 //
-// Copyright (c) 2018-2020, Frank Pagliughi
+// Copyright (c) 2018-2023, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -21,9 +21,21 @@
 //!
 //!   [libiio Wiki](https://wiki.analog.com/resources/tools-software/linux-software/libiio)
 //!
+//!
+//! #### Default Features ####
+//!
+//! * **utilities** - Whether to build the utility applications
+//! * **libiio_v0_24** - Use the bindings for _libiio_ v0.24
+//!
+//! #### Optional Features ####
+//!
+//! Note, if using alternate bindings for _libiio_, you must disable the
+//! default features, and only select one version.
+//!
+//! * **libiio_v0_24** - Use the bindings for _libiio_ v0.24
+//!
 
 // Lints
-// This may be overkill, but it's keeping me honest.
 #![deny(
     missing_docs,
     missing_debug_implementations,
@@ -34,7 +46,7 @@
 )]
 
 // Enable this when MSRV supports it.
-//#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::broken_intra_doc_links)]
 
 // Conversions from "C" types (c_int, etc) may not be useless on all targets.
 #![allow(clippy::useless_conversion)]

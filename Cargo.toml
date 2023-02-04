@@ -14,11 +14,13 @@ Linux Industrial I/O (IIO) Support
 """
 
 [features]
-default = ["utilities"]
+default = ["utilities", "libiio_v0_24"]
 utilities = ["clap"]
+libiio_v0_24 = ["libiio-sys/libiio_v0_24"]
+libiio_v0_21 = ["libiio-sys/libiio_v0_21"]
 
 [dependencies]
-libiio-sys = { version = "0.4", path = "libiio-sys" }
+libiio-sys = { version = "0.4", path = "libiio-sys", default-features = false }
 thiserror = "1.0"
 nix = "0.26"
 clap = { version = "3.2", features = ["cargo"], optional = true }

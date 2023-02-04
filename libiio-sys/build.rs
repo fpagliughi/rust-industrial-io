@@ -30,6 +30,12 @@ fn main() {
     let tgt = env::var("TARGET").unwrap();
     println!("debug: Building for target: '{}'", tgt);
 
+    #[cfg(feature = "libiio_v0_24")]
+    println!("debug: Using bindings for libiio v0.24");
+
+    #[cfg(feature = "libiio_v0_21")]
+    println!("debug: Using bindings for libiio v0.21");
+
     #[cfg(not(target_os = "macos"))]
     println!("cargo:rustc-link-lib=iio");
 

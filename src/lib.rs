@@ -33,6 +33,9 @@
 //! default features, and only select one version.
 //!
 //! * **libiio_v0_24** - Use the bindings for _libiio_ v0.24
+//! * **libiio_v0_23** - Use the bindings for _libiio_ v0.23
+//! * **libiio_v0_21** - Use the bindings for _libiio_ v0.21
+//! * **libiio_v0_19** - Use the bindings for _libiio_ v0.19
 //!
 
 // Lints
@@ -69,6 +72,9 @@ pub use crate::context::*;
 pub use crate::device::*;
 pub use crate::errors::*;
 
+#[cfg(not(feature = "libiio_v0_19"))]
+pub use crate::scan_context::*;
+
 mod macros;
 
 pub mod buffer;
@@ -76,6 +82,9 @@ pub mod channel;
 pub mod context;
 pub mod device;
 pub mod errors;
+
+#[cfg(not(feature = "libiio_v0_19"))]
+pub mod scan_context;
 
 /// According to the IIO samples, internal buffers need to be big enough
 /// for attributes coming back from the kernel.

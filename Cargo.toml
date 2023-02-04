@@ -17,7 +17,9 @@ Linux Industrial I/O (IIO) Support
 default = ["utilities", "libiio_v0_24"]
 utilities = ["clap"]
 libiio_v0_24 = ["libiio-sys/libiio_v0_24"]
+libiio_v0_23 = ["libiio-sys/libiio_v0_23"]
 libiio_v0_21 = ["libiio-sys/libiio_v0_21"]
+libiio_v0_19 = ["libiio-sys/libiio_v0_19"]
 
 [dependencies]
 libiio-sys = { version = "0.4", path = "libiio-sys", default-features = false }

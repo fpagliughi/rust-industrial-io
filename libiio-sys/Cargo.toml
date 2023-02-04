@@ -16,6 +16,8 @@ description = "Native, unsafe, bindings to the Linux libiio library. Used by ind
 [features]
 default = ["libiio_v0_24"]
 libiio_v0_24 = []
+libiio_v0_23 = []
 libiio_v0_21 = []
+libiio_v0_19 = []
 
 [dependencies]

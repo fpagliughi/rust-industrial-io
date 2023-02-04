@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-###  [v0.5.2](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.1..v0.5.2) - 2023-02-03
+### Unreleased Features
+
+- Upgraded to Rust Edition 2021, MSRV 1.63.0
+- New bindings in the -sys crate for _libiio_ v0.24
+- Build features to select the version of bindings to match the installed _libiio_ (Currently v0.21 or v0.24)
+- Conditional features based on the version of _libiio_.
+- Updated examples and utils to use `clap` v3.2, with forward-looking implementation.
+
+### [v0.5.2](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.1..v0.5.2) - 2023-02-03
 
 - [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version

@@ -1,12 +1,13 @@
 // libiio-sys/src/context.rs
 //
-// Copyright (c) 2018, Frank Pagliughi
+// Copyright (c) 2018-2023, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
 // This file may not be copied, modified, or distributed except according
 // to those terms.
 //
+
 //! Industrial I/O Contexts.
 //!
 
@@ -19,6 +20,8 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+
+/////////////////////////////////////////////////////////////////////////////
 
 /// An Industrial I/O Context
 ///
@@ -409,7 +412,8 @@ impl Context {
     }
 
     /// Try to find a device by name or ID
-    /// `name` The name or ID of the device to find
+    /// `name` The name or ID of the device to find. For versions that
+    /// support a label, it can also be used to look up a device.
     pub fn find_device(&self, name: &str) -> Option<Device> {
         let name = CString::new(name).unwrap();
         let dev = unsafe { ffi::iio_context_find_device(self.inner.ctx, name.as_ptr()) };

@@ -18,7 +18,7 @@ default = ["utilities"]
 utilities = ["clap"]
 
 [dependencies]
-libiio-sys = { version = "0.3", path = "libiio-sys" }
+libiio-sys = { version = "0.4", path = "libiio-sys" }
 thiserror = "1.0"
 nix = "0.26"
 clap = { version = "3.2", features = ["cargo"], optional = true }

@@ -21,9 +21,8 @@
 //
 
 use anyhow::{bail, Context, Result};
-use chrono::offset::Utc;
-use chrono::DateTime;
-use clap::{App, ArgAction, arg, value_parser};
+use chrono::{DateTime, offset::Utc};
+use clap::{ArgAction, arg, Command, value_parser};
 use industrial_io as iio;
 use std::{
     any::TypeId,
@@ -125,7 +124,7 @@ pub fn timestamp() -> u64 {
 /////////////////////////////////////////////////////////////////////////////
 
 fn run() -> Result<()> {
-    let args = App::new("riio_bufavg")
+    let args = Command::new("riio_bufavg")
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about("Rust IIO timestamped buffered read & average example.")

@@ -11,48 +11,41 @@
 // to those terms.
 //
 
-#[macro_use]
-extern crate clap;
-
-use clap::{App, Arg};
+use clap::{arg, ArgAction, Command};
 use industrial_io as iio;
 use std::{any::TypeId, process};
 
 const DFLT_DEV_NAME: &str = "44e0d000.tscadc:adc";
 
 fn main() {
-    let matches = App::new("riio_free_scan")
-        .version(crate_version!())
+    let args = Command::new("riio_free_scan")
+        .version(clap::crate_version!())
         .about("Rust IIO free scan buffered reads.")
-        .arg(
-            Arg::with_name("device")
-                .short("d")
-                .long("device")
-                .help("Specifies the name of the IIO device to read")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("network")
-                .short("n")
-                .long("network")
-                .help("Use the network backend with the provided hostname")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("uri")
-                .short("u")
-                .long("uri")
-                .help("Use the context with the provided URI")
-                .takes_value(true),
-        )
+        .args(&[
+             arg!(-h --host "Use the network backend with the specified host")
+                 .action(ArgAction::Set),
+             arg!(-u --uri "Use the context with the provided URI")
+                 .action(ArgAction::Set)
+                 .conflicts_with("host"),
+             arg!(-d --device "Specifies the name of the IIO device to read")
+                 .default_value(DFLT_DEV_NAME),
+             arg!(-'v' --version "Print version information")
+                 .action(ArgAction::Version),
+             arg!(-'?' --help "Print help information")
+                 .global(true)
+                 .action(ArgAction::Help),
+        ])
         .get_matches();
 
-    let dev_name = matches.value_of("device").unwrap_or(DFLT_DEV_NAME);
 
-    let ctx = if let Some(hostname) = matches.value_of("network") {
-        iio::Context::with_backend(iio::Backend::Network(hostname))
+    let dev_name = args.get_one::<String>("device").unwrap();
+
+    let ctx = if let Some(host) = args.get_one::<String>("host") {
+        println!("Using host: {}", host);
+        iio::Context::with_backend(iio::Backend::Network(host))
     }
-    else if let Some(uri) = matches.value_of("uri") {
+    else if let Some(uri) = args.get_one::<String>("uri") {
+        println!("Using URI: {}", uri);
         iio::Context::from_uri(uri)
     }
     else {

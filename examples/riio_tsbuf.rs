@@ -15,7 +15,7 @@
 
 use anyhow::{bail, Context, Result};
 use chrono::{offset::Utc, DateTime};
-use clap::{App, ArgAction, arg, value_parser};
+use clap::{ArgAction, arg, Command, value_parser};
 use industrial_io as iio;
 use std::{
     cmp, process,
@@ -37,7 +37,7 @@ const DFLT_NUM_SAMPLE: usize = 100;
 // --------------------------------------------------------------------------
 
 fn run() -> Result<()> {
-    let args = App::new("riio_tsbuf")
+    let args = Command::new("riio_tsbuf")
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about("Rust IIO timestamped buffered read & average example.")
@@ -106,7 +106,7 @@ fn run() -> Result<()> {
         .unwrap_or(&DFLT_FREQ);
 
     // If the user asked for a trigger device, see if we can use it
-    if let Some(trig_name) = args.value_of("trigger") {
+    if let Some(trig_name) = args.get_one::<String>("trigger") {
         let trig = ctx
             .find_device(trig_name)
             .context(format!("Couldn't find requested trigger: {}", trig_name))?;

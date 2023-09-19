@@ -86,6 +86,12 @@ impl Device {
         sys_result(ret, ())
     }
 
+    /// Set the number of kernel buffers for the device.
+    pub fn set_num_kernel_buffers(&self, n: u32) -> Result<()> {
+        let ret = unsafe { ffi::iio_device_set_kernel_buffers_count(self.dev, n as c_uint) };
+        sys_result(ret, ())
+    }
+
     // ----- Attributes -----
 
     /// Determines if the device has any attributes

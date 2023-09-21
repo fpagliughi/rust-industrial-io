@@ -1,6 +1,6 @@
 [package]
 name = "industrial-io"
-version = "0.6.0"
+version = "0.6.0-pre.0"
 edition = "2021"
 rust-version = "1.63.0"
 authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
@@ -14,15 +14,16 @@ Linux Industrial I/O (IIO) Support
 """
 
 [features]
-default = ["utilities", "libiio_v0_24"]
+default = ["utilities", "libiio_v0_25"]
 utilities = ["clap"]
+libiio_v0_25 = ["libiio-sys/libiio_v0_25"]
 libiio_v0_24 = ["libiio-sys/libiio_v0_24"]
 libiio_v0_23 = ["libiio-sys/libiio_v0_23"]
 libiio_v0_21 = ["libiio-sys/libiio_v0_21"]
 libiio_v0_19 = ["libiio-sys/libiio_v0_19"]
 
 [dependencies]
-libiio-sys = { version = "0.4", path = "libiio-sys", default-features = false }
+libiio-sys = { version = "0.4.0-pre.0", path = "libiio-sys", default-features = false }
 thiserror = "1.0"
 nix = "0.26"
 clap = { version = "3.2", features = ["cargo"], optional = true }

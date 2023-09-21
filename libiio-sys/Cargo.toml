@@ -1,6 +1,6 @@
 [package]
 name = "libiio-sys"
-version = "0.4.0"
+version = "0.4.0-pre.0"
 edition = "2021"
 rust-version = "1.63.0"
 authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
@@ -14,7 +14,8 @@ categories = ["embedded", "hardware-support", "os", "os::unix-apis"]
 description = "Native, unsafe, bindings to the Linux libiio library. Used by industrial-io."
 
 [features]
-default = ["libiio_v0_24"]
+default = ["libiio_v0_25"]
+libiio_v0_25 = []
 libiio_v0_24 = []
 libiio_v0_23 = []
 libiio_v0_21 = []

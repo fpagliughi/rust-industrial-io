@@ -23,16 +23,15 @@ fn main() {
         .version(clap::crate_version!())
         .about("Rust IIO free scan buffered reads.")
         .args(&[
-             arg!(-h --host "Use the network backend with the specified host")
-                 .action(ArgAction::Set),
-             arg!(-u --uri "Use the context with the provided URI")
-                 .action(ArgAction::Set)
-                 .conflicts_with("host"),
-             arg!(-'v' --version "Print version information")
-                 .action(ArgAction::Version),
-             arg!(-'?' --help "Print help information")
-                 .global(true)
-                 .action(ArgAction::Help),
+            arg!(-h --host "Use the network backend with the specified host")
+                .action(ArgAction::Set),
+            arg!(-u --uri "Use the context with the provided URI")
+                .action(ArgAction::Set)
+                .conflicts_with("host"),
+            arg!(-'v' --version "Print version information").action(ArgAction::Version),
+            arg!(-'?' --help "Print help information")
+                .global(true)
+                .action(ArgAction::Help),
         ])
         .get_matches();
 

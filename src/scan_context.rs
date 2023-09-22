@@ -28,7 +28,7 @@ impl ScanContext {
         let backend = CString::new(backend)?;
         let ctx = unsafe { ffi::iio_create_scan_block(backend.as_ptr(), 0) };
         if ctx.is_null() {
-            return Err(Error::from(Errno::last()))
+            return Err(Error::from(Errno::last()));
         }
         Ok(Self { ctx })
     }
@@ -51,7 +51,12 @@ impl ScanContext {
     /// Gets the number of contexts in this backend
     pub fn len(&self) -> usize {
         let n = unsafe { ffi::iio_scan_block_scan(self.ctx) };
-        if n < 0 { 0 } else { n as usize }
+        if n < 0 {
+            0
+        }
+        else {
+            n as usize
+        }
     }
 
     /// Gets an iterator to the contexts
@@ -92,4 +97,3 @@ impl<'a> Iterator for ScanContextIterator<'a> {
         }
     }
 }
-

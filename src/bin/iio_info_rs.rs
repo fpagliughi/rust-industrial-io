@@ -11,7 +11,7 @@
 //! Rust application to gather information about Industrial I/O devices.
 //!
 
-use clap::{Command, Arg, ArgAction};
+use clap::{Arg, ArgAction, Command};
 use industrial_io as iio;
 use std::process;
 
@@ -32,21 +32,21 @@ fn main() {
                 .long("help")
                 .global(true)
                 .action(ArgAction::Help)
-                .help("Print help information")
+                .help("Print help information"),
         )
         .arg(
             Arg::new("network")
                 .short('n')
                 .long("network")
                 .action(ArgAction::Set)
-                .help("Use the network backend with the provided hostname")
+                .help("Use the network backend with the provided hostname"),
         )
         .arg(
             Arg::new("uri")
                 .short('u')
                 .long("uri")
                 .action(ArgAction::Set)
-                .help("Use the context with the provided URI")
+                .help("Use the context with the provided URI"),
         )
         .get_matches();
 

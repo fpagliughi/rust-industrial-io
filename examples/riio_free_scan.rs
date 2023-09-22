@@ -22,21 +22,19 @@ fn main() {
         .version(clap::crate_version!())
         .about("Rust IIO free scan buffered reads.")
         .args(&[
-             arg!(-h --host "Use the network backend with the specified host")
-                 .action(ArgAction::Set),
-             arg!(-u --uri "Use the context with the provided URI")
-                 .action(ArgAction::Set)
-                 .conflicts_with("host"),
-             arg!(-d --device "Specifies the name of the IIO device to read")
-                 .default_value(DFLT_DEV_NAME),
-             arg!(-'v' --version "Print version information")
-                 .action(ArgAction::Version),
-             arg!(-'?' --help "Print help information")
-                 .global(true)
-                 .action(ArgAction::Help),
+            arg!(-h --host "Use the network backend with the specified host")
+                .action(ArgAction::Set),
+            arg!(-u --uri "Use the context with the provided URI")
+                .action(ArgAction::Set)
+                .conflicts_with("host"),
+            arg!(-d --device "Specifies the name of the IIO device to read")
+                .default_value(DFLT_DEV_NAME),
+            arg!(-'v' --version "Print version information").action(ArgAction::Version),
+            arg!(-'?' --help "Print help information")
+                .global(true)
+                .action(ArgAction::Help),
         ])
         .get_matches();
-
 
     let dev_name = args.get_one::<String>("device").unwrap();
 

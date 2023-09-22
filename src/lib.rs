@@ -47,10 +47,8 @@
     unused_import_braces,
     unused_qualifications
 )]
-
 // Enable this when MSRV supports it.
 #![warn(rustdoc::broken_intra_doc_links)]
-
 // Conversions from "C" types (c_int, etc) may not be useless on all targets.
 #![allow(clippy::useless_conversion)]
 
@@ -66,14 +64,16 @@ use std::{
 use libiio_sys::{self as ffi};
 use nix::errno;
 
-pub use crate::buffer::*;
-pub use crate::channel::*;
-pub use crate::context::*;
-pub use crate::device::*;
-pub use crate::errors::*;
+pub use crate::buffer::{AttrIterator as BufferAttrIterator, Buffer};
+pub use crate::channel::{AttrIterator as ChannelAttrIterator, Channel, ChannelType, DataFormat};
+pub use crate::context::{
+    AttrIterator as ContextAttrIterator, Backend, Context, DeviceIterator, InnerContext,
+};
+pub use crate::device::{AttrIterator as DeviceAttrIterator, ChannelIterator, Device};
+pub use crate::errors::{Error, Result};
 
 #[cfg(not(feature = "libiio_v0_19"))]
-pub use crate::scan_context::*;
+pub use crate::scan_context::{ScanContext, ScanContextIterator};
 
 mod macros;
 

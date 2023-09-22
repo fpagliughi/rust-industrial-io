@@ -21,8 +21,8 @@
 //
 
 use anyhow::{bail, Context, Result};
-use chrono::{DateTime, offset::Utc};
-use clap::{ArgAction, arg, Command, value_parser};
+use chrono::{offset::Utc, DateTime};
+use clap::{arg, value_parser, ArgAction, Command};
 use industrial_io as iio;
 use std::{
     any::TypeId,
@@ -133,22 +133,19 @@ fn run() -> Result<()> {
         .args(&[
             arg!(-h --host "Use the network backend with the specified host")
                 .action(ArgAction::Set),
-            arg!(-u --uri "Use the context with the provided URI")
-                .action(ArgAction::Set),
+            arg!(-u --uri "Use the context with the provided URI").action(ArgAction::Set),
             arg!(-d --device "Specifies the name of the IIO device to read")
                 .default_value(DFLT_DEV_NAME),
             arg!(-c --channel "Specifies the name of the channel to read")
                 .default_value(DFLT_CHAN_NAME),
-            arg!(-t --trigger "Specifies the name of the trigger")
-                .action(ArgAction::Set),
+            arg!(-t --trigger "Specifies the name of the trigger").action(ArgAction::Set),
             arg!(-n --num_sample "Specifies the number of samples per buffer")
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(usize)),
             arg!(-f --frequency "Specifies the sampling frequency")
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(i64)),
-            arg!(-'v' --version "Print version information")
-                .action(ArgAction::Version),
+            arg!(-'v' --version "Print version information").action(ArgAction::Version),
             arg!(-'?' --help "Print help information")
                 .global(true)
                 .action(ArgAction::Help),
@@ -216,9 +213,7 @@ fn run() -> Result<()> {
 
     // ----- Set sample frequency and trigger -----
 
-    let freq = *args
-        .get_one("frequency")
-        .unwrap_or(&DFLT_FREQ);
+    let freq = *args.get_one("frequency").unwrap_or(&DFLT_FREQ);
 
     // If the user asked for a trigger device, see if we can use it
     if let Some(trig_name) = args.get_one::<String>("trigger") {
@@ -249,9 +244,7 @@ fn run() -> Result<()> {
 
     // ----- Create a buffer -----
 
-    let n_sample = *args
-        .get_one("num_sample")
-        .unwrap_or(&DFLT_NUM_SAMPLE);
+    let n_sample = *args.get_one("num_sample").unwrap_or(&DFLT_NUM_SAMPLE);
 
     let mut buf = dev
         .create_buffer(n_sample, false)

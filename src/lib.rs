@@ -48,9 +48,7 @@
     unused_import_braces,
     unused_qualifications
 )]
-
 #![warn(rustdoc::broken_intra_doc_links)]
-
 // Conversions from "C" types (c_int, etc) may not be useless on all targets.
 #![allow(clippy::useless_conversion)]
 

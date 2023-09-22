@@ -32,6 +32,7 @@
 //! Note, if using alternate bindings for _libiio_, you must disable the
 //! default features, and only select one version.
 //!
+//! * **libiio_v0_25** - Use the bindings for _libiio_ v0.25
 //! * **libiio_v0_24** - Use the bindings for _libiio_ v0.24
 //! * **libiio_v0_23** - Use the bindings for _libiio_ v0.23
 //! * **libiio_v0_21** - Use the bindings for _libiio_ v0.21
@@ -47,8 +48,9 @@
     unused_import_braces,
     unused_qualifications
 )]
-// Enable this when MSRV supports it.
+
 #![warn(rustdoc::broken_intra_doc_links)]
+
 // Conversions from "C" types (c_int, etc) may not be useless on all targets.
 #![allow(clippy::useless_conversion)]
 

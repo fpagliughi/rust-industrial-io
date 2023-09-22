@@ -23,7 +23,7 @@ use std::{
 /// The type of data associated with a channel.
 #[allow(missing_docs)]
 #[repr(u32)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelType {
     Voltage = ffi::iio_chan_type_IIO_VOLTAGE,
     Current = ffi::iio_chan_type_IIO_CURRENT,

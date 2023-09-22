@@ -198,7 +198,7 @@ pub(crate) unsafe extern "C" fn attr_read_all_cb(
 // --------------------------------------------------------------------------
 
 /// A struct to hold version numbers
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Version {
     /// The Major version number
     pub major: u32,

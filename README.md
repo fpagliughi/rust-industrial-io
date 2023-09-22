@@ -2,22 +2,17 @@
 
 ![Crates.io](https://img.shields.io/crates/d/industrial-io)
 
-Rust library crate for using the Linux Industrial I/O (IIO) subsystem, primarily used for the input and output of analog data from a Linux system in user space. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
+Rust library for using the Linux Industrial I/O (IIO) subsystem for the input and output of analog data from a Linux host in user space. See the [IIO Wiki](https://wiki.analog.com/software/linux/docs/iio/iio).
 
-The current version is a wrapper around the user-space C library, [libiio](https://github.com/analogdevicesinc/libiio).  Subsequent versions may access the interface the kernel ABI directly.
+This is a wrapper around the user-space C library, [libiio](https://github.com/analogdevicesinc/libiio). It assumes that a fairly recent version of the C library is installed on the target. By default, it will use bindings for the latest version of the C library at the time the crate version was created - currently v0.25 - but several previous versions are also supported and a specific one can be selected via
+cargo build features.
 
-To use in an application, add this to _Cargo.toml:_
+To use this library an application, add this to _Cargo.toml:_
 
 ```toml
 [dependencies]
-industrial-io = "0.5"
+industrial-io = "0.6"
 ```
-
-## Pre-release Note
-
-This is a pre-release version of the crate. The API is stabilizing, but is still under active development and may change before a final release.
-
-This initial development work wrappers a _specific_ version (v0.21) of _libiio_. It assumes that the library is pre-installed on the build system and the target system.
 
 ## Contributing
 
@@ -27,7 +22,7 @@ Contributions to this project are gladly welcomed. Just keep a few things in min
 - Please keep individual Pull Requests to a single topic.
 - Please do not reformat code with other updates. Any code reformatting should be in a separate commit or PR. The formatting specification is in `.rustfmt.toml` and currently requires the _nightly_ release.
 
-Contributions are particularly welcome for any adjustments or feedback pertaining to different IIO device. If you test, work, or have any trouble with specific IIO hardware or drivers, let us know. 
+Contributions are particularly welcome for any adjustments or feedback pertaining to different IIO device. If you test, work, or have any trouble with specific IIO hardware or drivers, let us know.
 
 New examples for different hardware are also requested.
 
@@ -37,23 +32,29 @@ Overall, an effort is underway to get this crate to production quality.  It incl
 
 - Full coverage of the _libiio_ API - or as much as makes sense.
 - A complete set of working examples.
-- Unit tests and CI
+- More unit tests and CI
 
 To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
+### Unreleased Features in this Branch
+
+- Targeting Rust Edition 2021 with MSRV v1.65
+- Converted to explicit re-exports to avoid ambigious warnings.
+- [PR #28](https://github.com/fpagliughi/rust-industrial-io/pull/28)-  Move set_num_kernel_buffers() to Device
+- [PR #22](https://github.com/fpagliughi/rust-industrial-io/pull/22)-  Disable chrono default features to mitigate segfault potential in time crate
+- Updated to `clap` v3.2
+- Support and bindings for libiio v0.25
+- Cargo build features for selecting bindings to older libiio versions (v0.24, v0.23, etc)
+- 
 ### New in Version 0.5.2
 
 - [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version
 - Updated dependencies for `clap` and `ctrlc` crates.
 
-### New in Version 0.5.1
 
-- `iio_info_rs` utility now supports network and URI contexts.
-- [PR #19](https://github.com/fpagliughi/rust-industrial-io/pull/19) macOS build makes a distinction for Intel and non-Intel builds when searching for Homebrew Frameworks (libiio library).
-- [PR #20](https://github.com/fpagliughi/rust-industrial-io/pull/20) Fix some clippy suggestions. Particularly cleaner casting of raw pointers, etc.
 
 ## The Basics
 
@@ -97,9 +98,9 @@ Nothing is created or destroyed when new Rust hardware structures are declared, 
 The Rust `Context` object is just a reference-counted smart pointer to an `InnerContext`. This makes it easy to share the C context between different objects (devices, channels, etc), and to manage its lifetime. The `InnerContext` actually wraps the C context. When it goes out of scope, typically when the last reference disappears, the C context is destroyed. Cloning the `InnerContext` creates a full copy of the C library's context.
 
 This creates some confusion around "cloning" a Context. Since a `Context` is just a thread-safe, reference counted smart pointer to that inner context, cloning it just creates a new, shared pointer to the existing inner/C context. This makes it easy to share the context and guarantee it's lifetime between multiple `Device` objects created from it. Cloning a `Context` and sending the clone to another thread will actually then _share_ the `InnerContext` (and thus C context) between the two threads.
- 
+
 Often, however, when using separate threads to manage each device, it can be more efficient to create a fully separate C context for each thread. To do this, a "deep" clone of the `Context` is necessary. This is simply a clone of the `InnerContext`, and creating new smart pointers around that inner context. So it is a clone of the `InnerContext` which actually makes a copy of the C library context. See the next section for details.
- 
+
 ### Thread Safety
 
 Early versions of this library (v0.4.x and before) were written with the mistaken belief that the underling _libiio_ was not thread-safe. Some public information about the library was a little misleading, but with input from a maintainers of the library and additional published information, thread restrictions are slowly being lifted from this library.

@@ -523,7 +523,7 @@ impl Channel {
         }
 
         let sz_item = mem::size_of::<T>();
-        let sz_in = data.len() * sz_item;
+        let sz_in = mem::size_of_val(data);
 
         let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
 
@@ -541,7 +541,7 @@ impl Channel {
         }
 
         let sz_item = mem::size_of::<T>();
-        let sz_in = data.len() * sz_item;
+        let sz_in = mem::size_of_val(data);
 
         let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
 

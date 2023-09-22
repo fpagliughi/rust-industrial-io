@@ -50,13 +50,15 @@ impl ScanContext {
 
     /// Gets the number of contexts in this backend
     pub fn len(&self) -> usize {
-        let n = unsafe { ffi::iio_scan_block_scan(self.ctx) };
-        if n < 0 {
-            0
+        match unsafe { ffi::iio_scan_block_scan(self.ctx) } {
+            n if n < 0 => 0,
+            n => n as usize,
         }
-        else {
-            n as usize
-        }
+    }
+
+    /// Determines if this backend has no contexts
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Gets an iterator to the contexts

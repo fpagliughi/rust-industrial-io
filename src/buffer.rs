@@ -53,7 +53,6 @@ use std::{
     marker::PhantomData,
     mem,
     os::raw::{c_int, c_longlong},
-    ptr,
 };
 
 use super::*;
@@ -328,20 +327,13 @@ impl Buffer {
     }
 
     /// Gets an iterator for the data from a channel.
-    pub fn channel_iter<T>(&self, chan: &Channel) -> IntoIter<T> {
-        unsafe {
-            let begin = ffi::iio_buffer_first(self.buf, chan.chan).cast();
-            let end = ffi::iio_buffer_end(self.buf) as *const T;
-            let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(self.buf) / mem::size_of::<T>() as isize;
+    pub fn channel_iter<T>(&self, chan: &Channel) -> Iter<'_, T> {
+        Iter::new(self, chan)
+    }
 
-            IntoIter {
-                phantom: PhantomData,
-                ptr,
-                end,
-                step,
-            }
-        }
+    /// Gets a mutable iterator for the data to a channel.
+    pub fn channel_iter_mut<T>(&mut self, chan: &Channel) -> IterMut<'_, T> {
+        IterMut::new(self, chan)
     }
 }
 
@@ -354,8 +346,8 @@ impl Drop for Buffer {
 
 /// An iterator that moves channel data out of a buffer.
 #[derive(Debug)]
-pub struct IntoIter<T> {
-    phantom: PhantomData<T>,
+pub struct Iter<'a, T: 'a> {
+    _phantom: PhantomData<&'a T>,
     // Pointer to the current sample for a channel
     ptr: *const T,
     // Pointer to the end of the buffer
@@ -364,10 +356,29 @@ pub struct IntoIter<T> {
     step: isize,
 }
 
-impl<T> Iterator for IntoIter<T> {
-    type Item = T;
+impl<'a, T> Iter<'a, T> {
+    /// Create an iterator to move channel data out of a buffer.
+    pub fn new(buf: &Buffer, chan: &Channel) -> Self {
+        unsafe {
+            let begin = ffi::iio_buffer_first(buf.buf, chan.chan).cast();
+            let end = ffi::iio_buffer_end(buf.buf).cast();
+            let ptr = begin;
+            let step: isize = ffi::iio_buffer_step(buf.buf) / mem::size_of::<T>() as isize;
 
-    fn next(&mut self) -> Option<T> {
+            Self {
+                _phantom: PhantomData,
+                ptr,
+                end,
+                step,
+            }
+        }
+    }
+}
+
+impl<'a, T: 'a> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
         unsafe {
             if self.ptr.cast() >= self.end {
                 None
@@ -375,7 +386,56 @@ impl<T> Iterator for IntoIter<T> {
             else {
                 let prev = self.ptr;
                 self.ptr = self.ptr.offset(self.step);
-                Some(ptr::read(prev))
+                Some(&*prev)
+            }
+        }
+    }
+}
+
+/// A mutable iterator to move channel data into a buffer.
+#[derive(Debug)]
+pub struct IterMut<'a, T: 'a> {
+    // Reference to the buffer lifetime
+    _phantom: PhantomData<&'a mut T>,
+    // Pointer to the current sample for a channel
+    ptr: *mut T,
+    // Pointer to the end of the buffer
+    end: *const T,
+    // The offset to the next sample for the channel
+    step: isize,
+}
+
+impl<'a, T: 'a> IterMut<'a, T> {
+    /// Create a mutable iterator to move channel data into a buffer.
+    pub fn new(buf: &'a mut Buffer, chan: &Channel) -> Self {
+        unsafe {
+            let begin = ffi::iio_buffer_first(buf.buf, chan.chan).cast();
+            let end = ffi::iio_buffer_end(buf.buf).cast();
+            let ptr = begin;
+            let step: isize = ffi::iio_buffer_step(buf.buf) / mem::size_of::<T>() as isize;
+
+            Self {
+                _phantom: PhantomData,
+                ptr,
+                end,
+                step,
+            }
+        }
+    }
+}
+
+impl<'a, T: 'a> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ptr as *const T >= self.end {
+            None
+        }
+        else {
+            unsafe {
+                let prev = self.ptr;
+                self.ptr = self.ptr.offset(self.step);
+                Some(&mut *prev)
             }
         }
     }

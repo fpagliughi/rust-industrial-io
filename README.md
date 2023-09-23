@@ -38,16 +38,20 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
-### Unreleased Features in this Branch
+### Unreleased Features in this Branch (Upcoming v0.6)
 
 - Targeting Rust Edition 2021 with MSRV v1.65
 - Converted to explicit re-exports to avoid ambigious warnings.
+- Added a mutable iterator for channel data in a buffer (to fill the buffer)
+- Added lifetime to buffer iterator so as not to outlive the buffer.
+- [Breaking]: Buffer iterator now returns a reference to the item in the buffer, to be consistent with mutable iterator and slice iterators.
 - [PR #28](https://github.com/fpagliughi/rust-industrial-io/pull/28)-  Move set_num_kernel_buffers() to Device
 - [PR #22](https://github.com/fpagliughi/rust-industrial-io/pull/22)-  Disable chrono default features to mitigate segfault potential in time crate
 - Updated to `clap` v3.2
 - Support and bindings for libiio v0.25
 - Cargo build features for selecting bindings to older libiio versions (v0.24, v0.23, etc)
-- 
+- Added initial CI support to test building and format. (Still can't run unit tests in CI due to iio kernel module requirements).
+
 ### New in Version 0.5.2
 
 - [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).

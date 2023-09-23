@@ -167,7 +167,7 @@ fn run() -> Result<()> {
         // nanoseconds since the Unix Epoch. We convert to a Rust SystemTime,
         // then a chrono DataTime for pretty printing.
         buf.channel_iter::<u16>(&sample_chan)
-            .zip(ts_data.map(|ts| {
+            .zip(ts_data.map(|&ts| {
                 DateTime::<Utc>::from(SystemTime::UNIX_EPOCH + Duration::from_nanos(ts))
                     .format("%T%.6f")
             }))

@@ -283,6 +283,7 @@ fn run() -> Result<()> {
         let ts: u64 = if let Some(ref chan) = ts_chan {
             buf.channel_iter::<u64>(chan)
                 .nth(n_sample - 1)
+                .map(|&x| x)
                 .unwrap_or_default()
         }
         else {

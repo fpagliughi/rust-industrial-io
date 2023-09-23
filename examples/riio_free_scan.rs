@@ -87,7 +87,7 @@ fn main() {
     }
 
     for chan in dev.channels() {
-        let data: Vec<u16> = buf.channel_iter::<u16>(&chan).collect();
+        let data: Vec<u16> = buf.channel_iter::<u16>(&chan).map(|&x| x).collect();
         println!("{}: {:?}", chan.id().unwrap_or_default(), data);
     }
 }

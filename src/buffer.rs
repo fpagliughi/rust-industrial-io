@@ -465,3 +465,17 @@ impl<'a> Iterator for AttrIterator<'a> {
         }
     }
 }
+
+// --------------------------------------------------------------------------
+//                              Unit Tests
+// --------------------------------------------------------------------------
+
+// Note: These tests assume that the IIO Dummy kernel module is loaded
+// locally with a device created. See the `load_dummy.sh` script.
+
+#[cfg(test)]
+mod tests {
+    //use super::*;
+
+    //const DEV_ID: &str = "dummydev";
+}

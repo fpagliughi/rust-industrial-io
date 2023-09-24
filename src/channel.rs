@@ -549,6 +549,14 @@ impl Channel {
     }
 }
 
+impl PartialEq for Channel {
+    /// Two channels are the same if they refer to the same underlying
+    /// object in the library.
+    fn eq(&self, other: &Self) -> bool {
+        self.chan == other.chan
+    }
+}
+
 /// Iterator over the attributes of a Channel
 #[derive(Debug)]
 pub struct AttrIterator<'a> {
@@ -584,11 +592,19 @@ impl<'a> Iterator for AttrIterator<'a> {
 mod tests {
     use super::*;
 
+    const DEV_ID: &str = "dummydev";
+
     // See that we get the default context.
     #[test]
     fn default_context() {
-        let dev = Context::new().unwrap().get_device(0).unwrap();
-        let chan = dev.get_channel(0);
-        assert!(chan.is_ok());
+        let ctx = Context::new().unwrap();
+        let dev = ctx.find_device(DEV_ID).unwrap();
+
+        let idx_chan = dev.get_channel(0).unwrap();
+        let id = idx_chan.id().unwrap();
+        let output = idx_chan.is_output();
+
+        let id_chan = dev.find_channel(&id, output).unwrap();
+        assert_eq!(id_chan, idx_chan);
     }
 }

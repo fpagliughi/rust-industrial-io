@@ -396,23 +396,32 @@ impl<'a> Iterator for AttrIterator<'a> {
 mod tests {
     use super::*;
 
+    const DEV_ID: &str = "iio:device0";
+    const DEV_NAME: &str = "dummydev";
+
     // Make sure we get a device
     #[test]
     fn get_device() {
         let ctx = Context::new().unwrap();
-        let dev = ctx.get_device(0);
-        assert!(dev.is_ok());
 
-        let dev = dev.unwrap();
-        let id = dev.id().unwrap();
-        assert!(!id.is_empty());
+        let id_dev = ctx.find_device(DEV_ID).unwrap();
+        assert_eq!(id_dev.id(), Some(DEV_ID.to_string()));
+
+        let name_dev = ctx.find_device(DEV_NAME).unwrap();
+        assert_eq!(name_dev.name(), Some(DEV_NAME.to_string()));
+
+        // Find by name or ID should both work and give the same device.
+        let id = name_dev.id().unwrap();
+        let id_dev = ctx.find_device(&id).unwrap();
+        assert_eq!(name_dev.name(), Some(DEV_NAME.to_string()));
+        assert_eq!(name_dev, id_dev);
     }
 
     // See that attr iterator gets the correct number of attributes
     #[test]
     fn attr_iterator_count() {
         let ctx = Context::new().unwrap();
-        let dev = ctx.get_device(0).unwrap();
+        let dev = ctx.find_device(DEV_ID).unwrap();
 
         let n = dev.num_attrs();
         assert!(n != 0);

@@ -176,7 +176,7 @@ fn run() -> Result<()> {
 
     // ----- Find the timestamp channel (if any) and a data channel -----
 
-    let mut ts_chan = dev.find_channel("timestamp", false);
+    let mut ts_chan = dev.find_channel("timestamp", iio::Direction::Input);
 
     if ts_chan.is_some() {
         println!("Found timestamp channel.");
@@ -186,7 +186,7 @@ fn run() -> Result<()> {
     }
 
     let sample_chan = dev
-        .find_channel(chan_name, false)
+        .find_channel(chan_name, iio::Direction::Input)
         .with_context(|| format!("No '{}' channel on this device", chan_name))?;
 
     println!("Using channel: {}", chan_name);

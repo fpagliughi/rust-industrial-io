@@ -20,6 +20,15 @@ use std::{
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
 };
 
+/// The channel direction
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    /// Channel is input
+    Input,
+    /// Channel is output
+    Output,
+}
+
 /// The type of data associated with a channel.
 #[allow(missing_docs)]
 #[repr(u32)]
@@ -176,8 +185,23 @@ impl Channel {
     }
 
     /// Determines if this is an output channel.
+    #[inline]
     pub fn is_output(&self) -> bool {
         unsafe { ffi::iio_channel_is_output(self.chan) }
+    }
+
+    /// Determines if this is an input channel.
+    #[inline]
+    pub fn is_input(&self) -> bool {
+        !self.is_output()
+    }
+
+    /// Determines the direction of the channel
+    pub fn direction(&self) -> Direction {
+        match self.is_output() {
+            true => Direction::Output,
+            false => Direction::Input,
+        }
     }
 
     /// Determines if the channel is a scan element

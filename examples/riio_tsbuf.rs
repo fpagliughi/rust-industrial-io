@@ -86,11 +86,11 @@ fn run() -> Result<()> {
     // ----- Find the timestamp channel and a voltage channel -----
 
     let ts_chan = dev
-        .find_channel("timestamp", false)
+        .find_channel("timestamp", iio::Direction::Input)
         .context("No timestamp channel on this device")?;
 
     let sample_chan = dev
-        .find_channel(chan_name, false)
+        .find_channel(chan_name, iio::Direction::Input)
         .context(format!("No '{}' channel on this device", chan_name))?;
 
     ts_chan.enable();

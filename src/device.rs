@@ -11,7 +11,7 @@
 //!
 
 use super::*;
-use crate::{ffi, ATTR_BUF_SIZE};
+use crate::{ffi, Direction, ATTR_BUF_SIZE};
 use nix::errno::Errno;
 use std::{
     collections::HashMap,
@@ -265,7 +265,8 @@ impl Device {
     }
 
     /// Try to find a channel by its name or ID
-    pub fn find_channel(&self, name: &str, is_output: bool) -> Option<Channel> {
+    pub fn find_channel(&self, name: &str, dir: Direction) -> Option<Channel> {
+        let is_output = dir == Direction::Output;
         let cname = cstring_or_bail!(name);
         let chan = unsafe { ffi::iio_device_find_channel(self.dev, cname.as_ptr(), is_output) };
 
@@ -278,6 +279,18 @@ impl Device {
                 ctx: self.context(),
             })
         }
+    }
+
+    /// Try to find an input channel by its name or ID
+    #[inline]
+    pub fn find_input_channel(&self, name: &str) -> Option<Channel> {
+        self.find_channel(name, Direction::Input)
+    }
+
+    /// Try to find an input channel by its name or ID
+    #[inline]
+    pub fn find_output_channel(&self, name: &str) -> Option<Channel> {
+        self.find_channel(name, Direction::Output)
     }
 
     /// Gets an iterator for the channels in the device

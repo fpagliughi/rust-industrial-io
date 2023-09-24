@@ -65,7 +65,9 @@ use libiio_sys::{self as ffi};
 use nix::errno;
 
 pub use crate::buffer::{AttrIterator as BufferAttrIterator, Buffer};
-pub use crate::channel::{AttrIterator as ChannelAttrIterator, Channel, ChannelType, DataFormat};
+pub use crate::channel::{
+    AttrIterator as ChannelAttrIterator, Channel, ChannelType, DataFormat, Direction,
+};
 pub use crate::context::{
     AttrIterator as ContextAttrIterator, Backend, Context, DeviceIterator, InnerContext,
 };

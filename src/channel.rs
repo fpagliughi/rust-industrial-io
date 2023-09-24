@@ -626,9 +626,9 @@ mod tests {
 
         let idx_chan = dev.get_channel(0).unwrap();
         let id = idx_chan.id().unwrap();
-        let output = idx_chan.is_output();
+        let dir = idx_chan.direction();
 
-        let id_chan = dev.find_channel(&id, output).unwrap();
+        let id_chan = dev.find_channel(&id, dir).unwrap();
         assert_eq!(id_chan, idx_chan);
     }
 }

@@ -1,3 +1,5 @@
+[workspace]
+members = ["libiio-sys"]
 [package]
 name = "industrial-io"
 version = "0.6.0-pre.0"

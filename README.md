@@ -7,7 +7,7 @@ Rust library for using the Linux Industrial I/O (IIO) subsystem for the input an
 This is a wrapper around the user-space C library, [libiio](https://github.com/analogdevicesinc/libiio). It assumes that a fairly recent version of the C library is installed on the target. By default, it will use bindings for the latest version of the C library at the time the crate version was created - currently v0.25 - but several previous versions are also supported and a specific one can be selected via
 cargo build features.
 
-To use this library an application, add this to _Cargo.toml:_
+To use this library in an application, add this to _Cargo.toml:_
 
 ```toml
 [dependencies]
@@ -40,7 +40,7 @@ To keep up with the latest announcements for this project, follow:
 
 ### Unreleased Features in this Branch (Upcoming v0.6)
 
-- Targeting Rust Edition 2021 with MSRV v1.65
+- Targeting Rust Edition 2021 with MSRV v1.73
 - Converted to explicit re-exports to avoid ambigious warnings.
 - Added a mutable iterator for channel data in a buffer (to fill the buffer)
 - Added lifetime to buffer iterator so as not to outlive the buffer.

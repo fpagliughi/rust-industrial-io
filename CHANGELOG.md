@@ -7,9 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Unreleased Features
 
-- Upgraded to Rust Edition 2021, MSRV 1.63.0
-- New bindings in the -sys crate for _libiio_ v0.24
-- Build features to select the version of bindings to match the installed _libiio_ (Currently v0.21 or v0.24)
+- Upgraded to Rust Edition 2021, MSRV 1.73.0
+- New bindings in the -sys crate for _libiio_ v0.24 & v0.25
+- Build features to select the version of bindings to match the installed _libiio_, with several options.
 - Conditional features based on the version of _libiio_.
 - Updated examples and utils to use `clap` v3.2, with forward-looking implementation.
 

@@ -62,7 +62,7 @@ use std::{
 };
 
 use libiio_sys::{self as ffi};
-use nix::errno;
+use nix::errno::Errno;
 
 pub use crate::buffer::{AttrIterator as BufferAttrIterator, Buffer};
 pub use crate::channel::{
@@ -109,7 +109,7 @@ fn cstring_opt(pstr: *const c_char) -> Option<String> {
 
 pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
     if ret < 0 {
-        Err(errno::from_i32(-ret).into())
+        Err(Errno::from_raw(-ret).into())
     }
     else {
         Ok(result)

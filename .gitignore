@@ -6,5 +6,6 @@ Cargo.lock
 /.hgignore
 /.hgtags
 /doc/
+*vpw*
 *.vpj
-
+*.vtg

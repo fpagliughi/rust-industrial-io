@@ -9,9 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Upgraded to Rust Edition 2021, MSRV 1.73.0
 - New bindings in the -sys crate for _libiio_ v0.24 & v0.25
-- Build features to select the version of bindings to match the installed _libiio_, with several options.
+- Build features to select the version of bindings to match the installed target _libiio_, with several options.
 - Conditional features based on the version of _libiio_.
 - Updated examples and utils to use `clap` v3.2, with forward-looking implementation.
+- Added _buildtst.sh_ for local CI testing.
+- Fixed new clippy warnings.
+
 
 ### [v0.5.2](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.1..v0.5.2) - 2023-02-03
 

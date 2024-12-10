@@ -50,7 +50,7 @@ impl Device {
     }
 
     /// Gets the label of the device, if any.
-    #[cfg(any(feature = "libiio_v0_23", feature = "libiio_v0_24"))]
+    #[cfg(not(any(feature = "libiio_v0_19", feature = "libiio_v0_21")))]
     pub fn label(&self) -> Option<String> {
         let pstr = unsafe { ffi::iio_device_get_label(self.dev) };
         cstring_opt(pstr)

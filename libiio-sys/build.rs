@@ -10,41 +10,30 @@
 // to those terms.
 //
 
-use std::env;
+use std::{env, path::PathBuf};
 
-#[cfg(target_os = "macos")]
-fn config_macos() {
-    println!("cargo:rustc-link-lib=framework=iio");
-
-    if cfg!(target_arch = "x86_64") {
-        println!(r"cargo:rustc-link-search=framework=/usr/local/Frameworks/");
-    }
-    else {
-        println!(r"cargo:rustc-link-search=framework=/opt/homebrew/Frameworks/");
-    }
-}
+use pkg_config::{self, Library};
 
 fn main() {
-    // TODO: We should eventually find or regenerate the
-    //      bindings file for the specific target.
-    let tgt = env::var("TARGET").unwrap();
-    println!("debug: Building for target: '{}'", tgt);
+    let lib = pkg_config::Config::new()
+        .range_version("0.19"..="0.25")
+        .probe("libiio")
+        .expect("Failed to find an acceptable version of libiio");
+    let Library { include_paths, .. } = lib;
+    let mut include_args = vec![];
 
-    #[cfg(feature = "libiio_v0_25")]
-    println!("debug: Using bindings for libiio v0.25");
+    for inc_path in include_paths.iter() {
+        include_args.push(format!("-I{}", inc_path.to_str().unwrap()));
+    }
 
-    #[cfg(feature = "libiio_v0_24")]
-    println!("debug: Using bindings for libiio v0.24");
+    let bindings = bindgen::Builder::default()
+        .header("src/wrapper.h")
+        .clang_args(include_args)
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()));
 
-    #[cfg(feature = "libiio_v0_23")]
-    println!("debug: Using bindings for libiio v0.23");
-
-    #[cfg(feature = "libiio_v0_21")]
-    println!("debug: Using bindings for libiio v0.21");
-
-    #[cfg(not(target_os = "macos"))]
-    println!("cargo:rustc-link-lib=iio");
-
-    #[cfg(target_os = "macos")]
-    config_macos();
+    let bindings = bindings.generate().unwrap();
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("iio_bindings.rs"))
+        .expect("Couldn't write bindings!");
 }

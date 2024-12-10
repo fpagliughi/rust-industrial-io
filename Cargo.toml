@@ -1,6 +1,6 @@
 [package]
 name = "industrial-io"
-version = "0.6.0-pre.0"
+version = "0.6.0"
 edition = "2021"
 rust-version = "1.73.0"
 authors = ["Frank Pagliughi <fpagliughi@mindspring.com>"]
@@ -23,7 +23,7 @@ libiio_v0_21 = ["libiio-sys/libiio_v0_21"]
 libiio_v0_19 = ["libiio-sys/libiio_v0_19"]
 
 [dependencies]
-libiio-sys = { version = "0.4.0-pre.0", path = "libiio-sys", default-features = false }
+libiio-sys = { version = "0.4", path = "libiio-sys", default-features = false }
 thiserror = "1.0"
 nix = "0.29"
 clap = { version = "3.2", features = ["cargo"], optional = true }
@@ -39,7 +39,7 @@ anyhow = "1.0"
 # ----- Utilities -----
 
 [[bin]]
-name = "iio_info_rs"
+name = "riio_info"
 required-features = ["utilities"]
 
 [[bin]]

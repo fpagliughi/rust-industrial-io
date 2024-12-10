@@ -22,7 +22,7 @@ Contributions to this project are gladly welcomed. Just keep a few things in min
 - Please keep individual Pull Requests to a single topic.
 - Please do not reformat code with other updates. Any code reformatting should be in a separate commit or PR. The formatting specification is in `.rustfmt.toml` and currently requires the _nightly_ release.
 
-Contributions are particularly welcome for any adjustments or feedback pertaining to different IIO device. If you test, work, or have any trouble with specific IIO hardware or drivers, let us know.
+Contributions are particularly welcome for any adjustments or feedback pertaining to different IIO devices. If you test, work, or have any trouble with specific IIO hardware or drivers, let us know.
 
 New examples for different hardware are also requested.
 
@@ -38,26 +38,24 @@ To keep up with the latest announcements for this project, follow:
 
 **Twitter:**  [@fmpagliughi](https://twitter.com/fmpagliughi)
 
-### Unreleased Features in this Branch (Upcoming v0.6)
+### New Features in v0.6
 
-- Targeting Rust Edition 2021 with MSRV v1.73
+- Upgraded to Rust Edition 2021, MSRV 1.73.0
+- New bindings in the -sys crate for _libiio_ v0.24 & v0.25
+    - Cargo build features for selecting bindings to older libiio versions (v0.24, v0.23, etc)
+    - Conditional features based on the version of _libiio_.
+- Updated examples and utils to use `clap` v3.2, with forward-looking implementation.
+- Added _buildtst.sh_ script for local CI testing. This runs the cargo _check, test, clippy,_ and _doc_ for the latest stable compiler and the MSRV.
+- Fixed new clippy warnings.
+- Updated `nix` dependency to v0.29
+- Renamed `iio_info_rs` to `riio_info` to be compatible with naming of other utilities and examples.
 - Converted to explicit re-exports to avoid ambigious warnings.
 - Added a mutable iterator for channel data in a buffer (to fill the buffer)
 - Added lifetime to buffer iterator so as not to outlive the buffer.
 - [Breaking]: Buffer iterator now returns a reference to the item in the buffer, to be consistent with mutable iterator and slice iterators.
 - [PR #28](https://github.com/fpagliughi/rust-industrial-io/pull/28)-  Move set_num_kernel_buffers() to Device
 - [PR #22](https://github.com/fpagliughi/rust-industrial-io/pull/22)-  Disable chrono default features to mitigate segfault potential in time crate
-- Updated to `clap` v3.2
-- Support and bindings for libiio v0.25
-- Cargo build features for selecting bindings to older libiio versions (v0.24, v0.23, etc)
 - Added initial CI support to test building and format. (Still can't run unit tests in CI due to iio kernel module requirements).
-
-### New in Version 0.5.2
-
-- [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
-- [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version
-- Updated dependencies for `clap` and `ctrlc` crates.
-
 
 
 ## The Basics
@@ -107,12 +105,12 @@ Often, however, when using separate threads to manage each device, it can be mor
 
 ### Thread Safety
 
-Early versions of this library (v0.4.x and before) were written with the mistaken belief that the underling _libiio_ was not thread-safe. Some public information about the library was a little misleading, but with input from a maintainers of the library and additional published information, thread restrictions are slowly being lifted from this library.
+Early versions of this library (v0.4.x and before) were written with the mistaken belief that the underling _libiio_ was not thread-safe. Some public information about the library was a little misleading, but with input from a _libiio_ maintainers and additional published information, thread restrictions are slowly being lifted from this library.
 
 Starting in v0.5, the following is now possible:
 
 - `InnerContext`, which actually wraps the C library context, is now `Sync` in addition to being `Send`. It can be shared between threads.
-- `Context` is now implemented with an `Arc` to point to its `InnerContext`. So these references to the inner context can be sent to different threads and those threads can share the same context.
+- `Context` is now implemented with an `Arc` to point to its `InnerContext`. So these references to the inner context can be quickly cloned and sent to different threads, where those threads will then share the same context.
 - The `Device` objects, which hold a `Context` reference, are now `Send`. They can be moved to a different thread than the one that created the context.
 - For now, the `Channel` and `Buffer` objects are still `!Send` and `!Sync`, and need to live in the same thread with the `Device`, but these restrictions may be loosened as we figure out which specific operations are not thread safe.
 - The `Buffer::refill()` function now take a mutable reference to self, `&mut self`, in preparation of loosening thread restrictions on the buffer. The buffer definitely can not be filled by two different threads at the same time.
@@ -128,7 +126,7 @@ One way is to do a "deep" clone of a context and send it to the other thread:
 
     let ctx = Context::new()?;
     let thr_ctx = ctx.try_deep_clone()?;
-    
+
     thread::spawn(move || {
         let dev = thr_ctx.find_device("somedevice")?
         // ...
@@ -191,7 +189,7 @@ Install _libiio_ v0.21 on the target board. If you're developing on a Linux host
 
 ### Check the version on the target
 
-If you're using a BeagleBone Black, an old library may have shipped with the distro. Install the latest distribution for the board. (This was tested with _Debian 9.5 2018-10-07 4GB SD IoT_).
+If you're using a maker board, such as a BeagleBone, an old library may have shipped with the distro. Install the latest distribution for the board.
 
 Log onto the board and check the version:
 
@@ -200,7 +198,7 @@ $ iiod --version
 0.21
 ```
 
-If this is less than 0.21, remove the Debian packages and install from sources.
+If this is an old version, it would be best to remove the Debian packages and install from sources.
 
 First, get rid of the existing library and utilities:
 
@@ -220,9 +218,9 @@ And then download the library sources and build:
 
 ```
 $ cd /tmp
-$ wget https://github.com/analogdevicesinc/libiio/archive/v0.21.tar.gz
-$ tar -xf v0.21.tar.gz 
-$ cd libiio-0.21/
+$ wget https://github.com/analogdevicesinc/libiio/archive/v0.25.tar.gz
+$ tar -xf v0.25.tar.gz
+$ cd libiio-0.25/
 $ mkdir build ; cd build
 $ cmake .. && make && sudo make install
 ```
@@ -231,7 +229,7 @@ Then check that the version installed properly:
 
 ```
 $ iiod --version
-0.21
+0.25
 ```
 
 ## Build the Rust Crate

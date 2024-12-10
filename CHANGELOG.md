@@ -5,15 +5,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Unreleased Features
+### [v0.6.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.2..v0.6.0) - 2024-12-10
 
 - Upgraded to Rust Edition 2021, MSRV 1.73.0
 - New bindings in the -sys crate for _libiio_ v0.24 & v0.25
-- Build features to select the version of bindings to match the installed target _libiio_, with several options.
-- Conditional features based on the version of _libiio_.
+    - Cargo build features for selecting bindings to older libiio versions (v0.24, v0.23, etc)
+    - Conditional features based on the version of _libiio_.
 - Updated examples and utils to use `clap` v3.2, with forward-looking implementation.
-- Added _buildtst.sh_ for local CI testing.
+- Added _buildtst.sh_ script for local CI testing. This runs the cargo _check, test, clippy,_ and _doc_ for the latest stable compiler and the MSRV.
 - Fixed new clippy warnings.
+- Updated `nix` dependency to v0.29
+- Renamed `iio_info_rs` to `riio_info` to be compatible with naming of other utilities and examples.
+- Converted to explicit re-exports to avoid ambigious warnings.
+- Added a mutable iterator for channel data in a buffer (to fill the buffer)
+- Added lifetime to buffer iterator so as not to outlive the buffer.
+- [Breaking]: Buffer iterator now returns a reference to the item in the buffer, to be consistent with mutable iterator and slice iterators.
+- [PR #28](https://github.com/fpagliughi/rust-industrial-io/pull/28)-  Move set_num_kernel_buffers() to Device
+- [PR #22](https://github.com/fpagliughi/rust-industrial-io/pull/22)-  Disable chrono default features to mitigate segfault potential in time crate
+- Added initial CI support to test building and format. (Still can't run unit tests in CI due to iio kernel module requirements).
 
 
 ### [v0.5.2](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.1..v0.5.2) - 2023-02-03

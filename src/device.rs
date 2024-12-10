@@ -360,7 +360,7 @@ pub struct ChannelIterator<'a> {
     idx: usize,
 }
 
-impl<'a> Iterator for ChannelIterator<'a> {
+impl Iterator for ChannelIterator<'_> {
     type Item = Channel;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -383,7 +383,7 @@ pub struct AttrIterator<'a> {
     idx: usize,
 }
 
-impl<'a> Iterator for AttrIterator<'a> {
+impl Iterator for AttrIterator<'_> {
     type Item = String;
 
     /// Gets the next Device attribute from the iterator

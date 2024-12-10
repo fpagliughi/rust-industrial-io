@@ -465,7 +465,7 @@ pub struct DeviceIterator<'a> {
     idx: usize,
 }
 
-impl<'a> Iterator for DeviceIterator<'a> {
+impl Iterator for DeviceIterator<'_> {
     type Item = Device;
 
     /// Gets the next Device from the iterator.
@@ -489,7 +489,7 @@ pub struct AttrIterator<'a> {
     idx: usize,
 }
 
-impl<'a> Iterator for AttrIterator<'a> {
+impl Iterator for AttrIterator<'_> {
     type Item = (String, String);
 
     /// Gets the next Device attribute from the iterator.

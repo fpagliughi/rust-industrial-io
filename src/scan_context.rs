@@ -83,7 +83,7 @@ pub struct ScanContextIterator<'a> {
     idx: u32,
 }
 
-impl<'a> Iterator for ScanContextIterator<'a> {
+impl Iterator for ScanContextIterator<'_> {
     type Item = (String, String);
 
     fn next(&mut self) -> Option<Self::Item> {

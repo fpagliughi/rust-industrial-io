@@ -16,7 +16,7 @@ use std::{
     any::TypeId,
     collections::HashMap,
     ffi::CString,
-    mem,
+    mem::{self, size_of, size_of_val},
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
 };
 
@@ -493,7 +493,7 @@ impl Channel {
         }
 
         let n = buf.capacity();
-        let sz_item = mem::size_of::<T>();
+        let sz_item = size_of::<T>();
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
@@ -519,7 +519,7 @@ impl Channel {
         }
 
         let n = buf.capacity();
-        let sz_item = mem::size_of::<T>();
+        let sz_item = size_of::<T>();
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
@@ -546,8 +546,8 @@ impl Channel {
             return Err(Error::WrongDataType);
         }
 
-        let sz_item = mem::size_of::<T>();
-        let sz_in = mem::size_of_val(data);
+        let sz_item = size_of::<T>();
+        let sz_in = size_of_val(data);
 
         let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
 
@@ -564,8 +564,8 @@ impl Channel {
             return Err(Error::WrongDataType);
         }
 
-        let sz_item = mem::size_of::<T>();
-        let sz_in = mem::size_of_val(data);
+        let sz_item = size_of::<T>();
+        let sz_in = size_of_val(data);
 
         let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
 
@@ -590,7 +590,7 @@ pub struct AttrIterator<'a> {
     idx: usize,
 }
 
-impl<'a> Iterator for AttrIterator<'a> {
+impl Iterator for AttrIterator<'_> {
     type Item = String;
 
     /// Gets the next Channel attribute from the iterator

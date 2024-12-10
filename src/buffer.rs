@@ -51,7 +51,7 @@
 use std::{
     collections::HashMap,
     marker::PhantomData,
-    mem,
+    mem::size_of,
     os::raw::{c_int, c_longlong},
 };
 
@@ -356,14 +356,14 @@ pub struct Iter<'a, T: 'a> {
     step: isize,
 }
 
-impl<'a, T> Iter<'a, T> {
+impl<T> Iter<'_, T> {
     /// Create an iterator to move channel data out of a buffer.
     pub fn new(buf: &Buffer, chan: &Channel) -> Self {
         unsafe {
             let begin = ffi::iio_buffer_first(buf.buf, chan.chan).cast();
             let end = ffi::iio_buffer_end(buf.buf).cast();
             let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(buf.buf) / mem::size_of::<T>() as isize;
+            let step: isize = ffi::iio_buffer_step(buf.buf) / size_of::<T>() as isize;
 
             Self {
                 _phantom: PhantomData,
@@ -412,7 +412,7 @@ impl<'a, T: 'a> IterMut<'a, T> {
             let begin = ffi::iio_buffer_first(buf.buf, chan.chan).cast();
             let end = ffi::iio_buffer_end(buf.buf).cast();
             let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(buf.buf) / mem::size_of::<T>() as isize;
+            let step: isize = ffi::iio_buffer_step(buf.buf) / size_of::<T>() as isize;
 
             Self {
                 _phantom: PhantomData,
@@ -451,7 +451,7 @@ pub struct AttrIterator<'a> {
     idx: usize,
 }
 
-impl<'a> Iterator for AttrIterator<'a> {
+impl Iterator for AttrIterator<'_> {
     type Item = String;
 
     /// Gets the next Buffer attribute from the iterator

@@ -1,0 +1,78 @@
+# GitHub Actions CI check for the 'industrial-io' Rust crate
+#
+# It does the following:
+# - Format check of the sources using nightly
+# - Build check using the current stable compiler and the MSRV version.
+# - Clippy check using the MSRV compiler
+#
+# Note that the current MSRV predates the new cargo resolver, v3, so we go
+# out of or way to use it from stable to create a Cargo.lock file that 
+# properly resolves dependencies for the MSRV.
+#
+# Note that the unit tests currently won't work without the 'industrialio'
+# and 'iio_dummy' modules, loaded into the kernel. So for now, they're 
+# commented out. We'll try to figure out how to load them, but if that
+# doesn't work, perhaps can split out a default set of tests that don't
+# hit the kernel and at least run those.
+#
+
+name: Rust
+
+on:
+  push:
+    branches: [ "master", "develop" ]
+  pull_request:
+    branches: [ "master", "develop" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        components: rustfmt
+    - run: cargo fmt --check --all
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - 1.73.0
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+
+    - name: Resolve dependencies for MSRV
+      run: |
+        mkdir -p $HOME/.cargo
+        echo 'resolver.incompatible-rust-versions = "fallback"' > $HOME/.cargo/config.toml
+        cargo +stable update
+
+    - name: Build check
+      run: |
+        cargo +${{ matrix.rust }} check --verbose
+
+#    - name: Run tests
+#      run: cargo +${{ matrix.rust }} test --verbose
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.73.0
+        override: true
+        components: clippy
+    - run: cargo clippy -- -D warnings

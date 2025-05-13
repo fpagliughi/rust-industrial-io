@@ -20,7 +20,7 @@ name: Rust
 
 on:
   push:
-    branches: [ "master", "develop" ]
+    branches: [ "master", "develop", "ci-test" ]
   pull_request:
     branches: [ "master", "develop" ]
 
@@ -52,6 +52,12 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ matrix.rust }}
+
+    - name: Load kernel modules for test
+      run: |
+        sudo apt-get install -y libiio-dev libiio-utils
+        tree /lib/modules/6.11.0-1013-azure
+        sudo ./scripts/load_dummy.sh
 
     - name: Resolve dependencies for MSRV
       run: |

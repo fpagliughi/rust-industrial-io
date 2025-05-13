@@ -24,7 +24,7 @@ libiio_v0_19 = ["libiio-sys/libiio_v0_19"]
 
 [dependencies]
 libiio-sys = { version = "0.4", path = "libiio-sys", default-features = false }
-thiserror = "1.0"
+thiserror = "2.0"
 nix = "0.29"
 clap = { version = "4.4", features = ["cargo"], optional = true }
 
@@ -32,7 +32,7 @@ clap = { version = "4.4", features = ["cargo"], optional = true }
 schedule_recv = "0.1"
 chrono = { version = "0.4" }
 clap = { version = "4.4", features = ["cargo"] }
-ctrlc = "3.2"
+ctrlc = "3.4"
 anyhow = "1.0"
 
 

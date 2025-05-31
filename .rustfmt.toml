@@ -1,10 +1,10 @@
 # .rustfmt.toml
 #
-# Code format definitions for Eclipse Paho MQTT Rust library.
+# Code format definitions for the Rust Linux 'indistrial-io' crate.
 #
 
-edition = "2018"
+edition = "2021"
 
-# As of 2021-04-23, this is still unstable, requiring +nightly
+# As of 2025-05-23, this is still unstable, requiring +nightly
 control_brace_style = "ClosingNextLine"
 

@@ -109,7 +109,7 @@ fn cstring_opt(pstr: *const c_char) -> Option<String> {
 pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
     match ret {
         ret if ret < 0 => Err(Errno::from_raw(-ret).into()),
-        _ => Ok(result)
+        _ => Ok(result),
     }
 }
 
@@ -269,7 +269,7 @@ mod tests {
     #[test]
     fn test_sys_result() {
         assert!(matches!(sys_result(-1, "hello"), Err(_)));
-        assert!(matches!(sys_result( 1, "hello"), Ok("hello")));
+        assert!(matches!(sys_result(1, "hello"), Ok("hello")));
     }
 
     #[test]

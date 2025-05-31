@@ -356,9 +356,12 @@ impl Context {
         let mut pname: *const c_char = ptr::null();
         let mut pval: *const c_char = ptr::null();
 
-        sys_result(unsafe {
-            ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint, &mut pname, &mut pval)
-        }, ())?;
+        sys_result(
+            unsafe {
+                ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint, &mut pname, &mut pval)
+            },
+            (),
+        )?;
         let name = cstring_opt(pname);
         let val = cstring_opt(pval);
         if name.is_none() || val.is_none() {

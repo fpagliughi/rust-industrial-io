@@ -148,7 +148,8 @@ impl DataFormat {
                 8 => Some(TypeId::of::<i64>()),
                 _ => None,
             }
-        } else {
+        }
+        else {
             match nbytes {
                 1 => Some(TypeId::of::<u8>()),
                 2 => Some(TypeId::of::<u16>()),

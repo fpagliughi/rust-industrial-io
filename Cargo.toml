@@ -14,8 +14,8 @@ Linux Industrial I/O (IIO) Support
 """
 
 [features]
-default = ["utilities", "libiio_v0_25"]
-utilities = ["clap"]
+default = ["libiio_v0_25"]
+utils = ["clap"]
 libiio_v0_25 = ["libiio-sys/libiio_v0_25"]
 libiio_v0_24 = ["libiio-sys/libiio_v0_24"]
 libiio_v0_23 = ["libiio-sys/libiio_v0_23"]
@@ -35,13 +35,12 @@ clap = { version = "4.4", features = ["cargo"] }
 ctrlc = "3.4"
 anyhow = "1.0"
 
-
 # ----- Utilities -----
 
 [[bin]]
 name = "riio_info"
-required-features = ["utilities"]
+required-features = ["utils"]
 
 [[bin]]
 name = "riio_stop_all"
-required-features = ["utilities"]
+required-features = ["utils"]

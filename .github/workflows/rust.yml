@@ -3,6 +3,7 @@
 # It does the following:
 # - Format check of the sources using nightly
 # - Build check using the current stable compiler and the MSRV version.
+#   - Check library, utils, and examples
 # - Clippy check using the MSRV compiler
 #
 # Note that the current MSRV predates the new cargo resolver, v3, so we go
@@ -59,9 +60,17 @@ jobs:
         echo 'resolver.incompatible-rust-versions = "fallback"' > $HOME/.cargo/config.toml
         cargo +stable update
 
-    - name: Build check
-      run: |
-        cargo +${{ matrix.rust }} check --verbose
+    - name: Library build check
+      run: cargo +${{ matrix.rust }} check
+
+    - name: Features build check
+      run: cargo +${{ matrix.rust }} check --features=utils
+
+    - name: Examples build check
+      run: cargo +${{ matrix.rust }} check --examples
+
+    - name: Doc generation
+      run: cargo +${{ matrix.rust }} doc --no-deps
 
 #    - name: Run tests
 #      run: cargo +${{ matrix.rust }} test --verbose

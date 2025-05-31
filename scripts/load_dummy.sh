@@ -7,7 +7,7 @@
 # 
 # This is useful for application testing and unit testing of the library.
 # 
-# The required IIO drivers must be comiled for the kernel as loadable modules.
+# The required IIO drivers must be compiled for the kernel as loadable modules.
 # This should be the case for Ubuntu 18.04 and Mint 19. Your mileage may vary.
 #
 
@@ -15,7 +15,7 @@
 IIO_DEV_NAME=dummydev
 IIO_TIMER_NAME=timer0
 
-# ----- Must have root privleges to run this script -----
+# ----- Must have root privileges to run this script -----
 
 if (( $EUID != 0 )); then
    echo "This script must be run as root"

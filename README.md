@@ -49,7 +49,7 @@ To keep up with the latest announcements for this project, follow:
 - Fixed new clippy warnings.
 - Updated `nix` dependency to v0.29
 - Renamed `iio_info_rs` to `riio_info` to be compatible with naming of other utilities and examples.
-- Converted to explicit re-exports to avoid ambigious warnings.
+- Converted to explicit re-exports to avoid ambiguous warnings.
 - Added a mutable iterator for channel data in a buffer (to fill the buffer)
 - Added lifetime to buffer iterator so as not to outlive the buffer.
 - [Breaking]: Buffer iterator now returns a reference to the item in the buffer, to be consistent with mutable iterator and slice iterators.

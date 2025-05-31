@@ -98,21 +98,18 @@ const ATTR_BUF_SIZE: usize = 16384;
 /// If the pointer is NULL, this returns `None` otherwise it converts the
 /// string and returns it.
 fn cstring_opt(pstr: *const c_char) -> Option<String> {
-    if pstr.is_null() {
-        None
-    }
-    else {
-        let name = unsafe { CStr::from_ptr(pstr) };
-        Some(name.to_str().unwrap_or_default().to_string())
+    unsafe {
+        pstr.as_ref().map(|_| {
+            let name = CStr::from_ptr(pstr);
+            name.to_str().unwrap_or_default().to_string()
+        })
     }
 }
 
 pub(crate) fn sys_result<T>(ret: i32, result: T) -> Result<T> {
-    if ret < 0 {
-        Err(Errno::from_raw(-ret).into())
-    }
-    else {
-        Ok(result)
+    match ret {
+        ret if ret < 0 => Err(Errno::from_raw(-ret).into()),
+        _ => Ok(result)
     }
 }
 
@@ -250,6 +247,7 @@ pub fn library_version() -> Version {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ptr;
 
     // Just make sure version gives a consistent result.
     #[test]
@@ -257,6 +255,21 @@ mod tests {
         let v1 = library_version();
         let v2 = library_version();
         assert!(v1 == v2);
+    }
+
+    #[test]
+    fn test_cstring_opt() {
+        assert_eq!(cstring_opt(ptr::null()), None);
+
+        let s: &[u8] = &[b'h', b'e', b'l', b'l', b'o', 0];
+        let p = s.as_ptr() as *const c_char;
+        assert_eq!(cstring_opt(p), Some(String::from("hello")));
+    }
+
+    #[test]
+    fn test_sys_result() {
+        assert!(matches!(sys_result(-1, "hello"), Err(_)));
+        assert!(matches!(sys_result( 1, "hello"), Ok("hello")));
     }
 
     #[test]

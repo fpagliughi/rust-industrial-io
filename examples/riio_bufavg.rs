@@ -9,7 +9,7 @@
 // but a general-purpose solution would probe the channel type and/or use
 // generics to read and convert the raw data.
 //
-// For quick tests, just set `RawSampleType` to the type matchine the channel
+// For quick tests, just set `RawSampleType` to the type matching the channel
 // to be tested.
 //
 // Copyright (c) 2019, Frank Pagliughi
@@ -291,7 +291,7 @@ fn run() -> Result<()> {
         };
 
         // Extract and convert the raw data from the buffer.
-        // This puts the raw samples into host format (fixes "endiness" and
+        // This puts the raw samples into host format (fixes "endianness" and
         // shifts into place), but it's still raw data. The other thread
         // will apply the offset and scaling.
         // We do this here because the channel is not thread-safe.

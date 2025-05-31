@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### (Unreleased)
+
+- Updated the Github Actions CI to resolve the dependencies for the MSRV with cargo resolver v3.
+- Bumped dependencies
+    - clap v4.4
+    - thiserror v2.0
+- [PR #32](https://github.com/fpagliughi/rust-industrial-io/pull/32) Typo in `ChannelType::Light`
+
+
 ### [v0.6.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.2..v0.6.0) - 2024-12-10
 
 - Upgraded to Rust Edition 2021, MSRV 1.73.0
@@ -16,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fixed new clippy warnings.
 - Updated `nix` dependency to v0.29
 - Renamed `iio_info_rs` to `riio_info` to be compatible with naming of other utilities and examples.
-- Converted to explicit re-exports to avoid ambigious warnings.
+- Converted to explicit re-exports to avoid ambiguous warnings.
 - Added a mutable iterator for channel data in a buffer (to fill the buffer)
 - Added lifetime to buffer iterator so as not to outlive the buffer.
 - [Breaking]: Buffer iterator now returns a reference to the item in the buffer, to be consistent with mutable iterator and slice iterators.
@@ -71,7 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Updated error handling:
     - Support for `std::error`
     - Implementation changed to use `thiserror` (from *error_chain*)
-    - Specific types defined for common errors intead of just string descriptions (`WrongDataType`, `BadReturnSize`, `InvalidIndex,` etc)
+    - Specific types defined for common errors instead of just string descriptions (`WrongDataType`, `BadReturnSize`, `InvalidIndex,` etc)
 - New device capabilities:
     - _remove_trigger()_
     - _is_buffer_capable()_

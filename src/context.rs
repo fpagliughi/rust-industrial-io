@@ -345,8 +345,7 @@ impl Context {
 
     /// Gets the number of context-specific attributes
     pub fn num_attrs(&self) -> usize {
-        let n = unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) };
-        n as usize
+        unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) as usize }
     }
 
     /// Gets the name and value of the context-specific attributes.
@@ -357,16 +356,13 @@ impl Context {
         let mut pname: *const c_char = ptr::null();
         let mut pval: *const c_char = ptr::null();
 
-        let ret = unsafe {
+        sys_result(unsafe {
             ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint, &mut pname, &mut pval)
-        };
-        if ret < 0 {
-            return Err(Errno::from_raw(ret).into());
-        }
+        }, ())?;
         let name = cstring_opt(pname);
         let val = cstring_opt(pval);
         if name.is_none() || val.is_none() {
-            return Err(Error::General("String conversion error".into()));
+            return Err(Error::StringConversionError.into());
         }
         Ok((name.unwrap(), val.unwrap()))
     }

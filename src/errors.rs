@@ -39,7 +39,7 @@ pub enum Error {
     /// A device or channel index did not find a requested object
     #[error("Invalid index")]
     InvalidIndex,
-    /// A generic error with a string explaination
+    /// A generic error with a string explanation
     #[error("{0}")]
     General(String),
 }

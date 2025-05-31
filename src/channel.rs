@@ -40,7 +40,7 @@ pub enum ChannelType {
     Accel = ffi::iio_chan_type_IIO_ACCEL,
     AnglVel = ffi::iio_chan_type_IIO_ANGL_VEL,
     Magn = ffi::iio_chan_type_IIO_MAGN,
-    Ligtht = ffi::iio_chan_type_IIO_LIGHT,
+    Light = ffi::iio_chan_type_IIO_LIGHT,
     Intensity = ffi::iio_chan_type_IIO_INTENSITY,
     Proximity = ffi::iio_chan_type_IIO_PROXIMITY,
     Temp = ffi::iio_chan_type_IIO_TEMP,
@@ -148,8 +148,7 @@ impl DataFormat {
                 8 => Some(TypeId::of::<i64>()),
                 _ => None,
             }
-        }
-        else {
+        } else {
             match nbytes {
                 1 => Some(TypeId::of::<u8>()),
                 2 => Some(TypeId::of::<u16>()),

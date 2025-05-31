@@ -13,12 +13,8 @@ keywords = ["linux", "embedded", "analog", "iio"]
 categories = ["embedded", "hardware-support", "os", "os::unix-apis"]
 description = "Native, unsafe, bindings to the Linux libiio library. Used by industrial-io."
 
-[features]
-default = ["libiio_v0_25"]
-libiio_v0_25 = []
-libiio_v0_24 = []
-libiio_v0_23 = []
-libiio_v0_21 = []
-libiio_v0_19 = []
-
 [dependencies]
+
+[build-dependencies]
+bindgen = "0.69.4"
+pkg-config = "0.3.30"

@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     - clap v4.4
     - thiserror v2.0
 - [PR #32](https://github.com/fpagliughi/rust-industrial-io/pull/32) Typo in `ChannelType::Light`
+- [PR #33](https://github.com/fpagliughi/rust-industrial-io/pull/33) Fix build script platform behavior
 
 
 ### [v0.6.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.2..v0.6.0) - 2024-12-10

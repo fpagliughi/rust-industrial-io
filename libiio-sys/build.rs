@@ -12,7 +12,6 @@
 
 use std::env;
 
-#[cfg(target_os = "macos")]
 fn config_macos() {
     println!("cargo:rustc-link-lib=framework=iio");
 
@@ -42,9 +41,12 @@ fn main() {
     #[cfg(feature = "libiio_v0_21")]
     println!("debug: Using bindings for libiio v0.21");
 
-    #[cfg(not(target_os = "macos"))]
-    println!("cargo:rustc-link-lib=iio");
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
 
-    #[cfg(target_os = "macos")]
-    config_macos();
+    if target_os == "linux" {
+        println!("cargo:rustc-link-lib=iio");
+    }
+    else if target_os == "macos" {
+        config_macos();
+    }
 }

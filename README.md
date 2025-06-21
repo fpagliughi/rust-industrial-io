@@ -26,6 +26,13 @@ Contributions are particularly welcome for any adjustments or feedback pertainin
 
 New examples for different hardware are also requested.
 
+## MSRV v1.73
+
+The current version has a Minimum Supported Rust Version (MSRV) of v1.73.0
+
+This crate is typically used in Embedded Linux projects, where compilers are not often upgraded. Thus the MSRV may lag the current stable by a considerable number of releases. We typically do not update the MSRV in minor version releases to keep from breaking dependent code. This restriction may be loosened up in the near future now that the Cargo resolver v3 is available, and is MSRV-aware.
+[Cargo Resolver v3](https://doc.rust-lang.org/edition-guide/rust-2024/cargo-resolver.html)
+
 ## Latest News
 
 Overall, an effort is underway to get this crate to production quality.  It includes:

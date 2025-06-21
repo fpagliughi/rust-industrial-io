@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### (Unreleased)
+### v0.6.1-pre.0 (Unreleased)
 
 - Updated the Github Actions CI to resolve the dependencies for the MSRV with cargo resolver v3.
 - Renamed the 'utilities' feature to 'utils' and removed it from the default build

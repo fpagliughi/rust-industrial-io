@@ -1,6 +1,6 @@
 // libiio-sys/src/errors.rs
 //
-// Copyright (c) 2018-2020, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -12,8 +12,6 @@
 
 use std::{ffi, io};
 use thiserror::Error;
-
-//type SysError = nix::Error::Sys;
 
 /// The Error type for the IIO library
 #[derive(Error, Debug)]

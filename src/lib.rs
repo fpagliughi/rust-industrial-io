@@ -57,8 +57,8 @@ use std::{
     ffi::{CStr, CString},
     fmt,
     os::raw::{c_char, c_int, c_uint, c_void},
-    slice, str,
-    str::FromStr,
+    slice,
+    str::{self, FromStr},
 };
 
 use libiio_sys::{self as ffi};

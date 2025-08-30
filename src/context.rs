@@ -371,7 +371,7 @@ impl Context {
     }
 
     /// Gets an iterator for the attributes in the context
-    pub fn attributes(&self) -> AttrIterator {
+    pub fn attributes(&self) -> AttrIterator<'_> {
         AttrIterator { ctx: self, idx: 0 }
     }
 
@@ -428,7 +428,7 @@ impl Context {
     }
 
     /// Gets an iterator for all the devices in the context.
-    pub fn devices(&self) -> DeviceIterator {
+    pub fn devices(&self) -> DeviceIterator<'_> {
         DeviceIterator { ctx: self, idx: 0 }
     }
 

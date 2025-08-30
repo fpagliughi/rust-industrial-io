@@ -241,7 +241,7 @@ impl Device {
     }
 
     /// Gets an iterator for the attributes in the device
-    pub fn attributes(&self) -> AttrIterator {
+    pub fn attributes(&self) -> AttrIterator<'_> {
         AttrIterator { dev: self, idx: 0 }
     }
 
@@ -294,7 +294,7 @@ impl Device {
     }
 
     /// Gets an iterator for the channels in the device
-    pub fn channels(&self) -> ChannelIterator {
+    pub fn channels(&self) -> ChannelIterator<'_> {
         ChannelIterator { dev: self, idx: 0 }
     }
 

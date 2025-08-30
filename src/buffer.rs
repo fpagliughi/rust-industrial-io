@@ -1,6 +1,6 @@
 // libiio-sys/src/buffer.rs
 //
-// Copyright (c) 2018-2021, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -322,7 +322,7 @@ impl Buffer {
     }
 
     /// Gets an iterator for the buffer attributes in the device
-    pub fn attributes(&self) -> AttrIterator {
+    pub fn attributes(&self) -> AttrIterator<'_> {
         AttrIterator { buf: self, idx: 0 }
     }
 

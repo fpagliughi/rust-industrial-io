@@ -62,7 +62,7 @@ impl ScanContext {
     }
 
     /// Gets an iterator to the contexts
-    pub fn iter(&self) -> ScanContextIterator {
+    pub fn iter(&self) -> ScanContextIterator<'_> {
         ScanContextIterator { ctx: self, idx: 0 }
     }
 }

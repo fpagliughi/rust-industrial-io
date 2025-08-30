@@ -1,6 +1,6 @@
 // libiio-sys/src/channel.rs
 //
-// Copyright (c) 2018-2021, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -389,7 +389,7 @@ impl Channel {
     }
 
     /// Gets an iterator for the attributes of the channel
-    pub fn attrs(&self) -> AttrIterator {
+    pub fn attrs(&self) -> AttrIterator<'_> {
         AttrIterator { chan: self, idx: 0 }
     }
 

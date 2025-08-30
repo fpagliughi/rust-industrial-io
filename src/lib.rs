@@ -1,6 +1,6 @@
 // industrial-io/src/lib.rs
 //
-// Copyright (c) 2018-2023, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -137,9 +137,8 @@ pub trait FromAttribute: FromStr {
 /// Attribute conversion for the bool type.
 ///
 /// The bool type needs a special implementation of the attribute conversion
-/// trait because it's default Rust string counterparts are "true" and "false"
-/// for true and false values respectively. However, sysfs expects these to be
-/// "1" or "0".
+/// trait because it's default Rust string counterparts are "true" and "false".
+/// However, sysfs expects these to be "1" or "0".
 impl ToAttribute for bool {
     fn to_attr(&self) -> Result<String> {
         Ok((if *self { "1" } else { "0" }).into())

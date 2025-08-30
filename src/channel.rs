@@ -32,7 +32,7 @@ pub enum Direction {
 /// The type of data associated with a channel.
 #[allow(missing_docs)]
 #[repr(u32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChannelType {
     Voltage = ffi::iio_chan_type_IIO_VOLTAGE,
     Current = ffi::iio_chan_type_IIO_CURRENT,
@@ -67,6 +67,48 @@ pub enum ChannelType {
     Index = ffi::iio_chan_type_IIO_INDEX,
     Gravity = ffi::iio_chan_type_IIO_GRAVITY,
     Unknown = ffi::iio_chan_type_IIO_CHAN_TYPE_UNKNOWN,
+}
+
+impl From<u32> for ChannelType {
+    fn from(val: u32) -> ChannelType {
+        use ChannelType::*;
+
+        match val {
+            ffi::iio_chan_type_IIO_VOLTAGE => Voltage,
+            ffi::iio_chan_type_IIO_CURRENT => Current,
+            ffi::iio_chan_type_IIO_POWER => Power,
+            ffi::iio_chan_type_IIO_ACCEL => Accel,
+            ffi::iio_chan_type_IIO_ANGL_VEL => AnglVel,
+            ffi::iio_chan_type_IIO_MAGN => Magn,
+            ffi::iio_chan_type_IIO_LIGHT => Light,
+            ffi::iio_chan_type_IIO_INTENSITY => Intensity,
+            ffi::iio_chan_type_IIO_PROXIMITY => Proximity,
+            ffi::iio_chan_type_IIO_TEMP => Temp,
+            ffi::iio_chan_type_IIO_INCLI => Incli,
+            ffi::iio_chan_type_IIO_ROT => Rot,
+            ffi::iio_chan_type_IIO_ANGL => Angl,
+            ffi::iio_chan_type_IIO_TIMESTAMP => Timestamp,
+            ffi::iio_chan_type_IIO_CAPACITANCE => Capacitance,
+            ffi::iio_chan_type_IIO_ALTVOLTAGE => AltVoltage,
+            ffi::iio_chan_type_IIO_CCT => Cct,
+            ffi::iio_chan_type_IIO_PRESSURE => Pressure,
+            ffi::iio_chan_type_IIO_HUMIDITYRELATIVE => HumidityRelative,
+            ffi::iio_chan_type_IIO_ACTIVITY => Activity,
+            ffi::iio_chan_type_IIO_STEPS => Steps,
+            ffi::iio_chan_type_IIO_ENERGY => Energy,
+            ffi::iio_chan_type_IIO_DISTANCE => Distance,
+            ffi::iio_chan_type_IIO_VELOCITY => Velocity,
+            ffi::iio_chan_type_IIO_CONCENTRATION => Concentration,
+            ffi::iio_chan_type_IIO_RESISTANCE => Resistance,
+            ffi::iio_chan_type_IIO_PH => Ph,
+            ffi::iio_chan_type_IIO_UVINDEX => UvIndex,
+            ffi::iio_chan_type_IIO_ELECTRICALCONDUCTIVITY => ElectricalConductivity,
+            ffi::iio_chan_type_IIO_COUNT => Count,
+            ffi::iio_chan_type_IIO_INDEX => Index,
+            ffi::iio_chan_type_IIO_GRAVITY => Gravity,
+            _ => Unknown,
+        }
+    }
 }
 
 /// The format of a data sample.

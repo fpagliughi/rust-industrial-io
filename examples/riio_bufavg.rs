@@ -1,24 +1,28 @@
 // industrial-io/examples/riio_bufavg.rs
 //
-// Simple Rust IIO example for buffered reading and post-processing.
-// This does buffered reading with a trigger, then sends the data
-// to a second thread to convert and process.
+// This example is part of the Rust industrial-io crate.
 //
-// For the sake of simplicity, we assume a raw sample type of a signed,
-// 16-bit integer. A real, dedicated application might do something similar,
-// but a general-purpose solution would probe the channel type and/or use
-// generics to read and convert the raw data.
-//
-// For quick tests, just set `RawSampleType` to the type matching the channel
-// to be tested.
-//
-// Copyright (c) 2019, Frank Pagliughi
+// Copyright (c) 2019-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
 // This file may not be copied, modified, or distributed except according
 // to those terms.
 //
+
+//! Simple Rust IIO example for buffered reading and post-processing.
+//!
+//! This does buffered reading with a trigger, then sends the data
+//! to a second thread to convert and process.
+//!
+//! For the sake of simplicity, we assume a raw sample type of a signed,
+//! 16-bit integer. A real, dedicated application might do something similar,
+//! but a general-purpose solution would probe the channel type and/or use
+//! generics to read and convert the raw data.
+//!
+//! For quick tests, just set `RawSampleType` to the type matching the channel
+//! to be tested.
+//!
 
 use anyhow::{bail, Context, Result};
 use chrono::{offset::Utc, DateTime};
@@ -131,18 +135,18 @@ fn run() -> Result<()> {
         .disable_help_flag(true)
         .disable_version_flag(true)
         .args(&[
-            arg!(-h --host "Use the network backend with the specified host")
+            arg!(-h --host <host> "Use the network backend with the specified host")
                 .action(ArgAction::Set),
-            arg!(-u --uri "Use the context with the provided URI").action(ArgAction::Set),
-            arg!(-d --device "Specifies the name of the IIO device to read")
+            arg!(-u --uri <uri> "Use the context with the provided URI").action(ArgAction::Set),
+            arg!(-d --device <device> "Specifies the name of the IIO device to read")
                 .default_value(DFLT_DEV_NAME),
-            arg!(-c --channel "Specifies the name of the channel to read")
+            arg!(-c --channel <channel> "Specifies the name of the channel to read")
                 .default_value(DFLT_CHAN_NAME),
-            arg!(-t --trigger "Specifies the name of the trigger").action(ArgAction::Set),
-            arg!(-n --num_sample "Specifies the number of samples per buffer")
+            arg!(-t --trigger <trigger> "Specifies the name of the trigger").action(ArgAction::Set),
+            arg!(-n --num_sample <num_sample> "Specifies the number of samples per buffer")
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(usize)),
-            arg!(-f --frequency "Specifies the sampling frequency")
+            arg!(-f --frequency <frequency> "Specifies the sampling frequency")
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(i64)),
             arg!(-'v' --version "Print version information").action(ArgAction::Version),

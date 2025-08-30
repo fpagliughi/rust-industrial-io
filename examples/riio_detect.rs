@@ -1,12 +1,8 @@
 // industrial-io/examples/riio_detect.rs
 //
-// Simple Rust IIO example to list the devices found in the specified context.
+// This example is part of the Rust industrial-io crate.
 //
-// Note that, if no context is requested at the command line, this will create
-// a network context if the IIOD_REMOTE environment variable is set, otherwise
-// it will create a local context. See Context::new().
-//
-// Copyright (c) 2018-2019, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -14,18 +10,25 @@
 // to those terms.
 //
 
+//! Simple Rust IIO example to list the devices found in the specified context.
+//!
+//! Note that, if no context is requested at the command line, this will create
+//! a network context if the IIOD_REMOTE environment variable is set, otherwise
+//! it will create a local context. See Context::new().
+//!
+
 use clap::{arg, ArgAction, Command};
 use industrial_io as iio;
 use std::process;
 
 fn main() {
-    let args = Command::new("riio_free_scan")
+    let args = Command::new("riio_detect")
         .version(clap::crate_version!())
         .about("Rust IIO free scan buffered reads.")
         .args(&[
-            arg!(-h --host "Use the network backend with the specified host")
+            arg!(-h --host <host> "Use the network backend with the specified host")
                 .action(ArgAction::Set),
-            arg!(-u --uri "Use the context with the provided URI")
+            arg!(-u --uri <uri> "Use the context with the provided URI")
                 .action(ArgAction::Set)
                 .conflicts_with("host"),
             arg!(-'v' --version "Print version information").action(ArgAction::Version),

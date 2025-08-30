@@ -1,19 +1,24 @@
 // industrial-io/examples/riio_readraw.rs
 //
-// Periodically reads the samples from all channels on a device that have
-// the "raw" attribute. This periodically polls the channels using a Rust
-// timer via the schedule_recv crate.
+// This example is part of the Rust industrial-io crate.
 //
-// Note that, if no context is requested at the command line, this will create
-// a network context if the IIOD_REMOTE environment variable is set, otherwise
-// it will create a local context. See Context::new().
-//
-// Copyright (c) 2018-2019, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
 // This file may not be copied, modified, or distributed except according
 // to those terms.
+//
+
+//! Example to read raw analog data.
+//!
+//! Periodically reads the samples from all channels on a device that have
+//! the "raw" attribute. This periodically polls the channels using a Rust
+//! timer via the schedule_recv crate.
+//!
+//! Note that, if no context is requested at the command line, this will create
+//! a network context if the IIOD_REMOTE environment variable is set, otherwise
+//! it will create a local context. See Context::new().
 //
 
 use clap::{arg, ArgAction, Command};
@@ -26,12 +31,12 @@ fn main() -> iio::Result<()> {
         .version(clap::crate_version!())
         .about("Rust IIO raw reads example.")
         .args(&[
-            arg!(-h --host "Use the network backend with the specified host")
+            arg!(-h --host <host> "Use the network backend with the specified host")
                 .action(ArgAction::Set),
-            arg!(-u --uri "Use the context with the provided URI")
+            arg!(-u --uri <uri> "Use the context with the provided URI")
                 .action(ArgAction::Set)
                 .conflicts_with("host"),
-            arg!(-d --device "Specifies the name of the IIO device to read"),
+            arg!(-d --device <device> "Specifies the name of the IIO device to read"),
             arg!(-'v' --version "Print version information").action(ArgAction::Version),
             arg!(-'?' --help "Print help information")
                 .global(true)

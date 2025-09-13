@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### v0.6.1-pre.0 (Unreleased)
+### [v0.6.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.6.0..v0.6.1) - 2025-09-13
 
 - Updated the Github Actions CI to resolve the dependencies for the MSRV with cargo resolver v3.
 - Renamed the 'utilities' feature to 'utils' and removed it from the default build
 - Bumped MSRV to v1.75 to appease dependencies.
+- Fixed clippy warnings from v1.89 about elided lifetimes
 - Bumped dependencies
     - clap v4.4
     - thiserror v2.0

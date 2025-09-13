@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Updated the Github Actions CI to resolve the dependencies for the MSRV with cargo resolver v3.
 - Renamed the 'utilities' feature to 'utils' and removed it from the default build
+- Bumped MSRV to v1.75 to appease dependencies.
 - Bumped dependencies
     - clap v4.4
     - thiserror v2.0

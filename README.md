@@ -26,12 +26,11 @@ Contributions are particularly welcome for any adjustments or feedback pertainin
 
 New examples for different hardware are also requested.
 
-## MSRV v1.73
+## MSRV v1.75
 
-The current version has a Minimum Supported Rust Version (MSRV) of v1.73.0
+The current version has a Minimum Supported Rust Version (MSRV) of v1.75.0
 
-This crate is typically used in Embedded Linux projects, where compilers are not often upgraded. Thus the MSRV may lag the current stable by a considerable number of releases. We typically do not update the MSRV in minor version releases to keep from breaking dependent code. This restriction may be loosened up in the near future now that the Cargo resolver v3 is available, and is MSRV-aware.
-[Cargo Resolver v3](https://doc.rust-lang.org/edition-guide/rust-2024/cargo-resolver.html)
+This crate is typically used in Embedded Linux projects, where compilers are not often upgraded. Thus the MSRV may lag the current stable by a considerable number of releases.
 
 ## Latest News
 
@@ -47,7 +46,7 @@ To keep up with the latest announcements for this project, follow:
 
 ### New Features in v0.6
 
-- Upgraded to Rust Edition 2021, MSRV 1.73.0
+- Upgraded to Rust Edition 2021, MSRV 1.75
 - New bindings in the -sys crate for _libiio_ v0.24 & v0.25
     - Cargo build features for selecting bindings to older libiio versions (v0.24, v0.23, etc)
     - Conditional features based on the version of _libiio_.

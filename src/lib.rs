@@ -267,7 +267,7 @@ mod tests {
 
     #[test]
     fn test_sys_result() {
-        assert!(matches!(sys_result(-1, "hello"), Err(_)));
+        assert!(sys_result(-1, "hello").is_err());
         assert!(matches!(sys_result(1, "hello"), Ok("hello")));
     }
 
@@ -277,10 +277,10 @@ mod tests {
         assert_eq!(val, 123);
 
         let val = bool::from_attr("1").unwrap();
-        assert_eq!(val, true);
+        assert!(val);
 
         let val: bool = FromAttribute::from_attr(" 0 \n").unwrap();
-        assert_eq!(val, false);
+        assert!(!val);
 
         let val: String = String::from_attr("hello").unwrap();
         assert_eq!(&val, "hello");

@@ -1,6 +1,6 @@
 // libiio-sys/src/context.rs
 //
-// Copyright (c) 2018-2023, Frank Pagliughi
+// Copyright (c) 2018-2025, Frank Pagliughi
 //
 // Licensed under the MIT license:
 //   <LICENSE or http://opensource.org/licenses/MIT>
@@ -24,9 +24,6 @@ use std::{
 /////////////////////////////////////////////////////////////////////////////
 
 /// An Industrial I/O Context
-///
-/// Since the IIO library isn't thread safe, this object cannot be Send or
-/// Sync.
 ///
 /// This object maintains a reference counted pointer to the context object
 /// of the underlying library's `iio_context` object. Once all references to
@@ -518,9 +515,11 @@ mod tests {
     // See that we get the default context.
     #[test]
     fn default_context() {
-        let ctx = Context::new();
-        assert!(ctx.is_ok());
-        //let ctx = ctx.unwrap();
+        let res = Context::new();
+        assert!(res.is_ok());
+
+        let res = Context::from_ptr(ptr::null_mut());
+        assert!(res.is_err());
     }
 
     // Clone a context and make sure it's reported as same one.
@@ -528,7 +527,7 @@ mod tests {
     fn clone_context() {
         let ctx = Context::new().unwrap();
         let ctx2 = ctx.clone();
-        assert!(ctx == ctx2);
+        assert_eq!(ctx, ctx2);
     }
 
     // Clone the inner context and send to another thread.

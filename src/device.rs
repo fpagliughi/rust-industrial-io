@@ -256,12 +256,14 @@ impl Device {
     pub fn get_channel(&self, idx: usize) -> Result<Channel> {
         let chan = unsafe { ffi::iio_device_get_channel(self.dev, idx as c_uint) };
         if chan.is_null() {
-            return Err(Error::InvalidIndex);
+            Err(Error::InvalidIndex)
         }
-        Ok(Channel {
-            chan,
-            ctx: self.context(),
-        })
+        else {
+            Ok(Channel {
+                chan,
+                ctx: self.context(),
+            })
+        }
     }
 
     /// Try to find a channel by its name or ID

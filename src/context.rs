@@ -16,7 +16,7 @@ use nix::errno::Errno;
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_uint},
-    ptr, slice, str,
+    ptr::{self, NonNull}, slice, str,
     sync::Arc,
     time::Duration,
 };
@@ -34,121 +34,6 @@ use std::{
 pub struct Context {
     inner: Arc<InnerContext>,
 }
-
-/// Backends for I/O Contexts.
-///
-/// An I/O [`Context`] relies on a backend that provides sensor data.
-#[derive(Debug)]
-pub enum Backend<'a> {
-    /// Use the default backend. This will create a network context if the
-    /// IIOD_REMOTE environment variable is set to the hostname where the
-    /// IIOD server runs. If set to an empty string, the server will be
-    /// discovered using ZeroConf. If the environment variable is not set,
-    /// a local context will be created instead.
-    Default,
-    /// XML Backend, creates a Context from an XML file. Here the string is
-    /// the name of the file.
-    /// Example Parameter:
-    /// "/home/user/file.xml"
-    Xml(&'a str),
-    /// XML Backend, creates a Context from an in-memory XML string. Here
-    /// the string _is_ the XML description.
-    XmlMem(&'a str),
-    /// Network Backend, creates a Context through a network connection.
-    /// Requires a hostname, IPv4 or IPv6 address to connect to another host
-    /// that is running the [IIO Daemon]. If an empty string is provided,
-    /// automatic discovery through ZeroConf is performed (if available in IIO).
-    /// Example Parameter:
-    ///
-    /// - "192.168.2.1" to connect to given IPv4 host, **or**
-    /// - "localhost" to connect to localhost running IIOD, **or**
-    /// - "plutosdr.local" to connect to host with given hostname, **or**
-    /// - "" for automatic discovery
-    ///
-    /// [IIO Daemon]: https://github.com/analogdevicesinc/libiio/tree/master/iiod
-    Network(&'a str),
-    /// USB Backend, creates a context through a USB connection.
-    /// If only a single USB device is attached, provide an empty String ("")
-    /// to use that. When more than one usb device is attached, requires bus,
-    /// address, and interface parts separated with a dot.
-    /// Example Parameter: "3.32.5"
-    Usb(&'a str),
-    /// Serial Backend, creates a context through a serial connection.
-    /// Requires (Values in parentheses show examples):
-    ///
-    /// - a port (/dev/ttyUSB0),
-    /// - baud_rate (default 115200)
-    /// - serial port configuration
-    ///     - data bits (5 6 7 8 9)
-    ///     - parity ('n' none, 'o' odd, 'e' even, 'm' mark, 's' space)
-    ///     - stop bits (1 2)
-    ///     - flow control ('\0' none, 'x' Xon Xoff, 'r' RTSCTS, 'd' DTRDSR)
-    ///
-    /// Example Parameters:
-    ///
-    /// - "/dev/ttyUSB0,115200", **or**
-    /// - "/dev/ttyUSB0,115200,8n1"
-    Serial(&'a str),
-    /// "Guess" the backend to use from the URI that's supplied. This merely
-    /// provides compatibility with [`iio_create_context_from_uri`] from the
-    /// underlying IIO C-library. Refer to the IIO docs for information on how
-    /// to format this parameter.
-    ///
-    /// [`iio_create_context_from_uri`]: https://analogdevicesinc.github.io/libiio/master/libiio/group__Context.html#gafdcee40508700fa395370b6c636e16fe
-    Uri(&'a str),
-    /// Local Backend, only available on Linux hosts. Sensors to work with are
-    /// part of the system and accessible in sysfs (under `/sys/...`).
-    #[cfg(target_os = "linux")]
-    Local,
-}
-
-/// This holds a pointer to the library context.
-/// When it is dropped, the library context is destroyed.
-#[derive(Debug)]
-pub struct InnerContext {
-    /// Pointer to a libiio Context object
-    pub(crate) ctx: *mut ffi::iio_context,
-}
-
-impl InnerContext {
-    /// Tries to create the inner context from a C context pointer.
-    ///
-    /// This should be called _right after_ creating the C context as it
-    /// will use the last error on failure.
-    fn new(ctx: *mut ffi::iio_context) -> Result<Self> {
-        if ctx.is_null() {
-            Err(Error::from(Errno::last()))
-        }
-        else {
-            Ok(Self { ctx })
-        }
-    }
-
-    /// Tries to create a full, deep, copy of the underlying context.
-    ///
-    /// This creates a full copy of the actual context held in the underlying
-    /// C library. This is useful if you want to give a separate copy to each
-    /// thread in an application, which could help performance.
-    pub fn try_clone(&self) -> Result<Self> {
-        Self::new(unsafe { ffi::iio_context_clone(self.ctx) })
-    }
-}
-
-impl Drop for InnerContext {
-    /// Dropping destroys the underlying C context.
-    ///
-    /// When held by [`Context`] references, this should happen when the last
-    /// context referring to it goes out of scope.
-    fn drop(&mut self) {
-        unsafe { ffi::iio_context_destroy(self.ctx) };
-    }
-}
-
-// The inner context can be sent to another thread.
-unsafe impl Send for InnerContext {}
-
-// The inner context can be shared with another thread.
-unsafe impl Sync for InnerContext {}
 
 impl Context {
     /// Creates a default context from a local or remote IIO device.
@@ -261,6 +146,11 @@ impl Context {
         Ok(Self::from_inner(inner))
     }
 
+    /// Gets the pointer to the C context.
+    fn as_ptr(&self) -> *mut ffi::iio_context {
+        self.inner.as_ptr()
+    }
+
     /// Try to create a clone of the inner underlying context.
     ///
     /// The inner context wraps the C library context. Cloning it makes
@@ -292,13 +182,13 @@ impl Context {
     /// Get the name of the context.
     /// This should be "local", "xml", or "network" depending on how the context was created.
     pub fn name(&self) -> String {
-        let pstr = unsafe { ffi::iio_context_get_name(self.inner.ctx) };
+        let pstr = unsafe { ffi::iio_context_get_name(self.as_ptr()) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
     /// Get a description of the context
     pub fn description(&self) -> String {
-        let pstr = unsafe { ffi::iio_context_get_description(self.inner.ctx) };
+        let pstr = unsafe { ffi::iio_context_get_description(self.as_ptr()) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
@@ -311,7 +201,7 @@ impl Context {
         let mut buf = vec![b' ' as c_char; BUF_SZ];
         let pbuf = buf.as_mut_ptr();
 
-        unsafe { ffi::iio_context_get_version(self.inner.ctx, &mut major, &mut minor, pbuf) };
+        unsafe { ffi::iio_context_get_version(self.as_ptr(), &mut major, &mut minor, pbuf) };
 
         let sgit = unsafe {
             if buf.contains(&0) {
@@ -331,18 +221,18 @@ impl Context {
 
     /// Obtain the XML representation of the context.
     pub fn xml(&self) -> String {
-        let pstr = unsafe { ffi::iio_context_get_xml(self.inner.ctx) };
+        let pstr = unsafe { ffi::iio_context_get_xml(self.as_ptr()) };
         cstring_opt(pstr).unwrap_or_default()
     }
 
     /// Determines if the context has any attributes
     pub fn has_attrs(&self) -> bool {
-        unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) > 0 }
+        unsafe { ffi::iio_context_get_attrs_count(self.as_ptr()) > 0 }
     }
 
     /// Gets the number of context-specific attributes
     pub fn num_attrs(&self) -> usize {
-        unsafe { ffi::iio_context_get_attrs_count(self.inner.ctx) as usize }
+        unsafe { ffi::iio_context_get_attrs_count(self.as_ptr()) as usize }
     }
 
     /// Gets the name and value of the context-specific attributes.
@@ -355,7 +245,7 @@ impl Context {
 
         sys_result(
             unsafe {
-                ffi::iio_context_get_attr(self.inner.ctx, idx as c_uint, &mut pname, &mut pval)
+                ffi::iio_context_get_attr(self.as_ptr(), idx as c_uint, &mut pname, &mut pval)
             },
             (),
         )?;
@@ -386,18 +276,18 @@ impl Context {
     /// `timeout` The timeout, in ms. A value of zero specifies that no
     ///     timeout should be used.
     pub fn set_timeout_ms(&self, ms: u64) -> Result<()> {
-        let ret = unsafe { ffi::iio_context_set_timeout(self.inner.ctx, ms as c_uint) };
+        let ret = unsafe { ffi::iio_context_set_timeout(self.as_ptr(), ms as c_uint) };
         sys_result(ret, ())
     }
 
     /// Get the number of devices in the context
     pub fn num_devices(&self) -> usize {
-        unsafe { ffi::iio_context_get_devices_count(self.inner.ctx) as usize }
+        unsafe { ffi::iio_context_get_devices_count(self.as_ptr()) as usize }
     }
 
     /// Gets a device by index
     pub fn get_device(&self, idx: usize) -> Result<Device> {
-        let dev = unsafe { ffi::iio_context_get_device(self.inner.ctx, idx as c_uint) };
+        let dev = unsafe { ffi::iio_context_get_device(self.as_ptr(), idx as c_uint) };
         if dev.is_null() {
             return Err(Error::InvalidIndex);
         }
@@ -412,7 +302,7 @@ impl Context {
     /// support a label, it can also be used to look up a device.
     pub fn find_device(&self, name: &str) -> Option<Device> {
         let name = CString::new(name).unwrap();
-        let dev = unsafe { ffi::iio_context_find_device(self.inner.ctx, name.as_ptr()) };
+        let dev = unsafe { ffi::iio_context_find_device(self.as_ptr(), name.as_ptr()) };
         if dev.is_null() {
             None
         }
@@ -439,7 +329,7 @@ impl PartialEq for Context {
     /// Two contexts are the same if they refer to the same underlying
     /// object in the library.
     fn eq(&self, other: &Self) -> bool {
-        self.inner.ctx == other.inner.ctx
+        self.as_ptr() == other.as_ptr()
     }
 }
 
@@ -451,6 +341,55 @@ impl From<InnerContext> for Context {
         }
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////
+
+/// This holds a pointer to the library context.
+/// When it is dropped, the library context is destroyed.
+#[derive(Debug)]
+pub struct InnerContext(NonNull<ffi::iio_context>);
+
+impl InnerContext {
+    /// Tries to create the inner context from a C context pointer.
+    ///
+    /// This should be called _right after_ creating the C context as it
+    /// will use the last error on failure.
+    fn new(ctx: *mut ffi::iio_context) -> Result<Self> {
+        let ctx = NonNull::new(ctx)
+            .ok_or_else(|| Error::from(Errno::last()))?;
+        Ok(Self(ctx))
+    }
+
+    /// Gets the pointer to the C context.
+    fn as_ptr(&self) -> *mut ffi::iio_context {
+        self.0.as_ptr()
+    }
+
+    /// Tries to create a full, deep, copy of the underlying context.
+    ///
+    /// This creates a full copy of the actual context held in the underlying
+    /// C library. This is useful if you want to give a separate copy to each
+    /// thread in an application, which could help performance.
+    pub fn try_clone(&self) -> Result<Self> {
+        Self::new(unsafe { ffi::iio_context_clone(self.as_ptr()) })
+    }
+}
+
+impl Drop for InnerContext {
+    /// Dropping destroys the underlying C context.
+    ///
+    /// When held by [`Context`] references, this should happen when the last
+    /// context referring to it goes out of scope.
+    fn drop(&mut self) {
+        unsafe { ffi::iio_context_destroy(self.as_ptr()) };
+    }
+}
+
+// The inner context can be sent to another thread.
+unsafe impl Send for InnerContext {}
+
+// The inner context can be shared with another thread.
+unsafe impl Sync for InnerContext {}
 
 /// Iterator over the Devices in a Context
 #[derive(Debug)]
@@ -474,6 +413,73 @@ impl Iterator for DeviceIterator<'_> {
             Err(_) => None,
         }
     }
+}
+
+/// Backends for I/O Contexts.
+///
+/// An I/O [`Context`] relies on a backend that provides sensor data.
+#[derive(Debug)]
+pub enum Backend<'a> {
+    /// Use the default backend. This will create a network context if the
+    /// IIOD_REMOTE environment variable is set to the hostname where the
+    /// IIOD server runs. If set to an empty string, the server will be
+    /// discovered using ZeroConf. If the environment variable is not set,
+    /// a local context will be created instead.
+    Default,
+    /// XML Backend, creates a Context from an XML file. Here the string is
+    /// the name of the file.
+    /// Example Parameter:
+    /// "/home/user/file.xml"
+    Xml(&'a str),
+    /// XML Backend, creates a Context from an in-memory XML string. Here
+    /// the string _is_ the XML description.
+    XmlMem(&'a str),
+    /// Network Backend, creates a Context through a network connection.
+    /// Requires a hostname, IPv4 or IPv6 address to connect to another host
+    /// that is running the [IIO Daemon]. If an empty string is provided,
+    /// automatic discovery through ZeroConf is performed (if available in IIO).
+    /// Example Parameter:
+    ///
+    /// - "192.168.2.1" to connect to given IPv4 host, **or**
+    /// - "localhost" to connect to localhost running IIOD, **or**
+    /// - "plutosdr.local" to connect to host with given hostname, **or**
+    /// - "" for automatic discovery
+    ///
+    /// [IIO Daemon]: https://github.com/analogdevicesinc/libiio/tree/master/iiod
+    Network(&'a str),
+    /// USB Backend, creates a context through a USB connection.
+    /// If only a single USB device is attached, provide an empty String ("")
+    /// to use that. When more than one usb device is attached, requires bus,
+    /// address, and interface parts separated with a dot.
+    /// Example Parameter: "3.32.5"
+    Usb(&'a str),
+    /// Serial Backend, creates a context through a serial connection.
+    /// Requires (Values in parentheses show examples):
+    ///
+    /// - a port (/dev/ttyUSB0),
+    /// - baud_rate (default 115200)
+    /// - serial port configuration
+    ///     - data bits (5 6 7 8 9)
+    ///     - parity ('n' none, 'o' odd, 'e' even, 'm' mark, 's' space)
+    ///     - stop bits (1 2)
+    ///     - flow control ('\0' none, 'x' Xon Xoff, 'r' RTSCTS, 'd' DTRDSR)
+    ///
+    /// Example Parameters:
+    ///
+    /// - "/dev/ttyUSB0,115200", **or**
+    /// - "/dev/ttyUSB0,115200,8n1"
+    Serial(&'a str),
+    /// "Guess" the backend to use from the URI that's supplied. This merely
+    /// provides compatibility with [`iio_create_context_from_uri`] from the
+    /// underlying IIO C-library. Refer to the IIO docs for information on how
+    /// to format this parameter.
+    ///
+    /// [`iio_create_context_from_uri`]: https://analogdevicesinc.github.io/libiio/master/libiio/group__Context.html#gafdcee40508700fa395370b6c636e16fe
+    Uri(&'a str),
+    /// Local Backend, only available on Linux hosts. Sensors to work with are
+    /// part of the system and accessible in sysfs (under `/sys/...`).
+    #[cfg(target_os = "linux")]
+    Local,
 }
 
 /// Iterator over the attributes in a Context

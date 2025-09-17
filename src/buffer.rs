@@ -360,7 +360,7 @@ impl<T> Iter<'_, T> {
     /// Create an iterator to move channel data out of a buffer.
     pub fn new(buf: &Buffer, chan: &Channel) -> Self {
         unsafe {
-            let begin = ffi::iio_buffer_first(buf.buf, chan.chan).cast();
+            let begin = ffi::iio_buffer_first(buf.buf, chan.as_ptr()).cast();
             let end = ffi::iio_buffer_end(buf.buf).cast();
             let ptr = begin;
             let step: isize = ffi::iio_buffer_step(buf.buf) / size_of::<T>() as isize;
@@ -409,7 +409,7 @@ impl<'a, T: 'a> IterMut<'a, T> {
     /// Create a mutable iterator to move channel data into a buffer.
     pub fn new(buf: &'a mut Buffer, chan: &Channel) -> Self {
         unsafe {
-            let begin = ffi::iio_buffer_first(buf.buf, chan.chan).cast();
+            let begin = ffi::iio_buffer_first(buf.buf, chan.as_ptr()).cast();
             let end = ffi::iio_buffer_end(buf.buf).cast();
             let ptr = begin;
             let step: isize = ffi::iio_buffer_step(buf.buf) / size_of::<T>() as isize;

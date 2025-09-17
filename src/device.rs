@@ -255,15 +255,7 @@ impl Device {
     /// Gets a channel by index
     pub fn get_channel(&self, idx: usize) -> Result<Channel> {
         let chan = unsafe { ffi::iio_device_get_channel(self.dev, idx as c_uint) };
-        if chan.is_null() {
-            Err(Error::InvalidIndex)
-        }
-        else {
-            Ok(Channel {
-                chan,
-                ctx: self.context(),
-            })
-        }
+        Channel::new(chan, self.context()).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find a channel by its name or ID
@@ -271,16 +263,7 @@ impl Device {
         let is_output = dir == Direction::Output;
         let cname = cstring_or_bail!(name);
         let chan = unsafe { ffi::iio_device_find_channel(self.dev, cname.as_ptr(), is_output) };
-
-        if chan.is_null() {
-            None
-        }
-        else {
-            Some(Channel {
-                chan,
-                ctx: self.context(),
-            })
-        }
+        Channel::new(chan, self.context())
     }
 
     /// Try to find an input channel by its name or ID

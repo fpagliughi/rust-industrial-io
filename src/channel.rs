@@ -18,6 +18,7 @@ use std::{
     ffi::CString,
     mem::{self, size_of, size_of_val},
     os::raw::{c_char, c_int, c_longlong, c_uint, c_void},
+    ptr::NonNull,
 };
 
 /// The channel direction
@@ -203,33 +204,45 @@ impl DataFormat {
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
 /// An Industrial I/O Device Channel
 #[derive(Debug, Clone)]
 pub struct Channel {
     /// Pointer to the underlying IIO channel object
-    pub(crate) chan: *mut ffi::iio_channel,
+    chan: NonNull<ffi::iio_channel>,
     #[allow(dead_code)]
     /// Holder for the Device's lifetime for libiio safety.
-    pub(crate) ctx: Context,
+    ctx: Context,
 }
 
 impl Channel {
+    /// Creates a new channel from the C channel pointer
+    pub(crate) fn new(chan: *mut ffi::iio_channel, ctx: Context) -> Option<Self> {
+        NonNull::new(chan).map(|chan| Self { chan, ctx })
+    }
+
+    /// Gets a pointer to the C channel object
+    pub(crate) fn as_ptr(&self) -> *mut ffi::iio_channel {
+        self.chan.as_ptr()
+    }
+
     /// Retrieves the name of the channel (e.g. <b><i>vccint</i></b>)
     pub fn name(&self) -> Option<String> {
-        let pstr = unsafe { ffi::iio_channel_get_name(self.chan) };
+        let pstr = unsafe { ffi::iio_channel_get_name(self.as_ptr()) };
         cstring_opt(pstr)
     }
 
     /// Retrieve the channel ID (e.g. <b><i>voltage0</i></b>)
     pub fn id(&self) -> Option<String> {
-        let pstr = unsafe { ffi::iio_channel_get_id(self.chan) };
+        let pstr = unsafe { ffi::iio_channel_get_id(self.as_ptr()) };
         cstring_opt(pstr)
     }
 
     /// Determines if this is an output channel.
     #[inline]
     pub fn is_output(&self) -> bool {
-        unsafe { ffi::iio_channel_is_output(self.chan) }
+        unsafe { ffi::iio_channel_is_output(self.as_ptr()) }
     }
 
     /// Determines if this is an input channel.
@@ -252,42 +265,42 @@ impl Channel {
     /// input  channel) or receive samples (for an output channel) after
     /// being enabled.
     pub fn is_scan_element(&self) -> bool {
-        unsafe { ffi::iio_channel_is_scan_element(self.chan) }
+        unsafe { ffi::iio_channel_is_scan_element(self.as_ptr()) }
     }
 
     /// Gets the index of the channel in the device
     pub fn index(&self) -> Result<usize> {
-        let ret = unsafe { ffi::iio_channel_get_index(self.chan) };
+        let ret = unsafe { ffi::iio_channel_get_index(self.as_ptr()) };
         sys_result(ret as i32, ret as usize)
     }
 
     /// Determines if the channel has any attributes
     pub fn has_attrs(&self) -> bool {
-        unsafe { ffi::iio_channel_get_attrs_count(self.chan) > 0 }
+        unsafe { ffi::iio_channel_get_attrs_count(self.as_ptr()) > 0 }
     }
 
     /// Gets the number of attributes for the channel
     pub fn num_attrs(&self) -> usize {
-        let n = unsafe { ffi::iio_channel_get_attrs_count(self.chan) };
+        let n = unsafe { ffi::iio_channel_get_attrs_count(self.as_ptr()) };
         n as usize
     }
 
     /// Determines if the channel has the specified attribute.
     pub fn has_attr(&self, attr: &str) -> bool {
         let attr = cstring_or_bail_false!(attr);
-        unsafe { !ffi::iio_channel_find_attr(self.chan, attr.as_ptr()).is_null() }
+        unsafe { !ffi::iio_channel_find_attr(self.as_ptr(), attr.as_ptr()).is_null() }
     }
 
     /// Gets the channel-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
-        let pstr = unsafe { ffi::iio_channel_get_attr(self.chan, idx as c_uint) };
+        let pstr = unsafe { ffi::iio_channel_get_attr(self.as_ptr(), idx as c_uint) };
         cstring_opt(pstr).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find the channel-specific attribute by name.
     pub fn find_attr(&self, name: &str) -> Option<String> {
         let cname = cstring_or_bail!(name);
-        let pstr = unsafe { ffi::iio_channel_find_attr(self.chan, cname.as_ptr()) };
+        let pstr = unsafe { ffi::iio_channel_find_attr(self.as_ptr(), cname.as_ptr()) };
         cstring_opt(pstr)
     }
 
@@ -306,7 +319,7 @@ impl Channel {
         let mut buf = vec![0 as c_char; ATTR_BUF_SIZE];
         let attr = CString::new(attr)?;
         let ret = unsafe {
-            ffi::iio_channel_attr_read(self.chan, attr.as_ptr(), buf.as_mut_ptr(), buf.len())
+            ffi::iio_channel_attr_read(self.as_ptr(), attr.as_ptr(), buf.as_mut_ptr(), buf.len())
         };
         sys_result(ret as i32, ())?;
         let s = unsafe {
@@ -322,7 +335,7 @@ impl Channel {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_read_bool(self.chan, attr.as_ptr(), &mut val) };
+        let ret = unsafe { ffi::iio_channel_attr_read_bool(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -333,7 +346,7 @@ impl Channel {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
         let ret =
-            unsafe { ffi::iio_channel_attr_read_longlong(self.chan, attr.as_ptr(), &mut val) };
+            unsafe { ffi::iio_channel_attr_read_longlong(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val as i64)
     }
 
@@ -343,7 +356,7 @@ impl Channel {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_read_double(self.chan, attr.as_ptr(), &mut val) };
+        let ret = unsafe { ffi::iio_channel_attr_read_double(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -375,7 +388,7 @@ impl Channel {
         let mut map = HashMap::new();
         let pmap = (&mut map as *mut HashMap<_, _>).cast();
         let ret = unsafe {
-            ffi::iio_channel_attr_read_all(self.chan, Some(Channel::attr_read_all_cb), pmap)
+            ffi::iio_channel_attr_read_all(self.as_ptr(), Some(Channel::attr_read_all_cb), pmap)
         };
         sys_result(ret, map)
     }
@@ -396,7 +409,7 @@ impl Channel {
     pub fn attr_write_str(&self, attr: &str, val: &str) -> Result<()> {
         let attr = CString::new(attr)?;
         let sval = CString::new(val)?;
-        let ret = unsafe { ffi::iio_channel_attr_write(self.chan, attr.as_ptr(), sval.as_ptr()) };
+        let ret = unsafe { ffi::iio_channel_attr_write(self.as_ptr(), attr.as_ptr(), sval.as_ptr()) };
         sys_result(ret as i32, ())
     }
 
@@ -406,7 +419,7 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_write_bool(self.chan, attr.as_ptr(), val) };
+        let ret = unsafe { ffi::iio_channel_attr_write_bool(self.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -416,7 +429,7 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_write_longlong(self.chan, attr.as_ptr(), val) };
+        let ret = unsafe { ffi::iio_channel_attr_write_longlong(self.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -426,7 +439,7 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_write_double(self.chan, attr.as_ptr(), val) };
+        let ret = unsafe { ffi::iio_channel_attr_write_double(self.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -440,17 +453,17 @@ impl Channel {
     /// Before creating a buffer, at least one channel of the device
     /// must be enabled.
     pub fn enable(&self) {
-        unsafe { ffi::iio_channel_enable(self.chan) };
+        unsafe { ffi::iio_channel_enable(self.as_ptr()) };
     }
 
     /// Disable the channel
     pub fn disable(&self) {
-        unsafe { ffi::iio_channel_disable(self.chan) };
+        unsafe { ffi::iio_channel_disable(self.as_ptr()) };
     }
 
     /// Determines if the channel is enabled
     pub fn is_enabled(&self) -> bool {
-        unsafe { ffi::iio_channel_is_enabled(self.chan) }
+        unsafe { ffi::iio_channel_is_enabled(self.as_ptr()) }
     }
 
     // ----- Data Type and Conversion -----
@@ -458,7 +471,7 @@ impl Channel {
     /// Gets the data format for the channel
     pub fn data_format(&self) -> DataFormat {
         unsafe {
-            let pfmt = ffi::iio_channel_get_data_format(self.chan);
+            let pfmt = ffi::iio_channel_get_data_format(self.as_ptr());
             DataFormat::new(*pfmt)
         }
     }
@@ -476,7 +489,7 @@ impl Channel {
     pub fn channel_type(&self) -> ChannelType {
         // TODO: We're trusting that the lib returns a valid enum.
         unsafe {
-            let n = ffi::iio_channel_get_type(self.chan);
+            let n = ffi::iio_channel_get_type(self.as_ptr());
             mem::transmute(n)
         }
     }
@@ -494,7 +507,7 @@ impl Channel {
         if self.type_of() == Some(TypeId::of::<T>()) {
             unsafe {
                 ffi::iio_channel_convert(
-                    self.chan,
+                    self.as_ptr(),
                     (&mut retval as *mut T).cast(),
                     (&val as *const T).cast(),
                 );
@@ -516,7 +529,7 @@ impl Channel {
         if self.type_of() == Some(TypeId::of::<T>()) {
             unsafe {
                 ffi::iio_channel_convert_inverse(
-                    self.chan,
+                    self.as_ptr(),
                     (&mut retval as *mut T).cast(),
                     (&val as *const T).cast(),
                 );
@@ -539,7 +552,7 @@ impl Channel {
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
-        let sz = unsafe { ffi::iio_channel_read(self.chan, buf.buf, v.as_mut_ptr().cast(), sz_in) };
+        let sz = unsafe { ffi::iio_channel_read(self.as_ptr(), buf.buf, v.as_mut_ptr().cast(), sz_in) };
 
         if sz > sz_in {
             return Err(Error::BadReturnSize); // This should never happen.
@@ -566,7 +579,7 @@ impl Channel {
 
         let mut v = vec![T::default(); n];
         let sz =
-            unsafe { ffi::iio_channel_read_raw(self.chan, buf.buf, v.as_mut_ptr().cast(), sz_in) };
+            unsafe { ffi::iio_channel_read_raw(self.as_ptr(), buf.buf, v.as_mut_ptr().cast(), sz_in) };
 
         if sz > sz_in {
             return Err(Error::BadReturnSize); // This should never happen.
@@ -591,7 +604,7 @@ impl Channel {
         let sz_item = size_of::<T>();
         let sz_in = size_of_val(data);
 
-        let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
+        let sz = unsafe { ffi::iio_channel_write(self.as_ptr(), buf.buf, data.as_ptr().cast(), sz_in) };
 
         Ok(sz / sz_item)
     }
@@ -609,7 +622,7 @@ impl Channel {
         let sz_item = size_of::<T>();
         let sz_in = size_of_val(data);
 
-        let sz = unsafe { ffi::iio_channel_write(self.chan, buf.buf, data.as_ptr().cast(), sz_in) };
+        let sz = unsafe { ffi::iio_channel_write(self.as_ptr(), buf.buf, data.as_ptr().cast(), sz_in) };
 
         Ok(sz / sz_item)
     }
@@ -619,7 +632,7 @@ impl PartialEq for Channel {
     /// Two channels are the same if they refer to the same underlying
     /// object in the library.
     fn eq(&self, other: &Self) -> bool {
-        self.chan == other.chan
+        self.as_ptr() == other.as_ptr()
     }
 }
 

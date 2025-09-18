@@ -349,6 +349,23 @@ impl Buffer {
     pub fn channel_iter_mut<T>(&mut self, chan: &Channel) -> IterMut<'_, T> {
         IterMut::new(self, chan)
     }
+
+    /// Gets a mutable slice for the data from a channel.
+    pub fn channel_slice_mut<T>(&mut self, chan: &Channel) -> Option<&mut [T]> {
+        unsafe {
+            let begin = ffi::iio_buffer_first(self.buf, chan.chan) as *mut T;
+
+            if begin.is_null() {
+                None
+            } else {
+                let end = ffi::iio_buffer_end(self.buf) as *mut T;
+                let ptr = begin;
+                let size = end.offset_from(begin).abs() as usize;
+
+                Some(std::slice::from_raw_parts_mut(ptr, size))
+            }
+        }
+    }
 }
 
 /// Destroy the underlying buffer when the object scope ends.

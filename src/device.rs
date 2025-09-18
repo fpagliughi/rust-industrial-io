@@ -175,7 +175,8 @@ impl Device {
     pub fn attr_read_int(&self, attr: &str) -> Result<i64> {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_device_attr_read_longlong(self.as_ptr(), attr.as_ptr(), &mut val) };
+        let ret =
+            unsafe { ffi::iio_device_attr_read_longlong(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val as i64)
     }
 
@@ -185,7 +186,8 @@ impl Device {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_device_attr_read_double(self.as_ptr(), attr.as_ptr(), &mut val) };
+        let ret =
+            unsafe { ffi::iio_device_attr_read_double(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -195,7 +197,8 @@ impl Device {
     pub fn attr_read_all(&self) -> Result<HashMap<String, String>> {
         let mut map = HashMap::new();
         let pmap = (&mut map as *mut HashMap<_, _>).cast();
-        let ret = unsafe { ffi::iio_device_attr_read_all(self.as_ptr(), Some(attr_read_all_cb), pmap) };
+        let ret =
+            unsafe { ffi::iio_device_attr_read_all(self.as_ptr(), Some(attr_read_all_cb), pmap) };
         sys_result(ret, map)
     }
 
@@ -271,7 +274,8 @@ impl Device {
     pub fn find_channel(&self, name: &str, dir: Direction) -> Option<Channel> {
         let is_output = dir == Direction::Output;
         let cname = cstring_or_bail!(name);
-        let chan = unsafe { ffi::iio_device_find_channel(self.as_ptr(), cname.as_ptr(), is_output) };
+        let chan =
+            unsafe { ffi::iio_device_find_channel(self.as_ptr(), cname.as_ptr(), is_output) };
         Channel::new(chan, self.context())
     }
 

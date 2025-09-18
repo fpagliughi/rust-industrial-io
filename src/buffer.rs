@@ -239,8 +239,9 @@ impl Buffer {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_read_bool(self.dev.as_ptr(), attr.as_ptr(), &mut val) };
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_read_bool(self.dev.as_ptr(), attr.as_ptr(), &mut val)
+        };
         sys_result(ret, val)
     }
 
@@ -308,8 +309,9 @@ impl Buffer {
     /// `val` The value to write
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_bool(self.dev.as_ptr(), attr.as_ptr(), val) };
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_write_bool(self.dev.as_ptr(), attr.as_ptr(), val)
+        };
         sys_result(ret, ())
     }
 
@@ -319,8 +321,9 @@ impl Buffer {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_longlong(self.dev.as_ptr(), attr.as_ptr(), val) };
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_write_longlong(self.dev.as_ptr(), attr.as_ptr(), val)
+        };
         sys_result(ret, ())
     }
 
@@ -330,8 +333,9 @@ impl Buffer {
     /// `val` The value to write
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_double(self.dev.as_ptr(), attr.as_ptr(), val) };
+        let ret = unsafe {
+            ffi::iio_device_buffer_attr_write_double(self.dev.as_ptr(), attr.as_ptr(), val)
+        };
         sys_result(ret, ())
     }
 
@@ -350,20 +354,53 @@ impl Buffer {
         IterMut::new(self, chan)
     }
 
-    /// Gets a mutable slice for the data from a channel.
-    pub fn channel_slice_mut<T>(&mut self, chan: &Channel) -> Option<&mut [T]> {
+    /// Gets a slice for the data from a channel in a single-channel buffer.
+    /// This only works if there is a single channel with no padding in the
+    /// buffer. That's the only way the buffer can access a contiguous slice
+    /// of data from a channel.
+    pub fn as_channel_slice<T>(&self, chan: &Channel) -> Option<&[T]> {
         unsafe {
-            let begin = ffi::iio_buffer_first(self.buf, chan.chan) as *mut T;
-
-            if begin.is_null() {
-                None
-            } else {
-                let end = ffi::iio_buffer_end(self.buf) as *mut T;
-                let ptr = begin;
-                let size = end.offset_from(begin).abs() as usize;
-
-                Some(std::slice::from_raw_parts_mut(ptr, size))
+            if ffi::iio_buffer_step(self.buf.as_ptr()) as usize != size_of::<T>() {
+                return None;
             }
+
+            let begin = ffi::iio_buffer_first(self.as_ptr(), chan.as_ptr()) as *const T;
+            let end = ffi::iio_buffer_end(self.as_ptr()) as *const T;
+
+            // TODO: When we're past MSRV v1.79, check alignment of begin and end
+
+            if begin.is_null() || end.is_null() || end < begin {
+                None
+            }
+            else {
+                let len = end.offset_from(begin).unsigned_abs();
+                Some(slice::from_raw_parts(begin, len))
+            }
+        }
+    }
+
+    /// Gets a mutable slice for the data from a channel in a single-channel
+    /// buffer.
+    /// This only works if there is a single channel with no padding in the
+    /// buffer. That's the only way the buffer can access a contiguous slice
+    /// of data from a channel.
+    pub fn as_mut_channel_slice<T>(&mut self, chan: &Channel) -> Option<&mut [T]> {
+        unsafe {
+            if ffi::iio_buffer_step(self.buf.as_ptr()) as usize != size_of::<T>() {
+                return None;
+            }
+
+            let begin = ffi::iio_buffer_first(self.as_ptr(), chan.as_ptr()) as *mut T;
+            let end = ffi::iio_buffer_end(self.as_ptr()) as *const T;
+
+            // TODO: When we're past MSRV v1.79, check alignment of begin and end
+
+            if begin.is_null() || end.is_null() || end < begin {
+                return None;
+            }
+
+            let len = end.offset_from(begin).unsigned_abs();
+            Some(slice::from_raw_parts_mut(begin, len))
         }
     }
 }

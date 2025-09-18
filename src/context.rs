@@ -16,7 +16,8 @@ use nix::errno::Errno;
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_uint},
-    ptr::{self, NonNull}, slice, str,
+    ptr::{self, NonNull},
+    slice, str,
     sync::Arc,
     time::Duration,
 };
@@ -341,8 +342,7 @@ impl InnerContext {
     /// This should be called _right after_ creating the C context as it
     /// will use the last error on failure.
     fn new(ctx: *mut ffi::iio_context) -> Result<Self> {
-        let ctx = NonNull::new(ctx)
-            .ok_or_else(|| Error::from(Errno::last()))?;
+        let ctx = NonNull::new(ctx).ok_or_else(|| Error::from(Errno::last()))?;
         Ok(Self(ctx))
     }
 

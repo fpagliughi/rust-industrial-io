@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [v0.6.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.6.0..v0.6.1) - 2025-09-13
+## v0.6.2  (Unreleased)
+
+- Added methods to access a buffer as a slice
+- [#27](https://github.com/fpagliughi/rust-industrial-io/pull/27) Added method to get mutable slice of channel buffer
+
+
+## [v0.6.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.6.0..v0.6.1) - 2025-09-13
 
 - Updated the Github Actions CI to resolve the dependencies for the MSRV with cargo resolver v3.
 - Renamed the 'utilities' feature to 'utils' and removed it from the default build
@@ -18,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - [PR #33](https://github.com/fpagliughi/rust-industrial-io/pull/33) Fix build script platform behavior
 
 
-### [v0.6.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.2..v0.6.0) - 2024-12-10
+## [v0.6.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.2..v0.6.0) - 2024-12-10
 
 - Upgraded to Rust Edition 2021, MSRV 1.73.0
 - New bindings in the -sys crate for _libiio_ v0.24 & v0.25
@@ -38,21 +44,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added initial CI support to test building and format. (Still can't run unit tests in CI due to iio kernel module requirements).
 
 
-### [v0.5.2](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.1..v0.5.2) - 2023-02-03
+## [v0.5.2](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.1..v0.5.2) - 2023-02-03
 
 - [PR #26](https://github.com/fpagliughi/rust-industrial-io/pull/26) - Added 'utilities' feature to be able to turn off build of binary applications (i.e. only build the library).
 - [#21](https://github.com/fpagliughi/rust-industrial-io/issues/21) - Update nix dependency to avoid linking vulnerable version
 - Updated dependencies for `clap` and `ctrlc` crates.
 
 
-###  [v0.5.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.0..v0.5.1) - 2022-02-05
+##  [v0.5.1](https://github.com/fpagliughi/rust-industrial-io/compare/v0.5.0..v0.5.1) - 2022-02-05
 
 - `iio_info_rs` utility now supports network and URI contexts.
 - [PR #19](https://github.com/fpagliughi/rust-industrial-io/pull/19) macOS build makes a distinction for Intel and non-Intel builds when searching for Homebrew Frameworks (libiio library).
 - [PR #20](https://github.com/fpagliughi/rust-industrial-io/pull/20) Fix some clippy suggestions. Particularly cleaner casting of raw pointers, etc.
 
 
-###  [v0.5.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.4.0..v0.5.0) - 2022-01-30
+##  [v0.5.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.4.0..v0.5.0) - 2022-01-30
 
 - Started loosening thread safety restrictions:
     - The `Context` is now `Send` and `Sync`. Internally it has canverted to using an `Arc` instead of an `Rc` to track it's internal data.
@@ -65,7 +71,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
      - `From<InnerContext> for Context`
 
 
-###  [v0.4.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.3..v0.4.0) - 2022-01-28
+##  [v0.4.0](https://github.com/fpagliughi/rust-industrial-io/compare/v0.3..v0.4.0) - 2022-01-28
 
 - [#12](https://github.com/fpagliughi/rust-industrial-io/pull/12) Context construction now takes a `Backend` enumeration type.
 - The `InnerContext` is now public and can be cloned and sent to another thread to create a cloned context in the other thread.
@@ -78,7 +84,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - New `Version` struct which is returned by the library and `Context` version query functions.
 
 
-###  [v0.3](https://github.com/fpagliughi/rust-industrial-io/compare/v0.2..v0.3) - 2021-05-26
+##  [v0.3](https://github.com/fpagliughi/rust-industrial-io/compare/v0.2..v0.3) - 2021-05-26
 
 - Support for _libiio_ v0.21
 - Updated error handling:

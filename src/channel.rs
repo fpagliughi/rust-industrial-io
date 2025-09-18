@@ -335,7 +335,8 @@ impl Channel {
     pub fn attr_read_bool(&self, attr: &str) -> Result<bool> {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_read_bool(self.as_ptr(), attr.as_ptr(), &mut val) };
+        let ret =
+            unsafe { ffi::iio_channel_attr_read_bool(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -356,7 +357,8 @@ impl Channel {
     pub fn attr_read_float(&self, attr: &str) -> Result<f64> {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_read_double(self.as_ptr(), attr.as_ptr(), &mut val) };
+        let ret =
+            unsafe { ffi::iio_channel_attr_read_double(self.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -409,7 +411,8 @@ impl Channel {
     pub fn attr_write_str(&self, attr: &str, val: &str) -> Result<()> {
         let attr = CString::new(attr)?;
         let sval = CString::new(val)?;
-        let ret = unsafe { ffi::iio_channel_attr_write(self.as_ptr(), attr.as_ptr(), sval.as_ptr()) };
+        let ret =
+            unsafe { ffi::iio_channel_attr_write(self.as_ptr(), attr.as_ptr(), sval.as_ptr()) };
         sys_result(ret as i32, ())
     }
 
@@ -429,7 +432,8 @@ impl Channel {
     /// `val` The value to write
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
-        let ret = unsafe { ffi::iio_channel_attr_write_longlong(self.as_ptr(), attr.as_ptr(), val) };
+        let ret =
+            unsafe { ffi::iio_channel_attr_write_longlong(self.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -552,7 +556,9 @@ impl Channel {
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
-        let sz = unsafe { ffi::iio_channel_read(self.as_ptr(), buf.as_ptr(), v.as_mut_ptr().cast(), sz_in) };
+        let sz = unsafe {
+            ffi::iio_channel_read(self.as_ptr(), buf.as_ptr(), v.as_mut_ptr().cast(), sz_in)
+        };
 
         if sz > sz_in {
             return Err(Error::BadReturnSize); // This should never happen.
@@ -578,8 +584,9 @@ impl Channel {
         let sz_in = n * sz_item;
 
         let mut v = vec![T::default(); n];
-        let sz =
-            unsafe { ffi::iio_channel_read_raw(self.as_ptr(), buf.as_ptr(), v.as_mut_ptr().cast(), sz_in) };
+        let sz = unsafe {
+            ffi::iio_channel_read_raw(self.as_ptr(), buf.as_ptr(), v.as_mut_ptr().cast(), sz_in)
+        };
 
         if sz > sz_in {
             return Err(Error::BadReturnSize); // This should never happen.
@@ -604,7 +611,9 @@ impl Channel {
         let sz_item = size_of::<T>();
         let sz_in = size_of_val(data);
 
-        let sz = unsafe { ffi::iio_channel_write(self.as_ptr(), buf.as_ptr(), data.as_ptr().cast(), sz_in) };
+        let sz = unsafe {
+            ffi::iio_channel_write(self.as_ptr(), buf.as_ptr(), data.as_ptr().cast(), sz_in)
+        };
 
         Ok(sz / sz_item)
     }
@@ -622,7 +631,9 @@ impl Channel {
         let sz_item = size_of::<T>();
         let sz_in = size_of_val(data);
 
-        let sz = unsafe { ffi::iio_channel_write(self.as_ptr(), buf.as_ptr(), data.as_ptr().cast(), sz_in) };
+        let sz = unsafe {
+            ffi::iio_channel_write(self.as_ptr(), buf.as_ptr(), data.as_ptr().cast(), sz_in)
+        };
 
         Ok(sz / sz_item)
     }

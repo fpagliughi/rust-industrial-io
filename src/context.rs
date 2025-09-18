@@ -288,13 +288,7 @@ impl Context {
     /// Gets a device by index
     pub fn get_device(&self, idx: usize) -> Result<Device> {
         let dev = unsafe { ffi::iio_context_get_device(self.as_ptr(), idx as c_uint) };
-        if dev.is_null() {
-            return Err(Error::InvalidIndex);
-        }
-        Ok(Device {
-            dev,
-            ctx: self.clone(),
-        })
+        Device::new(dev, self.clone()).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find a device by name or ID
@@ -303,15 +297,7 @@ impl Context {
     pub fn find_device(&self, name: &str) -> Option<Device> {
         let name = CString::new(name).unwrap();
         let dev = unsafe { ffi::iio_context_find_device(self.as_ptr(), name.as_ptr()) };
-        if dev.is_null() {
-            None
-        }
-        else {
-            Some(Device {
-                dev,
-                ctx: self.clone(),
-            })
-        }
+        Device::new(dev, self.clone())
     }
 
     /// Gets an iterator for all the devices in the context.

@@ -53,6 +53,7 @@ use std::{
     marker::PhantomData,
     mem::size_of,
     os::raw::{c_int, c_longlong},
+    ptr::NonNull,
 };
 
 use super::*;
@@ -67,7 +68,7 @@ use crate::ffi;
 #[derive(Debug)]
 pub struct Buffer {
     /// The underlying buffer from the C library
-    pub(crate) buf: *mut ffi::iio_buffer,
+    buf: NonNull<ffi::iio_buffer>,
     /// The buffer capacity (# samples from each channel)
     pub(crate) cap: usize,
     /// Copy of the device to which this device is attached.
@@ -75,6 +76,19 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    /// Create a buffer for the device
+    pub(crate) fn new(dev: Device, cap: usize, cyclic: bool) -> Result<Self> {
+        let buf = unsafe { ffi::iio_device_create_buffer(dev.as_ptr(), cap, cyclic) };
+        NonNull::new(buf)
+            .map(|buf| Self { buf, cap, dev })
+            .ok_or(Errno::last().into())
+    }
+
+    /// Gets the pointer to the C buffer object
+    pub(crate) fn as_ptr(&self) -> *mut ffi::iio_buffer {
+        self.buf.as_ptr()
+    }
+
     /// Get the buffer size.
     ///
     /// Get the buffer capacity in number of samples from each channel that
@@ -93,7 +107,7 @@ impl Buffer {
     /// This can be used to determine when [`Buffer::refill()`] or
     /// [`Buffer::push()`] can be called without blocking.
     pub fn poll_fd(&self) -> Result<c_int> {
-        let ret = unsafe { ffi::iio_buffer_get_poll_fd(self.buf) };
+        let ret = unsafe { ffi::iio_buffer_get_poll_fd(self.as_ptr()) };
         sys_result(i32::from(ret), ret)
     }
 
@@ -102,7 +116,7 @@ impl Buffer {
     ///
     /// A [`Device`] is blocking by default.
     pub fn set_blocking_mode(&self, blocking: bool) -> Result<()> {
-        let ret = unsafe { ffi::iio_buffer_set_blocking_mode(self.buf, blocking) };
+        let ret = unsafe { ffi::iio_buffer_set_blocking_mode(self.as_ptr(), blocking) };
         sys_result(ret, ())
     }
 
@@ -110,7 +124,7 @@ impl Buffer {
     ///
     /// This is only valid for input buffers.
     pub fn refill(&mut self) -> Result<usize> {
-        let ret = unsafe { ffi::iio_buffer_refill(self.buf) };
+        let ret = unsafe { ffi::iio_buffer_refill(self.as_ptr()) };
         sys_result(ret as i32, ret as usize)
     }
 
@@ -118,7 +132,7 @@ impl Buffer {
     ///
     /// This is only valid for output buffers.
     pub fn push(&self) -> Result<usize> {
-        let ret = unsafe { ffi::iio_buffer_push(self.buf) };
+        let ret = unsafe { ffi::iio_buffer_push(self.as_ptr()) };
         sys_result(ret as i32, ret as usize)
     }
 
@@ -128,7 +142,7 @@ impl Buffer {
     /// explicitly doesn't refer to their size in bytes, but the actual number
     /// of samples, regardless of the sample size in memory.
     pub fn push_partial(&self, num_samples: usize) -> Result<usize> {
-        let ret = unsafe { ffi::iio_buffer_push_partial(self.buf, num_samples) };
+        let ret = unsafe { ffi::iio_buffer_push_partial(self.as_ptr(), num_samples) };
         sys_result(ret as i32, ret as usize)
     }
 
@@ -154,37 +168,37 @@ impl Buffer {
     /// but the first invocation will be without additional effect.
     pub fn cancel(&self) {
         unsafe {
-            ffi::iio_buffer_cancel(self.buf);
+            ffi::iio_buffer_cancel(self.as_ptr());
         }
     }
 
     /// Determines if the device has any buffer-specific attributes
     pub fn has_attrs(&self) -> bool {
-        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev.dev) > 0 }
+        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev.as_ptr()) > 0 }
     }
 
     /// Gets the number of buffer-specific attributes
     pub fn num_attrs(&self) -> usize {
-        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev.dev) as usize }
+        unsafe { ffi::iio_device_get_buffer_attrs_count(self.dev.as_ptr()) as usize }
     }
 
     /// Gets the name of the buffer-specific attribute at the index
     pub fn get_attr(&self, idx: usize) -> Result<String> {
-        let pstr = unsafe { ffi::iio_device_get_buffer_attr(self.dev.dev, idx as c_uint) };
+        let pstr = unsafe { ffi::iio_device_get_buffer_attr(self.dev.as_ptr(), idx as c_uint) };
         cstring_opt(pstr).ok_or(Error::InvalidIndex)
     }
 
     /// Try to find a buffer-specific attribute by its name
     pub fn find_attr(&self, name: &str) -> Option<String> {
         let cname = cstring_or_bail!(name);
-        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev.dev, cname.as_ptr()) };
+        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev.as_ptr(), cname.as_ptr()) };
         cstring_opt(pstr)
     }
 
     /// Determines if a buffer-specific attribute exists
     pub fn has_attr(&self, name: &str) -> bool {
         let cname = cstring_or_bail_false!(name);
-        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev.dev, cname.as_ptr()) };
+        let pstr = unsafe { ffi::iio_device_find_buffer_attr(self.dev.as_ptr(), cname.as_ptr()) };
         !pstr.is_null()
     }
 
@@ -204,7 +218,7 @@ impl Buffer {
         let attr = CString::new(attr)?;
         let ret = unsafe {
             ffi::iio_device_buffer_attr_read(
-                self.dev.dev,
+                self.dev.as_ptr(),
                 attr.as_ptr(),
                 buf.as_mut_ptr(),
                 buf.len(),
@@ -226,7 +240,7 @@ impl Buffer {
         let mut val: bool = false;
         let attr = CString::new(attr)?;
         let ret =
-            unsafe { ffi::iio_device_buffer_attr_read_bool(self.dev.dev, attr.as_ptr(), &mut val) };
+            unsafe { ffi::iio_device_buffer_attr_read_bool(self.dev.as_ptr(), attr.as_ptr(), &mut val) };
         sys_result(ret, val)
     }
 
@@ -237,7 +251,7 @@ impl Buffer {
         let mut val: c_longlong = 0;
         let attr = CString::new(attr)?;
         let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_longlong(self.dev.dev, attr.as_ptr(), &mut val)
+            ffi::iio_device_buffer_attr_read_longlong(self.dev.as_ptr(), attr.as_ptr(), &mut val)
         };
         sys_result(ret, val as i64)
     }
@@ -249,7 +263,7 @@ impl Buffer {
         let mut val: f64 = 0.0;
         let attr = CString::new(attr)?;
         let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_double(self.dev.dev, attr.as_ptr(), &mut val)
+            ffi::iio_device_buffer_attr_read_double(self.dev.as_ptr(), attr.as_ptr(), &mut val)
         };
         sys_result(ret, val)
     }
@@ -261,7 +275,7 @@ impl Buffer {
         let mut map = HashMap::new();
         let pmap = (&mut map as *mut HashMap<_, _>).cast();
         let ret = unsafe {
-            ffi::iio_device_buffer_attr_read_all(self.dev.dev, Some(attr_read_all_cb), pmap)
+            ffi::iio_device_buffer_attr_read_all(self.dev.as_ptr(), Some(attr_read_all_cb), pmap)
         };
         sys_result(ret, map)
     }
@@ -283,7 +297,7 @@ impl Buffer {
         let attr = CString::new(attr)?;
         let sval = CString::new(val)?;
         let ret = unsafe {
-            ffi::iio_device_buffer_attr_write(self.dev.dev, attr.as_ptr(), sval.as_ptr())
+            ffi::iio_device_buffer_attr_write(self.dev.as_ptr(), attr.as_ptr(), sval.as_ptr())
         };
         sys_result(ret as i32, ())
     }
@@ -295,7 +309,7 @@ impl Buffer {
     pub fn attr_write_bool(&self, attr: &str, val: bool) -> Result<()> {
         let attr = CString::new(attr)?;
         let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_bool(self.dev.dev, attr.as_ptr(), val) };
+            unsafe { ffi::iio_device_buffer_attr_write_bool(self.dev.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -306,7 +320,7 @@ impl Buffer {
     pub fn attr_write_int(&self, attr: &str, val: i64) -> Result<()> {
         let attr = CString::new(attr)?;
         let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_longlong(self.dev.dev, attr.as_ptr(), val) };
+            unsafe { ffi::iio_device_buffer_attr_write_longlong(self.dev.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -317,7 +331,7 @@ impl Buffer {
     pub fn attr_write_float(&self, attr: &str, val: f64) -> Result<()> {
         let attr = CString::new(attr)?;
         let ret =
-            unsafe { ffi::iio_device_buffer_attr_write_double(self.dev.dev, attr.as_ptr(), val) };
+            unsafe { ffi::iio_device_buffer_attr_write_double(self.dev.as_ptr(), attr.as_ptr(), val) };
         sys_result(ret, ())
     }
 
@@ -340,7 +354,7 @@ impl Buffer {
 /// Destroy the underlying buffer when the object scope ends.
 impl Drop for Buffer {
     fn drop(&mut self) {
-        unsafe { ffi::iio_buffer_destroy(self.buf) }
+        unsafe { ffi::iio_buffer_destroy(self.as_ptr()) }
     }
 }
 
@@ -360,10 +374,10 @@ impl<T> Iter<'_, T> {
     /// Create an iterator to move channel data out of a buffer.
     pub fn new(buf: &Buffer, chan: &Channel) -> Self {
         unsafe {
-            let begin = ffi::iio_buffer_first(buf.buf, chan.as_ptr()).cast();
-            let end = ffi::iio_buffer_end(buf.buf).cast();
+            let begin = ffi::iio_buffer_first(buf.as_ptr(), chan.as_ptr()).cast();
+            let end = ffi::iio_buffer_end(buf.as_ptr()).cast();
             let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(buf.buf) / size_of::<T>() as isize;
+            let step: isize = ffi::iio_buffer_step(buf.as_ptr()) / size_of::<T>() as isize;
 
             Self {
                 _phantom: PhantomData,
@@ -409,10 +423,10 @@ impl<'a, T: 'a> IterMut<'a, T> {
     /// Create a mutable iterator to move channel data into a buffer.
     pub fn new(buf: &'a mut Buffer, chan: &Channel) -> Self {
         unsafe {
-            let begin = ffi::iio_buffer_first(buf.buf, chan.as_ptr()).cast();
-            let end = ffi::iio_buffer_end(buf.buf).cast();
+            let begin = ffi::iio_buffer_first(buf.as_ptr(), chan.as_ptr()).cast();
+            let end = ffi::iio_buffer_end(buf.as_ptr()).cast();
             let ptr = begin;
-            let step: isize = ffi::iio_buffer_step(buf.buf) / size_of::<T>() as isize;
+            let step: isize = ffi::iio_buffer_step(buf.as_ptr()) / size_of::<T>() as isize;
 
             Self {
                 _phantom: PhantomData,

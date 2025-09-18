@@ -27,10 +27,9 @@ impl ScanContext {
     pub fn new(backend: &str) -> Result<Self> {
         let backend = CString::new(backend)?;
         let ctx = unsafe { ffi::iio_create_scan_block(backend.as_ptr(), 0) };
-        if ctx.is_null() {
-            return Err(Error::from(Errno::last()));
-        }
-        Ok(Self { ctx })
+        (!ctx.is_null())
+            .then_some(Self { ctx })
+            .ok_or(Error::from(Errno::last()))
     }
 
     /// Creates a scan context for the USB backend.
